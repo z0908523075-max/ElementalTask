@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Pairwise emergence-order comparison across models.
+"""Pairwise emergence-order comparison across 模型.
 
-For every pair of models, tasks are ranked by emergence token count.
-Unemerged tasks (NaN emergence_tokens_B) are treated as censored — they are
-assigned the bottom rank (as if they emerged one step after the last observed
-checkpoint).  Spearman ρ and Kendall τ (and their p-values) are reported for
+For every pair of 模型, 任務 are ranked by emergence token count.
+Unemerged 任務 (NaN emergence_tokens_B) are treated as censored — they are
+assigned the bottom rank (as if they emerged one step after the 最後一個 observed
+checkpoint). Spearman ρ and Kendall τ (and their p-values) are reported for
 each pair.
 
-By default only tasks evaluated in every specified model are included
-(--evaled_all, on by default).
+By 預設only 任務 evaluated in every specified 模型 are included
+(--evaled_all, on by 預設).
 
-Usage:
+用法：
     python scripts/trajectory_analysis/compare_canonical_emergence_order.py \\
-        --models olmo2_1b:results/emergence_olmo2_1b_fixed_t0.8.csv \\
+        --模型 olmo2_1b:results/emergence_olmo2_1b_fixed_t0.8.csv \\
                  olmo2_7b:results/emergence_olmo2_7b_fixed_t0.8.csv \\
                  amber:results/emergence_amber_fixed_t0.8.csv \\
-        --summary results/pairwise_emergence_comparison_summary.csv \\
+        --摘要 results/pairwise_emergence_comparison_summary.csv \\
         --definition fixed_t0.8_censored_evaled_all3
 """
 
@@ -54,7 +54,7 @@ def main():
                         help='Restrict to tasks with a row in every model file (default: True)')
     args = parser.parse_args()
 
-    # ── Parse name:path pairs ─────────────────────────────────────────────
+    # ── Parse 名稱:路徑 pairs ─────────────────────────────────────────────
     model_files = {}
     for token in args.models:
         if ':' not in token:
@@ -70,13 +70,13 @@ def main():
     print(f"\n  Models     : {names}")
     print(f"  Definition : {definition}")
 
-    # ── Load all files ────────────────────────────────────────────────────
+    # ── 載入all 檔案 ────────────────────────────────────────────────────
     dfs = {}
     for name, path in model_files.items():
         dfs[name] = load_emergence(path).rename(columns={'emergence_tokens_B': f'tok_{name}'})
         dfs[name][f'_in_{name}'] = True
 
-    # ── Outer-merge all models ────────────────────────────────────────────
+    # ── Outer-merge all 模型 ────────────────────────────────────────────
     merged = None
     for name, df in dfs.items():
         merged = df if merged is None else merged.merge(df, on='task_norm', how='outer')
@@ -85,7 +85,7 @@ def main():
     for col in presence_cols:
         merged[col] = merged[col].fillna(False).infer_objects(copy=False)
 
-    # ── Global filter (tasks present in ALL models) ───────────────────────
+    # ── Global 篩選 (任務 present in ALL 模型) ───────────────────────
     if args.evaled_all:
         merged = merged[merged[presence_cols].all(axis=1)].copy().reset_index(drop=True)
 
@@ -97,7 +97,7 @@ def main():
     header_width = 60
     print('=' * header_width)
     for name_a, name_b in itertools.combinations(names, 2):
-        # For each pair, work on rows where both models have data
+        # For each pair, work on rows where both 模型 have 資料
         pair_mask = merged[f'_in_{name_a}'] & merged[f'_in_{name_b}']
         df_pair = merged[pair_mask].copy().reset_index(drop=True)
         n_pair = len(df_pair)
@@ -125,14 +125,14 @@ def main():
         })
     print('=' * header_width)
 
-    # ── Save summary ──────────────────────────────────────────────────────
+    # ── 儲存summary ──────────────────────────────────────────────────────
     summary_path = pathlib.Path(args.summary)
     summary_path.parent.mkdir(parents=True, exist_ok=True)
 
     new_rows = pd.DataFrame(rows)
     if summary_path.exists():
         existing = pd.read_csv(summary_path)
-        # Drop any rows with the same definition+pair so we can overwrite cleanly
+        # Drop any rows with the 相同 definition+pair so we can overwrite cleanly
         key = existing['definition'] == definition
         existing = existing[~key]
         new_rows = pd.concat([existing, new_rows], ignore_index=True)

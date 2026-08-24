@@ -1,16 +1,16 @@
-"""Logical operators — elemental reasoning primitives.
+"""邏輯 operators — elemental 推理 primitives.
 
-Tests the model's capacity for basic logical operations in text form:
-    - negation:     Verify whether a candidate is a correct logical negation
-    - conjunction:  Evaluate conjunction/disjunction statements from text facts
-    - conditional:  Decide whether a conclusion follows from a rule + fact
+Tests the 模型's capacity for basic 邏輯 操作 in 文字 form:
+    - negation:   Verify whether a candidate is a 正確 邏輯 negation
+    - conjunction: 評估conjunction/disjunction statements from 文字 facts
+    - conditional: Decide whether a conclusion follows from a rule + fact
 
 These are building blocks for reasoning-heavy benchmarks.
 
-Format (ICL):
-    Input: [text logic problem]
-    Output: True or False
-    (varies by category — see demos)
+格式化(ICL):
+    輸入: [文字 logic problem]
+    輸出: True or False
+    (varies by 類別 — see demos)
 """
 
 import random
@@ -20,7 +20,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class LogicalOpsTask(BaseTask):
-    """Elemental logical-operators task."""
+    """Elemental logical-operators 任務."""
 
     TASK_NAME = "logical_ops"
 
@@ -175,7 +175,7 @@ def create_logical_ops_task(
     category: str = None,
     name: str = "logical_ops",
 ) -> LogicalOpsTask:
-    """Create a LogicalOpsTask, optionally filtered to one category."""
+    """建立一個LogicalOpsTask, optionally 已篩選 to one 類別."""
     data = None
     if category and category in LogicalOpsTask.CATEGORY_DATA:
         data = [

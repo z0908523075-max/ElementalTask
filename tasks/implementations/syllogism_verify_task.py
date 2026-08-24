@@ -1,16 +1,16 @@
-"""Syllogism Verification Task based on Lampinen & Dasgupta (2024) (https://arxiv.org/pdf/2207.07051).
+"""Syllogism Verification 任務 based on Lampinen & Dasgupta (2024) (https://arxiv.org/pdf/2207.07051).
 
-Task: Given two premises and a conclusion, determine if the conclusion
+任務: Given two premises and a conclusion, determine if the conclusion
 logically follows from the premises.
-Format:
-    Input: [major premise] [minor premise] Therefore, [conclusion]
-    Output: Valid / Invalid
+格式：
+    輸入: [major premise] [minor premise] Therefore, [conclusion]
+    輸出: 有效 / 無效
 
-Following Lampinen & Dasgupta (2024), we provide three categories that differ on
+Following Lampinen & Dasgupta (2024), we provide three 類別 that differ on
 consistency with typicality/world knowledge:
     - consistent: premises and conclusions align with world knowledge
-    - violate: logically valid conclusions that violate world knowledge
-    - nonce: nonsense words isolate pure logical reasoning from world knowledge
+    - violate: logically 有效 conclusions that violate world knowledge
+    - nonce: nonsense 詞 isolate pure 邏輯 推理 from world knowledge
 """
 from typing import Dict, List, Any
 
@@ -24,7 +24,7 @@ class SyllogismVerifyTask(BaseTask):
 
     CATEGORY_DATA: Dict[str, List[Dict[str, str]]] = {
         "consistent": [
-            # Valid
+            # 有效
             {"input": "All mammals are warm-blooded. Dogs are mammals. Therefore, dogs are warm-blooded.", "output": "Valid"},
             {"input": "No insects have a backbone. All bees are insects. Therefore, no bees have a backbone.", "output": "Valid"},
             {"input": "All carpenters work with wood. Some craftspeople are carpenters. Therefore, some craftspeople work with wood.", "output": "Valid"},
@@ -33,7 +33,7 @@ class SyllogismVerifyTask(BaseTask):
             {"input": "All vertebrates have a spine. Humans are vertebrates. Therefore, humans have a spine.", "output": "Valid"},
             {"input": "No liquids have a fixed shape. Water is a liquid. Therefore, water does not have a fixed shape.", "output": "Valid"},
             {"input": "No metals are transparent. Gold is a metal. Therefore, gold is not transparent.", "output": "Valid"},
-            # Invalid
+            # 無效
             {"input": "All mammals are warm-blooded. Cats are warm-blooded. Therefore, cats are mammals.", "output": "Invalid"},
             {"input": "All birds have feathers. Eagles have feathers. Therefore, eagles are the only animals with feathers.", "output": "Invalid"},
             {"input": "All doctors have medical degrees. All lawyers have degrees. Therefore, all doctors are lawyers.", "output": "Invalid"},
@@ -43,7 +43,7 @@ class SyllogismVerifyTask(BaseTask):
             {"input": "No metals are organic. Gold is not organic. Therefore, gold is a metal.", "output": "Invalid"},
         ],
         "violate": [
-            # Valid (logically valid, but conclusion violates world knowledge)
+            # 有效 (logically 有效, but conclusion violates world knowledge)
             {"input": "All birds can fly. Penguins are birds. Therefore, penguins can fly.", "output": "Valid"},
             {"input": "No mammals live in water. Whales are mammals. Therefore, whales do not live in water.", "output": "Valid"},
             {"input": "All metals sink in water. Lithium is a metal. Therefore, lithium sinks in water.", "output": "Valid"},
@@ -52,7 +52,7 @@ class SyllogismVerifyTask(BaseTask):
             {"input": "All snakes have legs. Cobras are snakes. Therefore, cobras have legs.", "output": "Valid"},
             {"input": "All oceanic creatures are fish. Dolphins are oceanic creatures. Therefore, dolphins are fish.", "output": "Valid"},
             {"input": "No plants grow in water. Lily pads are plants. Therefore, lily pads do not grow in water.", "output": "Valid"},
-            # Invalid (logically invalid, premises also violate world knowledge)
+            # 無效 (logically 無效, premises also violate world knowledge)
             {"input": "No birds can swim. Penguins are birds. Therefore, penguins can swim.", "output": "Invalid"},
             {"input": "All reptiles are warm-blooded. Crocodiles are reptiles. Therefore, crocodiles are not warm-blooded.", "output": "Invalid"},
             {"input": "All spiders have six legs. Tarantulas are not spiders. Therefore, tarantulas do not have six legs.", "output": "Invalid"},
@@ -62,7 +62,7 @@ class SyllogismVerifyTask(BaseTask):
             {"input": "All fish live in deserts. Salmon are fish. Therefore, no salmon live in deserts.", "output": "Invalid"},
         ],
         "nonce": [
-            # Valid
+            # 有效
             {"input": "All wugs are blickets. Daxes are wugs. Therefore, daxes are blickets.", "output": "Valid"},
             {"input": "No feps are glurps. All mooks are feps. Therefore, no mooks are glurps.", "output": "Valid"},
             {"input": "All zorbs have trunding. Some quivs are zorbs. Therefore, some quivs have trunding.", "output": "Valid"},
@@ -71,7 +71,7 @@ class SyllogismVerifyTask(BaseTask):
             {"input": "No crumps can bleeve. All dorfs are crumps. Therefore, no dorfs can bleeve.", "output": "Valid"},
             {"input": "All snarks are wumble. Borogoves are snarks. Therefore, borogoves are wumble.", "output": "Valid"},
             {"input": "No splugs have frimble. Blarks are splugs. Therefore, blarks do not have frimble.", "output": "Valid"},
-            # Invalid
+            # 無效
             {"input": "All wugs are blickets. Zorbs are blickets. Therefore, zorbs are wugs.", "output": "Invalid"},
             {"input": "All feps are glurps. Mooks are not feps. Therefore, mooks are not glurps.", "output": "Invalid"},
             {"input": "All zorbs have trunding. All quivs have trunding. Therefore, all zorbs are quivs.", "output": "Invalid"},
@@ -195,7 +195,7 @@ def create_syllogism_verify_task(
     category: str = None,
     name: str = "syllogism_verify",
 ) -> SyllogismVerifyTask:
-    """Create a SyllogismVerifyTask, optionally filtered to one category."""
+    """建立一個SyllogismVerifyTask, optionally 已篩選 to one 類別."""
     data = None
     if category and category in SyllogismVerifyTask.CATEGORY_DATA:
         data = [

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Comprehensive analysis of function vectors from real ICL tasks.
+Comprehensive analysis of function vectors from real ICL 任務.
 
 This script:
-1. Discovers all tasks that support ICL
-2. Extracts function vectors from a subset (training tasks)
+1. Discovers all 任務 that 支援 ICL
+2. Extracts function vectors from a subset (training 任務)
 3. Builds a skill basis using SVD
-4. Tests reconstruction of held-out tasks (test tasks)
+4. Tests reconstruction of held-out 任務 (test 任務)
 5. Analyzes epsilon-ranks and similarity patterns
-6. Saves detailed results and visualizations
+6. Saves detailed 結果 and visualizations
 """
 
 import sys
@@ -23,7 +23,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import io
 import contextlib
 
-# Add parent directory to path
+# Add parent 目錄 to 路徑
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
@@ -46,38 +46,38 @@ def load_task_performance(
     task_names: List[str] = None
 ) -> Dict[str, float]:
     """
-    Load final accuracy for each task from pivot CSV files.
+    載入final 準確率 for each 任務 from pivot CSV 檔案.
     
-    Args:
-        results_dir: Path to results directory (e.g., "results/olmo2_continuous_1b_early_revised")
-        checkpoint: Checkpoint to filter by (e.g., "main")
-        task_names: Optional list of task names to load (loads all if None)
+    參數：
+        results_dir: 路徑 to 結果 目錄 (e.g., "results/olmo2_continuous_1b_early_revised")
+        checkpoint: Checkpoint to 篩選 by (e.g., "main")
+        task_names: 可選list of 任務 名稱 to 載入(載入all if None)
     
-    Returns:
-        Dict mapping task_name -> accuracy (0.0-1.0)
+    回傳：
+        字典 mapping task_name -> 準確率 (0.0-1.0)
     """
     import pandas as pd
     
     results_path = Path(results_dir)
     performance = {}
     
-    # Load from accuracy_pivot_*.csv files
+    # 載入from accuracy_pivot_*.csv 檔案
     for pivot_file in results_path.glob("accuracy_pivot_*.csv"):
         try:
             df = pd.read_csv(pivot_file)
             
-            # Get task name from column (third column after model, checkpoint)
+            # 取得task 名稱 from column (third column after 模型, checkpoint)
             task_cols = [c for c in df.columns if c not in ['model', 'checkpoint']]
             if not task_cols:
                 continue
             task_name = task_cols[0]
             
-            # Filter to the requested checkpoint
+            # 篩選 to the requested checkpoint
             df_ckpt = df[df['checkpoint'] == checkpoint]
             if df_ckpt.empty:
                 continue
             
-            # Get accuracy
+            # 取得accuracy
             acc = df_ckpt[task_name].values[0]
             
             if task_names and task_name not in task_names:
@@ -86,7 +86,7 @@ def load_task_performance(
             performance[task_name] = float(acc)
             
         except Exception as e:
-            # Skip files that can't be parsed
+            # Skip 檔案 that can't be parsed
             continue
     
     return performance
@@ -97,19 +97,19 @@ def discover_icl_tasks(
     checkpoint: str = "main",
     holdout_compositional: bool = False
 ) -> List[BaseTask]:
-    """Discover all tasks that support ICL format, including subtasks.
+    """Discover all 任務 that 支援 ICL 格式, including subtasks.
     
-    Args:
-        results_dir: If provided, dynamically discover compositional tasks
-            from the evaluation results directory.
-        checkpoint: Checkpoint name to look for results (default: "main")
-        holdout_compositional: If True, return (non_comp_tasks, comp_tasks)
-            instead of a single list. Used for train/test splitting where
-            compositional tasks are held out.
+    參數：
+        results_dir: 若有提供, dynamically discover 組合式 任務
+            from the 評估 結果 目錄.
+        checkpoint: Checkpoint 名稱 to look for 結果 (預設: "main")
+        holdout_compositional: If True, 回傳(non_comp_tasks, comp_tasks)
+            instead of a single 列表. Used for train/test splitting where
+            組合式 任務 are held out.
     
-    Returns:
+    回傳：
         If holdout_compositional: tuple of (train_tasks, test_tasks)
-        Otherwise: list of all tasks
+        Otherwise: 列表 of all 任務
     """
     print("\n" + "="*70)
     print("DISCOVERING ICL TASKS")
@@ -117,43 +117,43 @@ def discover_icl_tasks(
     
     from tasks.registry import discover_tasks, get_task, list_tasks
     
-    # Discover base tasks
+    # Discover 基礎 任務
     discover_tasks()
     base_tasks = list_tasks()
     print(f"\nFound {len(base_tasks)} registered base tasks")
     
-    # ── Non-compositional tasks ──────────────────────────────────────
+    # ── Non-compositional 任務 ──────────────────────────────────────
     non_comp_names = [
-        # Base tasks
+        # 基礎任務
         "basic_arithmetic",
         "copying",
         "math",
         "token_reversal",
         "string_analogy",
-        # "ignoring_context",  # Format issues, only 1 instance
-        # "ioi_task",  # 0% accuracy, incompatible format
-        # "part_of_speech",  # 0% accuracy
+        # "ignoring_context", # 格式化issues, only 1 實例
+        # "ioi_task", # 0% 準確率, incompatible 格式
+        # "part_of_speech", # 0% 準確率
         
-        # simple_icl subtasks (all that have individual detailed JSONL files)
+        # simple_icl subtasks (all that have individual detailed JSONL 檔案)
         "simple_icl:uppercase",
         "simple_icl:lowercase",
         "simple_icl:first_letter",
-        # "simple_icl:last_letter",  # No individual detailed file
+        # "simple_icl:last_letter", # No individual detailed 檔案
         "simple_icl:translate_eng_fr",
         "simple_icl:translate_fr_eng",
-        # "simple_icl:translate_eng_sp",  # No individual detailed file
+        # "simple_icl:translate_eng_sp", # No individual detailed 檔案
         "simple_icl:translate_sp_eng",
-        # "simple_icl:present_to_gerund",  # No individual detailed file
+        # "simple_icl:present_to_gerund", # No individual detailed 檔案
         "simple_icl:singular_to_plural",
         "simple_icl:country_to_capital",
         "simple_icl:country_to_currency",
         
-        # textfrct subtasks (all with detailed JSONL files)
+        # textfrct subtasks (all with detailed JSONL 檔案)
         "textfrct:CV1",
         "textfrct:CV2",
         "textfrct:CV3",
-        # "textfrct:FA3",  # 0 instances
-        # "textfrct:FE1",  # 0 instances
+        # "textfrct:FA3", # 0 實例
+        # "textfrct:FE1", # 0 實例
         "textfrct:I1",
         "textfrct:I2",
         "textfrct:MA2",
@@ -170,7 +170,7 @@ def discover_icl_tasks(
         "textfrct:V4",
         "textfrct:V5",
 
-        # New elemental tasks (subtask variants with detailed JSONL results)
+        # 新的 elemental 任務 (subtask variants with detailed JSONL 結果)
         "multistep_arithmetic:two_step",
         "multistep_arithmetic:three_step",
         "logical_ops:negation",
@@ -181,19 +181,19 @@ def discover_icl_tasks(
         "fact_extraction:extract_location",
     ]
     
-    # ── Compositional tasks included in training ─────────────────────
-    # A few string-only compositions to teach the basis what "composition" 
+    # ── 組合式 任務 included in training ─────────────────────
+    # A few string-only 組合 to teach the basis what "composition" 
     # looks like, while still holding out the majority for testing.
     comp_train_names = [
-        "compositional:lower_reverse_first",   # lower→reverse→first (26/26 correct)
-        "compositional:upper_reverse_last",     # upper→reverse→last  (26/26 correct)
+        "compositional:lower_reverse_first",   # lower→reverse→第一個 (26/26 正確)
+        "compositional:upper_reverse_last",     # upper→reverse→最後一個 (26/26 正確)
     ]
     
-    # ── Compositional tasks ──────────────────────────────────────────
-    # Dynamically discover from results dir if available, otherwise use static list
+    # ── 組合式 任務 ──────────────────────────────────────────
+    # Dynamically discover from 結果 dir 若可用, otherwise use 靜態 列表
     comp_names = _discover_compositional_tasks(results_dir, checkpoint)
     
-    # Remove comp_train tasks from the test set
+    # Remove comp_train 任務 from the test set
     comp_test_names = [c for c in comp_names if c not in set(comp_train_names)]
     
     all_train_names = non_comp_names + comp_train_names
@@ -238,12 +238,12 @@ def _discover_compositional_tasks(
     results_dir: str = None, 
     checkpoint: str = "main"
 ) -> List[str]:
-    """Discover compositional tasks from evaluation results directory.
+    """Discover 組合式 任務 from 評估 結果 目錄.
     
-    Looks for detailed JSONL files matching compositional task patterns.
-    Falls back to a static list if no results_dir is provided.
+    Looks for detailed JSONL 檔案 matching 組合式 任務 patterns.
+    Falls back to a 靜態 列表 if no results_dir is provided.
     """
-    # Static fallback list (original 14 tasks)
+    # 靜態 fallback 列表 (original 14 任務)
     static_comp_names = [
         "compositional:upper_reverse",
         "compositional:lower_reverse",
@@ -266,7 +266,7 @@ def _discover_compositional_tasks(
     
     results_path = Path(results_dir)
     
-    # Find the checkpoint directory
+    # Find the checkpoint 目錄
     checkpoint_dirs = list(results_path.glob(f"*_{checkpoint}"))
     if not checkpoint_dirs:
         print(f"  ⚠️  No checkpoint dir for '{checkpoint}' in {results_path}, using static list")
@@ -274,26 +274,26 @@ def _discover_compositional_tasks(
     
     checkpoint_dir = checkpoint_dirs[0]
     
-    # Find all compositional detailed JSONL files
-    # Pattern: *_compositional_<subtask>_<subtask>_detailed.jsonl  (new tasks, doubled name)
-    # or:      *_compositional_<subtask>_detailed.jsonl  (could exist for old-style)
+    # Find all 組合式 detailed JSONL 檔案
+    # Pattern: *_compositional_<subtask>_<subtask>_detailed.jsonl (新的 任務, doubled 名稱)
+    # or:   *_compositional_<subtask>_detailed.jsonl (could exist for old-style)
     import re
     comp_names = set()
     
     for f in checkpoint_dir.glob("*_compositional_*_detailed.jsonl"):
         fname = f.name
-        # Skip the aggregate file
+        # Skip the aggregate 檔案
         if fname.endswith("_compositional_detailed.jsonl"):
             continue
         
-        # Extract the subtask name
-        # New pattern: ..._compositional_<name>_<name>_detailed.jsonl
-        # Old pattern: ..._compositional_<name>_detailed.jsonl
+        # 擷取 the subtask 名稱
+        # 新的 pattern: ..._compositional_<名稱>_<名稱>_detailed.jsonl
+        # 舊的 pattern: ..._compositional_<名稱>_detailed.jsonl
         match = re.search(r'_compositional_(.+?)_detailed\.jsonl$', fname)
         if match:
             subtask_raw = match.group(1)
             
-            # Handle doubled name pattern: "gerund_lower_gerund_lower" -> "gerund_lower"
+            # Handle doubled 名稱 pattern: "gerund_lower_gerund_lower" -> "gerund_lower"
             # Try splitting in half
             parts = subtask_raw
             half = len(parts) // 2
@@ -313,8 +313,8 @@ def _discover_compositional_tasks(
 
 
 def get_task_display_name(task: BaseTask) -> str:
-    """Get the full display name for a task, including subtask if applicable."""
-    # Check for our custom _full_name attribute first
+    """取得full display 名稱 for a 任務, including subtask if applicable."""
+    # 檢查for our 自訂 _full_name attribute 第一個
     if hasattr(task, '_full_name'):
         return task._full_name
     # Fall back to config.name
@@ -322,7 +322,7 @@ def get_task_display_name(task: BaseTask) -> str:
 
 
 def split_tasks(tasks: List[BaseTask], train_ratio: float = 0.7, seed: int = 42):
-    """Split tasks into training and test sets."""
+    """切分 任務 into training and test sets."""
     np.random.seed(seed)
     n_train = max(1, int(len(tasks) * train_ratio))
     
@@ -344,9 +344,9 @@ def extract_function_vectors(
     tokenizer,
     desc: str = "tasks"
 ):
-    """Extract function vectors from a list of tasks.
+    """擷取 function vectors from a 列表 of 任務.
     
-    Tasks with no correct instances (when only_correct=True) will be skipped.
+    任務 with no 正確 實例 (when only_correct=True) will be skipped.
     """
     print(f"\nExtracting function vectors from {len(tasks)} {desc}...")
     if config.only_correct:
@@ -359,7 +359,7 @@ def extract_function_vectors(
             task_name = get_task_display_name(task)
             print(f"  [{i}/{len(tasks)}] {task_name}...", end=" ")
             fv = extract_task_function_vec(task, config, headset, model, tokenizer)
-            # Also store the full task name in the function vector
+            # Also store the full 任務 名稱 in the function vector
             fv.task_name = task_name
             function_vecs.append(fv)
             norm = np.linalg.norm(fv.function_vec)
@@ -386,7 +386,7 @@ def analyze_epsilon_ranks(
     basis,
     epsilons: List[float] = [0.9, 0.5, 0.1, 0.01]
 ) -> Dict[str, Any]:
-    """Analyze epsilon-ranks for test tasks."""
+    """Analyze epsilon-ranks for test 任務."""
     print("\n" + "="*70)
     print("EPSILON-RANK ANALYSIS")
     print("="*70)
@@ -404,7 +404,7 @@ def analyze_epsilon_ranks(
         print(f"Task: {task_name}")
         print('='*60)
         
-        # Get detailed reconstruction info - pass the TaskFunctionVec object
+        # 取得detailed reconstruction info - pass the TaskFunctionVec object
         details = basis.epsilon_rank(
             vec,  # Pass the whole TaskFunctionVec object
             epsilon=epsilons[-1],  # Use strictest epsilon for details
@@ -423,7 +423,7 @@ def analyze_epsilon_ranks(
         print(f"\nReconstruction quality by number of components (k):")
         max_k = len(details['cosine_errors'])
         k_values = [1, 2, 3, 4, 5, 7, 10, 15, 20]
-        # Add max_k if not in list
+        # Add max_k if not in 列表
         if max_k not in k_values and max_k <= 30:
             k_values.append(max_k)
         k_values.sort()
@@ -471,7 +471,7 @@ def print_summary(
     test_vecs: List,
     train_vecs: List
 ):
-    """Print comprehensive summary of results."""
+    """Print comprehensive 摘要 of 結果."""
     print("\n" + "="*70)
     print("SUMMARY")
     print("="*70)
@@ -488,17 +488,17 @@ def print_summary(
         if k <= len(var_ratios):
             print(f"  Top {k:2d} component(s): {var_ratios[k-1]:6.2%}")
     
-    # Get unique epsilons from results (sorted)
+    # 取得unique epsilons from 結果 (sorted)
     all_epsilons = set()
     for task_name, data in results.items():
         all_epsilons.update(data['epsilon_ranks'].keys())
     sorted_epsilons = sorted(all_epsilons, reverse=True)
     
-    # Training task rankings
+    # Training 任務 rankings
     print("\n--- Training Task Reconstruction Quality ---")
     print("(Used to build basis - shows task complexity)")
     
-    # Build header
+    # 建立header
     header = f"{'Task':<30s} {'Type':<6s}"
     for eps in sorted_epsilons:
         header += f" {f'ε={eps:.2f}':>7s}"
@@ -506,7 +506,7 @@ def print_summary(
     print(header)
     print("-" * len(header))
     
-    # Collect training task scores
+    # Collect training 任務 scores
     train_task_names = {get_task_display_name(t) for t in train_tasks}
     train_scores = []
     for vec in train_vecs:
@@ -527,7 +527,7 @@ def print_summary(
         row += f" {best_sim:>10.4f}"
         print(row)
     
-    # Test task rankings
+    # Test 任務 rankings
     print("\n--- Test Task Reconstruction Quality ---")
     print("(Held-out tasks - tests generalization)")
     
@@ -560,7 +560,7 @@ def print_summary(
     
     # Use a moderate epsilon that shows differentiation (not too strict)
     ranking_eps = 0.05  # Requires similarity ≥ 0.95
-    # Fall back to next available if 0.05 not in results
+    # Fall back to 下一個 可用 if 0.05 not in 結果
     if ranking_eps not in sorted_epsilons:
         ranking_eps = sorted_epsilons[-1] if len(sorted_epsilons) > 0 else 0.1
     
@@ -574,12 +574,12 @@ def print_summary(
         rank_val = epsilon_ranks.get(ranking_eps, '-')
         print(f"{i:<6d} {task_name:<30s} {task_type:<6s} {str(rank_val):>7s} {best_sim:>10.4f}")
     
-    # Test task detailed reconstruction summary
+    # Test 任務 detailed reconstruction 摘要
     if len(test_scores) > 0:
         print("\n--- Test Task Reconstruction Summary (All Epsilon Levels) ---")
         print("(Epsilon = max allowed cosine distance; lower ε = stricter threshold)")
         
-        # Build header with all epsilon levels
+        # 建立header with all epsilon levels
         header = f"{'Task':<30s}"
         for eps in sorted_epsilons:
             header += f" {f'ε={eps:.2f}':>7s}"
@@ -587,7 +587,7 @@ def print_summary(
         print(header)
         print("-" * len(header))
         
-        # Sort test tasks by best similarity (descending)
+        # Sort test 任務 by best similarity (descending)
         test_scores_sorted = sorted(test_scores, key=lambda x: x[2], reverse=True)
         
         for task_name, epsilon_ranks, best_sim, _ in test_scores_sorted:
@@ -629,9 +629,9 @@ def interpret_principal_components(
     top_k: int = 5
 ):
     """
-    Interpret principal components by analyzing task loadings.
+    Interpret principal components by analyzing 任務 loadings.
     
-    Shows which tasks load most heavily on each PC and identifies patterns
+    Shows which 任務 載入most heavily on each PC and identifies patterns
     that may reveal what each dimension captures (e.g., case transformation,
     reversal, translation, etc.)
     """
@@ -657,7 +657,7 @@ def interpret_principal_components(
             pc = basis.U[:, j]
             loadings[i, j] = np.dot(fv, pc)
     
-    # Helper to categorize tasks
+    # 輔助 to categorize 任務
     def get_category(task_name):
         t = task_name.lower()
         if any(x in t for x in ['upper', 'lower', 'reverse', 'first_letter', 'copying']):
@@ -689,7 +689,7 @@ def interpret_principal_components(
             return 'compositional'
         return 'other'
     
-    # Print explained variance summary
+    # Print explained variance 摘要
     total_var = np.sum(basis.S ** 2)
     cumulative_var = 0
     print(f"\nExplained variance by component:")
@@ -703,7 +703,7 @@ def interpret_principal_components(
         pc_loadings = loadings[:, pc_idx]
         explained_var = (basis.S[pc_idx] ** 2) / total_var * 100
         
-        # Sort by loading
+        # Sort by 載入
         sorted_idx = np.argsort(pc_loadings)
         
         print(f"\n{'─' * 70}")
@@ -720,7 +720,7 @@ def interpret_principal_components(
             cat = get_category(task_names[i])
             print(f"    {pc_loadings[i]:+.4f}  {task_names[i]:<40} [{cat}]")
         
-        # Category means
+        # 類別 means
         cat_loadings = defaultdict(list)
         for i, t in enumerate(task_names):
             cat_loadings[get_category(t)].append(pc_loadings[i])
@@ -729,7 +729,7 @@ def interpret_principal_components(
         cat_means_sorted = sorted(cat_means.items(), key=lambda x: abs(x[1]), reverse=True)
         
         print(f"\n  Category mean loadings (sorted by |loading|):")
-        for cat, mean in cat_means_sorted[:7]:  # Top 7 categories
+        for cat, mean in cat_means_sorted[:7]:  # Top 7 類別
             n_tasks_cat = len(cat_loadings[cat])
             print(f"    {mean:+.4f}  {cat:<25} (n={n_tasks_cat})")
         
@@ -739,7 +739,7 @@ def interpret_principal_components(
         
         interpretations = []
         
-        # Check for upper/lower contrast
+        # 檢查for upper/lower contrast
         upper_pos = sum(1 for t in pos_tasks if 'upper' in t.lower())
         lower_pos = sum(1 for t in pos_tasks if 'lower' in t.lower())
         upper_neg = sum(1 for t in neg_tasks if 'upper' in t.lower())
@@ -750,7 +750,7 @@ def interpret_principal_components(
         elif lower_pos > 1 and upper_neg > 1:
             interpretations.append("lowercase ↔ uppercase")
         
-        # Check for reverse
+        # 檢查for reverse
         reverse_pos = sum(1 for t in pos_tasks if 'reverse' in t.lower())
         reverse_neg = sum(1 for t in neg_tasks if 'reverse' in t.lower())
         if reverse_pos > 1 and reverse_neg == 0:
@@ -758,7 +758,7 @@ def interpret_principal_components(
         elif reverse_neg > 1 and reverse_pos == 0:
             interpretations.append("- reversal operations")
         
-        # Check for translation
+        # 檢查for translation
         trans_pos = sum(1 for t in pos_tasks if 'translate' in t.lower())
         trans_neg = sum(1 for t in neg_tasks if 'translate' in t.lower())
         if trans_pos > 1:
@@ -766,7 +766,7 @@ def interpret_principal_components(
         elif trans_neg > 1:
             interpretations.append("- translation tasks")
         
-        # Check for grammatical
+        # 檢查for 語法
         gram_pos = sum(1 for t in pos_tasks if any(x in t.lower() for x in ['plural', 'gerund']))
         gram_neg = sum(1 for t in neg_tasks if any(x in t.lower() for x in ['plural', 'gerund']))
         if gram_pos > 1:
@@ -774,7 +774,7 @@ def interpret_principal_components(
         elif gram_neg > 1:
             interpretations.append("- grammatical transforms")
         
-        # Check for factual
+        # 檢查for 事實性
         fact_pos = sum(1 for t in pos_tasks if any(x in t.lower() for x in ['capital', 'currency']))
         fact_neg = sum(1 for t in neg_tasks if any(x in t.lower() for x in ['capital', 'currency']))
         if fact_pos > 1:
@@ -782,7 +782,7 @@ def interpret_principal_components(
         elif fact_neg > 1:
             interpretations.append("- factual lookup")
         
-        # Check for textfrct
+        # 檢查for textfrct
         tf_pos = sum(1 for t in pos_tasks if 'textfrct' in t.lower())
         tf_neg = sum(1 for t in neg_tasks if 'textfrct' in t.lower())
         if tf_pos >= 3:
@@ -790,7 +790,7 @@ def interpret_principal_components(
         elif tf_neg >= 3:
             interpretations.append("- textfrct tasks")
         
-        # Check for first/last
+        # 檢查for 第一個/最後一個
         first_pos = sum(1 for t in pos_tasks if 'first' in t.lower())
         last_pos = sum(1 for t in pos_tasks if 'last' in t.lower())
         first_neg = sum(1 for t in neg_tasks if 'first' in t.lower())
@@ -805,12 +805,12 @@ def interpret_principal_components(
         else:
             print(f"\n  💡 Interpretation: (no clear pattern detected)")
     
-    # Print correlation matrix between task features and PCs
+    # Print correlation matrix between 任務 features and PCs
     print(f"\n{'=' * 70}")
     print("PC-FEATURE CORRELATIONS")
     print(f"{'=' * 70}")
     
-    # Create binary features
+    # 建立binary features
     features = {
         'has_upper': np.array([1 if 'upper' in t.lower() else 0 for t in task_names]),
         'has_lower': np.array([1 if 'lower' in t.lower() else 0 for t in task_names]),
@@ -856,14 +856,14 @@ def visualize_task_projections(
     output_dir: Path,
     model_name: str = "model"
 ):
-    """Create visualizations of task projections in skill basis space.
+    """建立visualizations of 任務 projections in skill basis space.
     
     Uses SVD-based skill basis (uncentered decomposition of L2-normalized function vectors).
-    Similar to the visualizations in test_basic_icl_tasks.py but for real tasks.
+    Similar to the visualizations in test_basic_icl_tasks.py but for real 任務.
     """
     try:
         import matplotlib
-        matplotlib.use('Agg')  # Non-interactive backend
+        matplotlib.use('Agg')  # 非互動式後端
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
     except ImportError:
@@ -883,15 +883,15 @@ def visualize_task_projections(
     print("CREATING VISUALIZATIONS")
     print("="*70)
     
-    # Get task projections (coefficients in the skill basis)
-    # basis.Vt is (k, n_tasks) where n_tasks are the training tasks that were successfully extracted
+    # 取得task projections (coefficients in the skill basis)
+    # basis.Vt is (k, n_tasks) where n_tasks are the training 任務 that were successfully extracted
     projections = basis.Vt.T  # (n_tasks, k)
     
-    # Use task names from the basis (these are the tasks that were actually extracted)
-    # This handles the case where some tasks were skipped due to no correct instances
+    # Use 任務 名稱 from the basis (these are the 任務 that were actually extracted)
+    # This handles the case where some 任務 were skipped due to no 正確 實例
     task_names = basis.task_names
     
-    # Get explained variance ratios
+    # 取得explained variance ratios
     var_ratios = basis.explained_variance_ratio()
     
     print(f"\nProjections shape: {projections.shape}")
@@ -904,7 +904,7 @@ def visualize_task_projections(
         print("⚠️  Need at least 3 skill basis components for visualization")
         return
     
-    # Create output directory
+    # 建立輸出目錄
     viz_dir = output_dir / "visualizations"
     viz_dir.mkdir(exist_ok=True)
     
@@ -985,15 +985,15 @@ def visualize_task_projections(
     fig = plt.figure(figsize=(14, 10))
     ax = fig.add_subplot(111, projection='3d')
     
-    # Categorize tasks by cognitive/computational function
+    # Categorize 任務 by cognitive/computational function
     def categorize_task(name):
         name_lower = name.lower()
         
-        # 1. Arithmetic/Mathematical
+        # 1. 算術/Mathematical
         if any(kw in name_lower for kw in ['arithmetic', 'add_one', 'math']):
             return 'arithmetic', '#e74c3c'  # red
         
-        # 2. String Manipulation (algorithmic, no semantics)
+        # 2. 字串 Manipulation (algorithmic, no semantics)
         if any(kw in name_lower for kw in [
             'capitalization', 'uppercase', 'lowercase',
             'first_letter', 'last_letter', 'first_character', 'last_character',
@@ -1002,26 +1002,26 @@ def visualize_task_projections(
         ]):
             return 'string_manipulation', '#3498db'  # blue
         
-        # 3. Factual Lookup/Memorization
+        # 3. 事實性 查找/Memorization
         if any(kw in name_lower for kw in [
             'translate', 'country_to_capital', 'country_to_currency'
         ]):
             return 'factual_lookup', '#2ecc71'  # green
         
-        # 4. Grammatical (morphology, POS, linguistic rules)
+        # 4. 語法 (morphology, POS, linguistic rules)
         if any(kw in name_lower for kw in [
             'singular_to_plural', 'present_to_gerund', 'part_of_speech'
         ]):
             return 'grammatical', '#9b59b6'  # purple
         
-        # 5. Semantic Relations (meaning-based reasoning)
+        # 5. 語義 Relations (meaning-based 推理)
         if any(kw in name_lower for kw in [
             'opposites', 'nonsense_syllogisms', 'inference', 
             'analogy', 'rhyming', 'deciphering_languages'
         ]):
             return 'semantic_reasoning', '#f39c12'  # orange
         
-        # 6. Vocabulary/Word Knowledge
+        # 6. 詞彙/詞 Knowledge
         if any(kw in name_lower for kw in [
             'vocabulary_test', 'controlled_association', 
             'first_and_last_name', 'objest-number'
@@ -1034,13 +1034,13 @@ def visualize_task_projections(
         ]):
             return 'pattern_recognition', '#e67e22'  # dark orange
         
-        # 8. Meta-Cognitive (attention, context manipulation)
+        # 8. Meta-Cognitive (attention, 上下文 manipulation)
         if any(kw in name_lower for kw in [
             'ignoring_context', 'ioi_task'
         ]):
             return 'meta_cognitive', '#34495e'  # dark gray
         
-        # Default
+        # 預設
         return 'other', '#95a5a6'  # light gray
     
     task_colors = []
@@ -1054,14 +1054,14 @@ def visualize_task_projections(
                         c=task_colors, s=100, alpha=0.7, edgecolors='black', linewidth=0.5)
     
     # For 3D plots, adjustText doesn't work well, so we use conditional labeling
-    # Only label tasks that are well-separated (avoid clutter)
+    # Only label 任務 that are well-separated (avoid clutter)
     if use_adjust_text:
-        # Label every task but with smaller font
+        # Label every 任務 but with smaller font
         for i, name in enumerate(task_names):
             ax.text(projections[i, 0], projections[i, 1], projections[i, 2],
                    name, fontsize=6, alpha=0.7)
     else:
-        # Label all tasks
+        # Label all 任務
         for i, name in enumerate(task_names):
             ax.text(projections[i, 0], projections[i, 1], projections[i, 2],
                    name, fontsize=7, alpha=0.8)
@@ -1071,7 +1071,7 @@ def visualize_task_projections(
     ax.set_zlabel(f'Basis Component 3 ({var_ratios[2]:.1%})', fontsize=12, labelpad=10)
     ax.set_title('Task Projections in 3D Skill Basis Space', fontsize=16, fontweight='bold', pad=20)
     
-    # Add color legend with refined categories
+    # Add color legend with refined 類別
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor='#e74c3c', label='Arithmetic'),
@@ -1096,10 +1096,10 @@ def visualize_task_projections(
         print("\n💡 Tip: For interactive rotatable 3D plots, consider using plotly")
         print("   (We can add this in the future for better exploration)")
     
-    # ========== Task Category Analysis ==========
+    # ========== 任務 類別 Analysis ==========
     print("\n📊 Analyzing task categories...")
     
-    # Group tasks by refined cognitive/computational categories
+    # 群組 任務 by refined cognitive/computational 類別
     categories = {}
     for i, name in enumerate(task_names):
         cat, _ = categorize_task(name)
@@ -1141,19 +1141,19 @@ def visualize_task_projections_interactive(
     performance: Dict[str, float] = None,
     color_by: str = "both"
 ):
-    """Create interactive plotly visualization of task projections.
+    """建立interactive plotly visualization of 任務 projections.
     
-    Args:
-        train_tasks: Training tasks used to build basis
-        test_tasks: Held-out test tasks
-        basis: Skill basis from SVD
-        output_dir: Output directory for HTML files
-        model_name: Model name for filenames
-        performance: Optional dict mapping task_name -> accuracy (0.0-1.0)
+    參數：
+        train_tasks: Training 任務 used to 建立basis
+        test_tasks: Held-out test 任務
+        basis: skill basis from SVD
+        output_dir: 輸出 目錄 for HTML 檔案
+        model_name: 模型 名稱 for filenames
+        performance: 可選dict mapping task_name -> 準確率 (0.0-1.0)
         color_by: "category", "performance", or "both" (creates separate plots)
     
-    This is called after matplotlib plots are generated to avoid blocking
-    the main visualizations if plotly is not available.
+    This is called after matplotlib plots are 已生成 to avoid blocking
+    the 主要 visualizations if plotly is not 可用.
     """
     try:
         import plotly.graph_objects as go
@@ -1168,14 +1168,14 @@ def visualize_task_projections_interactive(
     print("CREATING INTERACTIVE PLOTLY VISUALIZATION")
     print("="*70)
     
-    # Get task projections
+    # 取得task projections
     projections = basis.Vt.T  # (n_tasks, k)
     
-    # Use task names from the basis (these are the tasks that were actually extracted)
+    # Use 任務 名稱 from the basis (these are the 任務 that were actually extracted)
     task_names = basis.task_names
     var_ratios = basis.explained_variance_ratio()
     
-    # TextFRCT category_id → (display_name, category, color)
+    # TextFRCT category_id → (display_name, 類別, color)
     TEXTFRCT_ID_MAP = {
         'cv1': ('Scrambled Words',    'String Manipulation', '#3498db'),
         'cv2': ('Hidden Words',       'String Manipulation', '#3498db'),
@@ -1200,9 +1200,9 @@ def visualize_task_projections_interactive(
         'xu2': ('Substitute Uses',    'Semantic Reasoning', '#16a085'),
     }
 
-    # Task display names (for point labels in plot)
+    # 任務 display 名稱 (for point labels in plot)
     DISPLAY_NAME_MAP = {
-        # New elemental tasks
+        # 新的 elemental 任務
         'multistep_arithmetic:two_step':       '2-Step Arith',
         'multistep_arithmetic:three_step':     '3-Step Arith',
         'logical_ops:negation':                'Negation',
@@ -1224,7 +1224,7 @@ def visualize_task_projections_interactive(
         'simple_icl:singular_to_plural':       '→Plural',
         'simple_icl:country_to_capital':       '→Capital',
         'simple_icl:country_to_currency':      '→Currency',
-        # base tasks
+        # 基礎 任務
         'basic_arithmetic':  'Arithmetic',
         'copying':           'Copying',
         'math':              'Math',
@@ -1233,7 +1233,7 @@ def visualize_task_projections_interactive(
     }
 
     def get_display_name(name):
-        """Return a short human-readable label for a task."""
+        """回傳a short 人類可讀 label for a 任務."""
         if name in DISPLAY_NAME_MAP:
             return DISPLAY_NAME_MAP[name]
         # textfrct:XY → look up in TEXTFRCT_ID_MAP
@@ -1242,12 +1242,12 @@ def visualize_task_projections_interactive(
             if tid in TEXTFRCT_ID_MAP:
                 return TEXTFRCT_ID_MAP[tid][0]
             return name.split(':', 1)[1]  # fallback: keep the ID
-        # compositional: strip prefix, shorten
+        # 組合式: strip prefix, shorten
         if name.startswith('compositional:'):
             return name.replace('compositional:', '').replace('_', '→')[:20]
         return name
 
-    # Categorize tasks
+    # Categorize 任務
     def categorize_task(name):
         name_lower = name.lower()
 
@@ -1259,7 +1259,7 @@ def visualize_task_projections_interactive(
                 return cat, color
             return 'Other', '#95a5a6'
 
-        # ── New elemental tasks ──────────────────────────────────────
+        # ── 新的 elemental 任務 ──────────────────────────────────────
         if name_lower.startswith('logical_ops'):
             return 'Logic', '#f39c12'
         if name_lower.startswith('fact_extraction'):
@@ -1267,7 +1267,7 @@ def visualize_task_projections_interactive(
         if name_lower.startswith('multistep_arithmetic'):
             return 'Math', '#e74c3c'
 
-        # ── Existing task rules ──────────────────────────────────────
+        # ── Existing 任務 rules ──────────────────────────────────────
         if any(kw in name_lower for kw in ['arithmetic', 'add_one', 'math']):
             return 'Math', '#e74c3c'
         if any(kw in name_lower for kw in [
@@ -1304,10 +1304,10 @@ def visualize_task_projections_interactive(
         ]):
             return 'Meta-Cognitive', '#34495e'
 
-        # Default
+        # 預設
         return 'Other', '#95a5a6'
     
-    # Build data for plotly
+    # 建立data for plotly
     categories = []
     cat_colors = []
     display_names = []
@@ -1317,7 +1317,7 @@ def visualize_task_projections_interactive(
         cat_colors.append(color)
         display_names.append(get_display_name(name))
     
-    # Get performance values if available
+    # 取得performance 值 若可用
     perf_values = []
     has_performance = performance is not None and len(performance) > 0
     if has_performance:
@@ -1330,7 +1330,7 @@ def visualize_task_projections_interactive(
     viz_dir = output_dir / "visualizations"
     viz_dir.mkdir(exist_ok=True)
     
-    # Helper to create a 3D plot
+    # 輔助 to 建立一個3D plot
     def create_3d_plot(colors, color_mode, title_suffix, colorbar_title=None):
         if color_mode == "performance":
             marker_dict = dict(
@@ -1351,7 +1351,7 @@ def visualize_task_projections_interactive(
                 line=dict(color='black', width=0.5)
             )
         
-        # Build hover text with performance info
+        # 建立hover 文字 with performance info
         hover_texts = []
         for i, name in enumerate(task_names):
             text = f'<b>{display_names[i]}</b><br><i>{name}</i><br>Category: {categories[i]}'
@@ -1404,7 +1404,7 @@ def visualize_task_projections_interactive(
             font=dict(family='Arial, sans-serif', size=12)
         )
         
-        # Add category legend for category-colored plots
+        # Add 類別 legend for category-colored plots
         if color_mode == "category":
             legend_text = "<b>Categories:</b><br>"
             unique_cats = {}
@@ -1428,14 +1428,14 @@ def visualize_task_projections_interactive(
         
         return fig
     
-    # Create category-colored plot
+    # 建立category-colored plot
     if color_by in ["category", "both"]:
         fig_cat = create_3d_plot(cat_colors, "category", "(by Category)")
         html_path = viz_dir / f"task_basis_3d_interactive_{model_name}.html"
         fig_cat.write_html(str(html_path))
         print(f"✓ Saved interactive 3D plot (by category) to: {html_path}")
     
-    # Create performance-colored plot if data available
+    # 建立performance-colored plot if 資料 可用
     if has_performance and color_by in ["performance", "both"]:
         # Replace NaN with 0.5 for display (gray in RdYlGn)
         perf_display = np.where(np.isnan(perf_values), 0.5, perf_values)
@@ -1449,10 +1449,10 @@ def visualize_task_projections_interactive(
     elif color_by == "performance" and not has_performance:
         print("  ⚠️  No performance data available - skipping performance-colored plot")
     
-    # Create 2D interactive plots
+    # 建立2D interactive plots
     print("\n📊 Creating interactive 2D plots...")
     
-    # Helper to create 2D plot
+    # 輔助 to 建立2D plot
     def create_2d_plots(colors, color_mode):
         fig_2d = make_subplots(
             rows=1, cols=3,
@@ -1538,7 +1538,7 @@ def visualize_task_projections_interactive(
         
         return fig_2d
     
-    # Create 2D plots
+    # 建立2D plots
     if color_by in ["category", "both"]:
         fig_2d = create_2d_plots(cat_colors, "category")
         html_2d_path = viz_dir / f"task_basis_2d_interactive_{model_name}.html"
@@ -1570,7 +1570,7 @@ def analyze_performance_clustering(
     categories: List[str],
     threshold: float = 0.5
 ):
-    """Analyze if hard tasks cluster in FV space."""
+    """Analyze if hard 任務 cluster in FV space."""
     from scipy import stats
     
     print("\n" + "=" * 70)
@@ -1593,7 +1593,7 @@ def analyze_performance_clustering(
     
     if hard_mask.sum() > 1 and easy_mask.sum() > 1:
         # Compute within-group distances
-        hard_points = projections[hard_mask, :3]  # Use first 3 PCs
+        hard_points = projections[hard_mask, :3]  # Use 第一個 3 PCs
         easy_points = projections[easy_mask, :3]
         
         hard_dists = []
@@ -1628,20 +1628,20 @@ def analyze_performance_clustering(
         sig = "**" if pval < 0.01 else "*" if pval < 0.05 else ""
         print(f"  PC{i+1} vs Accuracy: r={corr:+.3f} (p={pval:.3f}){sig}")
     
-    # Hardest tasks
+    # Hardest 任務
     print(f"\nHardest 5 tasks:")
     sorted_indices = np.argsort(perf_values)
     for idx in sorted_indices[:5]:
         if not np.isnan(perf_values[idx]):
             print(f"  {perf_values[idx]:5.1%}  {task_names[idx]:<40} [{categories[idx]}]")
     
-    # Easiest tasks
+    # Easiest 任務
     print(f"\nEasiest 5 tasks:")
     for idx in sorted_indices[-5:][::-1]:
         if not np.isnan(perf_values[idx]):
             print(f"  {perf_values[idx]:5.1%}  {task_names[idx]:<40} [{categories[idx]}]")
     
-    # Category breakdown
+    # 類別 breakdown
     print(f"\nAccuracy by category:")
     from collections import defaultdict
     cat_perfs = defaultdict(list)
@@ -1651,7 +1651,7 @@ def analyze_performance_clustering(
     
     cat_stats = [(cat, np.mean(perfs), np.std(perfs), len(perfs)) 
                  for cat, perfs in cat_perfs.items()]
-    cat_stats.sort(key=lambda x: x[1])  # Sort by mean accuracy
+    cat_stats.sort(key=lambda x: x[1])  # Sort by mean 準確率
     
     for cat, mean, std, n in cat_stats:
         print(f"  {mean:5.1%} ± {std:4.1%}  {cat:<25} (n={n})")
@@ -1697,14 +1697,14 @@ def main():
                        choices=["category", "performance", "both"],
                        help="How to color tasks in visualizations (default: both)")
     
-    # Compositional holdout
+    # 組合式 holdout
     parser.add_argument("--holdout-compositional", action="store_true",
                        help="Hold out compositional tasks for testing. All non-compositional "
                             "tasks are used to build the basis, compositional tasks are tested "
                             "for reconstruction quality. Overrides --train-ratio and "
                             "--use-synthetic-tests.")
     
-    # Model dtype
+    # 模型 dtype
     parser.add_argument("--dtype", type=str, default=None,
                        choices=["float32", "float16", "bfloat16"],
                        help="Model dtype (default: None = model default). "
@@ -1726,7 +1726,7 @@ def main():
     elif args.dtype == "float32":
         torch_dtype = torch.float32
     
-    # Validate filtering args
+    # 有效ate filtering args
     if args.only_correct and not args.results_dir:
         print("⚠️  Warning: --only-correct requires --results-dir. Disabling filtering.")
         args.only_correct = False
@@ -1751,7 +1751,7 @@ def main():
             print(f"  Train ratio: {args.train_ratio}")
     print(f"  Seed: {args.seed}")
     
-    # Phase 1: Discover ICL tasks
+    # Phase 1: Discover ICL 任務
     if args.holdout_compositional:
         train_tasks, test_tasks = discover_icl_tasks(
             results_dir=args.results_dir,
@@ -1774,14 +1774,14 @@ def main():
             print("\n❌ Need at least 2 ICL tasks to perform analysis!")
             return
     
-    # Phase 2: Split into train/test (only if not using holdout mode)
+    # Phase 2: 切分 into train/test (only if not using holdout mode)
     if not args.holdout_compositional:
         print("\n" + "="*70)
         print("SPLITTING TASKS")
         print("="*70)
         
         if args.use_synthetic_tests:
-            # Use ALL real tasks for training basis, PLUS some simple ICL test tasks
+            # Use ALL real 任務 for training basis, PLUS some 簡單 ICL test 任務
             print("\nAdding simple ICL test tasks to basis...")
             from tests.test_basic_icl_tasks import (
                 SimpleArithmeticTask,
@@ -1816,7 +1816,7 @@ def main():
             print(f"\nUsing {len(icl_tasks)} real tasks + {len(train_tasks) - len(icl_tasks)} simple ICL tasks for basis training")
             print(f"Testing with {len(test_tasks)} held-out synthetic tasks")
         else:
-            # Original behavior: split real tasks
+            # Original behavior: 切分 real 任務
             train_tasks, test_tasks = split_tasks(icl_tasks, args.train_ratio, args.seed)
     
     print(f"\nTraining tasks ({len(train_tasks)}):")
@@ -1827,7 +1827,7 @@ def main():
     for task in test_tasks:
         print(f"  • {get_task_display_name(task)}")
     
-    # Phase 3: Load model
+    # Phase 3: 載入model
     print("\n" + "="*70)
     print("LOADING MODEL")
     print("="*70)
@@ -1845,7 +1845,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
     dtype_kwargs = {"torch_dtype": torch_dtype} if torch_dtype is not None else {}
 
-    # FV extraction requires all tensors on one device — always load on a single GPU
+    # FV 擷取 requires all tensors on one device — always 載入on a single GPU
     n_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
     if args.device == "cuda" and n_gpus > 1:
         print(f"  {n_gpus} GPUs available; loading on cuda:0 for FV extraction (single-device required)")
@@ -1864,7 +1864,7 @@ def main():
         effective_device = args.device
     print("✓ Model loaded")
     
-    # Normalize layer index (support negative indexing)
+    # Normalize layer index (支援 negative indexing)
     from function_vecs.extract_function_vecs import get_blocks, extract_informative_heads
     blocks = get_blocks(model)
     num_layers = len(blocks)
@@ -1873,7 +1873,7 @@ def main():
         layer_idx = num_layers + layer_idx
     print(f"Using layer {layer_idx} (out of {num_layers} layers)")
     
-    # Setup extraction config
+    # Setup 擷取 設定
     config = ExtractConfig(
         model_name=args.model,
         checkpoint=args.checkpoint,
@@ -1893,11 +1893,11 @@ def main():
     print(f"\nSelecting top-{args.num_heads} most informative heads from layer {layer_idx}...")
     print("(Using AIE metric on training tasks with correct instances)")
     
-    # Use all training tasks for screening, require at least 5 to succeed
+    # Use all training 任務 for screening, require at least 5 to succeed
     headset = extract_informative_heads(
         config, 
         train_tasks, 
-        max_screen_tasks=None,  # Try all tasks
+        max_screen_tasks=None,  # Try all 任務
         min_screen_tasks=5,     # Need at least 5 successful
         model=model,
         tokenizer=tokenizer,
@@ -1907,7 +1907,7 @@ def main():
     for layer, head in sorted(headset.heads):
         print(f"  Layer {layer}, Head {head}")
     
-    # Phase 4: Extract training function vectors
+    # Phase 4: 擷取 training function vectors
     print("\n" + "="*70)
     print("PHASE 4: EXTRACTING TRAINING FUNCTION VECTORS")
     print("="*70)
@@ -1920,7 +1920,7 @@ def main():
         print("\n❌ Need at least 2 successful training extractions!")
         return
     
-    # Phase 5: Build skill basis
+    # Phase 5: 建立skill basis
     print("\n" + "="*70)
     print("BUILDING SKILL BASIS")
     print("="*70)
@@ -1929,12 +1929,12 @@ def main():
     print(f"\nTask matrix shape: {task_matrix.V.shape}")
     
     k = args.k_components if args.k_components else len(train_vecs)
-    k = min(k, len(train_vecs))  # Can't have more components than tasks
+    k = min(k, len(train_vecs))  # Can't have more components than 任務
     
     basis = build_skill_basis(task_matrix, method="svd", k=k, center=False)
     print(f"Basis: {basis.U.shape}, k={k}")
     
-    # Phase 6: Extract test function vectors
+    # Phase 6: 擷取 test function vectors
     print("\n" + "="*70)
     print("EXTRACTING TEST FUNCTION VECTORS")
     print("="*70)
@@ -1947,20 +1947,20 @@ def main():
         print("\n❌ No successful test extractions!")
         return
     
-    # Phase 7: Analyze epsilon-ranks for TEST tasks
+    # Phase 7: Analyze epsilon-ranks for TEST 任務
     print("\n" + "="*70)
     print("ANALYZING TEST TASKS")
     print("="*70)
     test_results = analyze_epsilon_ranks(test_vecs, basis, args.epsilons)
     
-    # Phase 7.5: Analyze epsilon-ranks for TRAINING tasks
+    # Phase 7.5: Analyze epsilon-ranks for TRAINING 任務
     print("\n" + "="*70)
     print("ANALYZING TRAINING TASKS (for comparison)")
     print("="*70)
     print("Note: These tasks were used to build the basis")
     train_results = analyze_epsilon_ranks(train_vecs, basis, args.epsilons)
     
-    # Combine results
+    # Combine 結果
     results = {**test_results, **train_results}
     
     # Phase 8: Compute similarities
@@ -1971,13 +1971,13 @@ def main():
     similarity_matrix = compute_similarity_matrix(test_vecs)
     print(f"\nSimilarity matrix shape: {similarity_matrix.shape}")
     
-    # Phase 9: Print summary
+    # Phase 9: Print 摘要
     print_summary(train_tasks, test_tasks, basis, results, similarity_matrix, test_vecs, train_vecs)
     
     # Phase 9.1: Interpret principal components
     interpret_principal_components(basis, train_vecs, test_vecs, n_components=10, top_k=5)
     
-    # Phase 9.2: Load performance data if available
+    # Phase 9.2: 載入performance 資料 若可用
     performance_data = None
     if args.results_dir:
         print("\n" + "="*70)
@@ -1994,17 +1994,17 @@ def main():
         else:
             print("⚠️  No performance data found in results dir")
     
-    # Phase 9.5: Create visualizations
+    # Phase 9.5: 建立visualizations
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True)
     
-    # Sanitize model name for filename (remove slashes, special chars)
+    # Sanitize 模型 名稱 for filename (remove slashes, special chars)
     model_name_sanitized = args.model.replace('/', '_').replace('\\', '_')
     
-    # First generate matplotlib plots (always works)
+    # 第一個 生成matplotlib plots (always works)
     visualize_task_projections(train_tasks, test_tasks, basis, output_dir, model_name_sanitized)
     
-    # Then try to generate interactive plotly plots (optional, won't crash if fails)
+    # Then try to 生成interactive plotly plots (可選, won't crash if fails)
     try:
         visualize_task_projections_interactive(
             train_tasks, test_tasks, basis, output_dir, model_name_sanitized,
@@ -2015,17 +2015,17 @@ def main():
         print(f"\n⚠️  Could not generate interactive plotly visualizations: {e}")
         print("   (This is optional - matplotlib plots were generated successfully)")
     
-    # Phase 10: Save results
+    # Phase 10: 儲存results
     print("\n" + "="*70)
     print("SAVING RESULTS")
     print("="*70)
     
-    # Save basis
+    # 儲存basis
     basis_path = output_dir / "skill_basis.npz"
     save_skill_basis(basis, str(basis_path))
     print(f"✓ Saved basis to: {basis_path}")
     
-    # Save test vectors
+    # 儲存test vectors
     test_vec_dir = output_dir / "test_vectors"
     test_vec_dir.mkdir(exist_ok=True)
     for vec in test_vecs:
@@ -2033,7 +2033,7 @@ def main():
         save_function_vec(vec, str(vec_path))
     print(f"✓ Saved {len(test_vecs)} test vectors to: {test_vec_dir}")
     
-    # Save summary results
+    # 儲存summary 結果
     import json
     summary = {
         "config": {
@@ -2060,7 +2060,7 @@ def main():
         json.dump(summary, f, indent=2)
     print(f"✓ Saved summary to: {summary_path}")
 
-    # Save human-readable summary.md by re-running the print functions into a file
+    # 儲存人類可讀 summary.md by re-running the print functions into a 檔案
     summary_md_path = output_dir / "summary.md"
     with open(summary_md_path, 'w') as f:
         with contextlib.redirect_stdout(f):
@@ -2079,7 +2079,7 @@ def main():
     print(f"    --vecs {test_vec_dir}/*.npz \\")
     print(f"    --output {output_dir}/visualizations")
 
-    # ── Cleanup model cache ──
+    # ── Cleanup 模型 cache ──
     if args.cleanup_cache:
         print("\n" + "="*70)
         print("CLEANING UP MODEL CACHE")
@@ -2088,18 +2088,18 @@ def main():
 
 
 def _cleanup_model_cache(model_name: str):
-    """Delete downloaded model files from the HuggingFace cache."""
+    """Delete downloaded 模型 檔案 from the HuggingFace cache."""
     import shutil
     
-    # Determine HF cache directory
+    # Determine HF cache 目錄
     cache_root = Path(os.environ.get("HF_HOME", 
                       os.environ.get("TRANSFORMERS_CACHE",
                       Path.home() / ".cache" / "huggingface")))
     
-    # HF hub stores models as models--{org}--{name}
+    # HF hub stores 模型 as 模型--{org}--{name}
     model_dir_name = "models--" + model_name.replace("/", "--")
     
-    # Check both hub/ subdirectory and direct path
+    # 檢查both hub/ subdirectory and direct 路徑
     candidates = [
         cache_root / "hub" / model_dir_name,
         cache_root / model_dir_name,

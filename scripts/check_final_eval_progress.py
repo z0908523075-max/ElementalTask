@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Check final-eval task completion status across models.
+"""檢查final-eval 任務 completion status across 模型.
 
 This script reads:
 - scripts/slurm_scripts/final/eval_tasks_final_lists.sh
 - scripts/slurm_scripts/final/eval_tasks_final_*.sh
 - eval_configs/*_0b_1t_main.json
 
-For each final model launcher, it reports which FINAL_TASKS are:
-- done:    metrics files >= expected checkpoint count
-- partial: 0 < metrics files < expected
-- missing: metrics files == 0
+For each final 模型 launcher, it reports which FINAL_TASKS are:
+- done:  metrics 檔案 >= expected checkpoint count
+- partial: 0 < metrics 檔案 < expected
+- missing: metrics 檔案 == 0
 
-It also prints missing task indices and a ready-to-run sbatch command:
+It also prints missing 任務 indices and a ready-to-run sbatch command:
   sbatch --array=<missing_indices> <launcher_script>
 
-Optionally, it annotates tasks currently RUNNING/PENDING in SLURM queue.
+Optionally, it annotates 任務 currently RUNNING/PENDING in SLURM queue.
 """
 
 from __future__ import annotations
@@ -104,11 +104,11 @@ def sanitize_task(task: str) -> str:
 
 
 def task_aliases(task: str) -> List[str]:
-    """Return canonical and known on-disk aliases for a task name."""
+    """回傳canonical and known on-disk aliases for a 任務 名稱."""
     task_s = sanitize_task(task)
     aliases = [task_s]
 
-    # Some compositional runs are saved under blended_compositions_*.
+    # Some 組合式 runs are 已儲存 under blended_compositions_*.
     if task_s.startswith("compositional_"):
         aliases.append("blended_compositions_" + task_s[len("compositional_"):])
 
@@ -116,10 +116,10 @@ def task_aliases(task: str) -> List[str]:
 
 
 def count_outputs(output_base: Path, task: str) -> int:
-    """Count checkpoint outputs for a task across known filename variants.
+    """Count checkpoint outputs for a 任務 across known filename variants.
 
-    Prefer metrics files when available, but fall back to detailed outputs for
-    tasks that only emit detailed JSONL files.
+    Prefer metrics 檔案 when 可用, but fall back to detailed outputs for
+    任務 that only emit detailed JSONL 檔案.
     """
     best = 0
     for alias in task_aliases(task):
@@ -146,7 +146,7 @@ def compress_indices(indices: List[int]) -> str:
 
 
 def queue_index_map() -> Dict[str, Dict[int, str]]:
-    """Return {job_name: {task_idx: running|pending}} from squeue.
+    """回傳{job_name: {task_idx: running|pending}} from squeue.
 
     Looks at JOBID in form <array_jobid>_<task_idx>.
     """
@@ -167,12 +167,12 @@ def queue_index_map() -> Dict[str, Dict[int, str]]:
         job_id = job_id.strip()
         indices: List[int] = []
 
-        # Single task form: 6596791_42
+        # Single 任務 form: 6596791_42
         m_single = re.match(r"\d+_(\d+)$", job_id)
         if m_single:
             indices = [int(m_single.group(1))]
         else:
-            # Range/list form: 6596792_[0-1,4-6,8,10]
+            # Range/列表 form: 6596792_[0-1,4-6,8,10]
             m_multi = re.match(r"\d+_\[(.+)\]$", job_id)
             if m_multi:
                 spec = m_multi.group(1)

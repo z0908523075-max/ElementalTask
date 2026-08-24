@@ -1,20 +1,20 @@
-"""Fact extraction from context — elemental reading comprehension.
+"""Fact 擷取 from 上下文 — elemental reading comprehension.
 
-Tests the model's ability to extract a specific fact from a short passage
-given a question. This is the core skill underlying virtually all QA benchmarks.
+Tests the 模型's ability to 擷取 a 特定 fact from a short passage
+given a 問題. This is the core skill underlying virtually all QA benchmarks.
 
-Categories:
-  - extract_entity:   "Who/What" questions about named entities
-  - extract_number:   "How many/much" questions about quantities
-  - extract_location: "Where" questions about places
+類別：
+  - extract_entity:  "Who/What" 問題 about named entities
+  - extract_number:  "How many/much" 問題 about quantities
+  - extract_location: "Where" 問題 about places
 
-Format (ICL):
+格式化(ICL):
     Passage: "The cat sat on the red mat in the kitchen."
-    Question: Where is the mat?
-    Answer: the kitchen
+    問題: Where is the mat?
+    答案: the kitchen
 
-Each category tests a different extraction target type while keeping
-the passages simple and unambiguous.
+Each 類別 tests a different 擷取 tar取得type while keeping
+the passages 簡單 and unambiguous.
 """
 
 import random
@@ -24,11 +24,11 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class FactExtractionTask(BaseTask):
-    """Elemental fact extraction from short passages."""
+    """Elemental fact 擷取 from short passages."""
 
     TASK_NAME = "fact_extraction"
 
-    # ── static data ──────────────────────────────────────────────────
+    # ── 靜態 資料 ──────────────────────────────────────────────────
 
     CATEGORY_DATA: Dict[str, List[Dict[str, str]]] = {
         "extract_entity": [
@@ -101,7 +101,7 @@ class FactExtractionTask(BaseTask):
         ],
     }
 
-    # Demonstrations for ICL (separate from test data)
+    # 示範 for ICL (separate from test 資料)
     CATEGORY_DEMOS: Dict[str, List[str]] = {
         "extract_entity": [
             'Passage: "The book was written by Charles Dickens in 1859."\nQuestion: Who wrote the book?\nAnswer: Charles Dickens',
@@ -130,7 +130,7 @@ class FactExtractionTask(BaseTask):
         super().__init__(config)
 
     def _load_data(self):
-        """Build data from hardcoded examples."""
+        """建立data from hardcoded 範例."""
         import pandas as pd
 
         if self.config.in_memory_data:
@@ -147,13 +147,13 @@ class FactExtractionTask(BaseTask):
                 })
         self.data = pd.DataFrame(rows)
 
-    # ── prompt building ──────────────────────────────────────────────
+    # ── 提示 building ──────────────────────────────────────────────
 
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
         category = instance.get("category_name", "extract_entity")
         demos = self.CATEGORY_DEMOS.get(category, [])
 
-        # Filter demos that overlap with the current instance
+        # 篩選 demos that overlap with the 當前 實例
         inst_input = instance.get("input", "")
         demos = [d for d in demos if inst_input not in d][:num_shots]
 
@@ -164,7 +164,7 @@ class FactExtractionTask(BaseTask):
         prompt += f"{inst_input}\nAnswer:"
         return prompt
 
-    # ── evaluation ───────────────────────────────────────────────────
+    # ── 評估 ───────────────────────────────────────────────────
 
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
         ground_truth = self.get_ground_truth(split)
@@ -210,7 +210,7 @@ def create_fact_extraction_task(
     category: str = None,
     name: str = "fact_extraction",
 ) -> FactExtractionTask:
-    """Create a FactExtractionTask, optionally filtered to one category."""
+    """建立一個FactExtractionTask, optionally 已篩選 to one 類別."""
     data = None
     if category and category in FactExtractionTask.CATEGORY_DATA:
         data = [

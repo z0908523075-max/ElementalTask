@@ -1,11 +1,11 @@
-"""String Analogy Task based on Melanie Mitchell's work.
-The default ICL examples are taken from: https://melaniemitchell.me/ExplorationsContent/analogy-problems.html
+"""字串 類比 任務 based on Melanie Mitchell's work.
+The 預設ICL 範例 are taken from: https://melaniemitchell.me/ExplorationsContent/analogy-problems.html
 
-Format: source -> target, query -> ?
-Task: Identify the transformation from source to target, then apply it to query.
+格式: source -> target, query -> ?
+任務: Identify the transformation from source to target, then apply it to query.
 
-Example: abc -> abd, ijk -> ?
-Answer: ijl (replace last letter with successor)
+範例: abc -> abd, ijk -> ?
+答案: ijl (replace 最後一個 letter with successor)
 """
 
 import random
@@ -16,26 +16,26 @@ from tasks.base_task import BaseTask, TaskConfig
 
 class StringAnalogyTask(BaseTask):
     """
-    String analogy task for testing analogical reasoning.
+    字串 類比 用於testing 類比 推理.
     
-    Format: source -> target, query -> ?
-    The model must identify the transformation and apply it to the query.
+    格式: source -> target, query -> ?
+    The 模型 must identify the transformation and apply it to the query.
     """
     TASK_NAME = "string_analogy"
     
     def __init__(self, config: TaskConfig, use_generator: bool = False):
         """
-        Initialize StringAnalogyTask.
+        初始化StringAnalogyTask.
         
-        Args:
-            config: TaskConfig with task settings
-            use_generator: If True, generate synthetic examples for ICL
+        參數：
+            設定: TaskConfig with 任務 settings
+            use_generator: If True, 生成synthetic 範例 for ICL
         """
         self.use_generator = use_generator
         super().__init__(config)
     
     def _successor(self, char: str) -> str:
-        """Get the next letter in alphabet (wraps z->a)."""
+        """取得next letter in alphabet (wraps z->a)."""
         if char.isalpha():
             if char == 'z':
                 return 'a'
@@ -45,7 +45,7 @@ class StringAnalogyTask(BaseTask):
         return char
     
     def _predecessor(self, char: str) -> str:
-        """Get the previous letter in alphabet (wraps a->z)."""
+        """取得previous letter in alphabet (wraps a->z)."""
         if char.isalpha():
             if char == 'a':
                 return 'z'
@@ -55,34 +55,34 @@ class StringAnalogyTask(BaseTask):
         return char
     
     def _apply_transformation(self, transformation: str, query: str) -> str:
-        """Apply a transformation rule to a query string."""
+        """Apply a transformation rule to a query 字串."""
         
         if transformation == "successor_last":
-            # Replace last character with successor
+            # Replace 最後一個 字元 with successor
             if not query:
                 return query
             return query[:-1] + self._successor(query[-1])
         
         elif transformation == "successor_all":
-            # Replace all characters with successors
+            # Replace all 字元 with successors
             return ''.join(self._successor(c) for c in query)
         
         elif transformation == "predecessor_last":
-            # Replace last character with predecessor
+            # Replace 最後一個 字元 with predecessor
             if not query:
                 return query
             return query[:-1] + self._predecessor(query[-1])
         
         elif transformation == "reverse":
-            # Reverse the string
+            # Reverse the 字串
             return query[::-1]
         
         elif transformation == "double_string":
-            # Double the entire string
+            # Double the entire 字串
             return query + query
         
         elif transformation == "double_each":
-            # Double each character
+            # Double each 字元
             return ''.join(c * 2 for c in query)
         
         elif transformation == "delete_middle":
@@ -96,15 +96,15 @@ class StringAnalogyTask(BaseTask):
                 return query[:mid-1] + query[mid+1:]
         
         elif transformation == "delete_first":
-            # Delete first character
+            # Delete 第一個 字元
             return query[1:] if len(query) > 0 else query
         
         elif transformation == "delete_last":
-            # Delete last character
+            # Delete 最後一個 字元
             return query[:-1] if len(query) > 0 else query
         
         elif transformation == "append_successor":
-            # Append the successor of the last character
+            # Append the successor of the 最後一個 字元
             if not query:
                 return query
             return query + self._successor(query[-1])
@@ -115,7 +115,7 @@ class StringAnalogyTask(BaseTask):
             return query[:mid] + 'x' + query[mid:]
         
         elif transformation == "swap_halves":
-            # Swap first and second half
+            # Swap 第一個 and second half
             mid = len(query) // 2
             return query[mid:] + query[:mid]
         
@@ -130,7 +130,7 @@ class StringAnalogyTask(BaseTask):
             return ''.join(result)
         
         else:
-            # Unknown transformation, return query unchanged
+            # Unknown transformation, 回傳query unchanged
             return query
     
     def generate_analogy_example(
@@ -139,25 +139,25 @@ class StringAnalogyTask(BaseTask):
         source_length: int = 3,
         seed: Optional[int] = None
     ) -> Dict[str, str]:
-        """Generate a synthetic analogy example with a given transformation.
+        """生成a 合成 類比 範例 with a given transformation.
         
-        For ICL format, this generates just a single input->output pair showing
-        the transformation. Multiple examples of the same transformation type
-        should be used together for proper ICL demonstration.
+        For ICL 格式, this 生成 just a single 輸入->輸出 pair showing
+        the transformation. Multiple 範例 of the 相同 transformation type
+        should be used together for proper ICL 示範.
         
-        Args:
+        參數：
             transformation: Type of transformation to apply
-            source_length: Length of the source string
-            seed: Random seed for reproducibility
+            source_length: Length of the source 字串
+            種子: 隨機種子 以確保可重現性
             
-        Returns:
-            Dict with input, output, and transformation fields
+        回傳：
+            字典 with 輸入, 輸出, and transformation fields
         """
         if seed is not None:
             random.seed(seed)
         
-        # Generate source/query strings and apply the same transformation to both,
-        # so examples match the task's analogy format.
+        # 生成source/query 字串 and apply the 相同 transformation to both,
+        # so 範例 match the 任務's 類比 格式.
         source = ''.join(random.choices(string.ascii_lowercase, k=source_length))
         query_length = random.randint(2, 5)
         query = ''.join(random.choices(string.ascii_lowercase, k=query_length))
@@ -182,17 +182,17 @@ class StringAnalogyTask(BaseTask):
         seed: Optional[int] = None,
         same_transformation: bool = True
     ) -> List[Dict[str, str]]:
-        """Generate multiple analogy examples.
+        """生成multiple 類比 範例.
         
-        Args:
-            num_examples: Number of examples to generate
-            transformations: List of transformation types to use (if None, use all)
-            seed: Random seed for reproducibility
-            same_transformation: If True, all examples use the same transformation type
-                                (proper ICL format). If False, mix different transformations.
+        參數：
+            num_examples: 數字 of 範例 to 生成
+            transformations: 列表 of transformation types to use (if None, use all)
+            種子: 隨機種子 以確保可重現性
+            same_transformation: If True, all 範例 use the 相同 transformation type
+                                (proper ICL 格式). If False, mix different transformations.
             
-        Returns:
-            List of example dictionaries
+        回傳：
+            列表 of 範例 dictionaries
         """
         if seed is not None:
             random.seed(seed)
@@ -208,7 +208,7 @@ class StringAnalogyTask(BaseTask):
         examples = []
         
         if same_transformation:
-            # Pick one transformation and generate all examples with it
+            # Pick one transformation and 生成all 範例 with it
             trans = random.choice(transformations)
             for i in range(num_examples):
                 length = random.randint(2, 4)
@@ -234,26 +234,26 @@ class StringAnalogyTask(BaseTask):
         same_transformation: bool = True,
     ) -> List[Dict[str, str]]:
         """
-        Return ICL-formatted examples.
+        回傳 ICL 格式的範例.
         
-        If use_generator=True, generates synthetic examples with the same transformation.
-        Otherwise, uses the standard BaseTask logic with stored data.
+        If use_generator=True, 生成 合成 範例 with the 相同 transformation.
+        Otherwise, uses the standard BaseTask logic with stored 資料.
         
-        Args:
-            num_examples: Number of examples to return
-            shuffle: Whether to shuffle (ignored if use_generator=True)
-            seed: Random seed for reproducibility
-            fresh: Whether to prefer unused examples (ignored if use_generator=True)
-            transformations: List of transformation types for generator mode
-            same_transformation: If True, all generated examples use the same transformation
-                                (recommended for proper ICL format)
+        參數：
+            num_examples: 數字 of 範例 to 回傳
+            打亂: Whether to 打亂 (ignored if use_generator=True)
+            種子: 隨機種子 以確保可重現性
+            新的: Whether to prefer 未使用 範例 (ignored if use_generator=True)
+            transformations: 列表 of transformation types for generator mode
+            same_transformation: If True, all 已生成 範例 use the 相同 transformation
+                                (recommended for proper ICL 格式)
             
-        Returns:
-            List of example dictionaries with 'input' and 'output' keys
+        回傳：
+            列表 of 範例 dictionaries with 'input' and 'output' keys
         """
         if self.use_generator:
-            # Generate fresh examples on-the-fly
-            # Use same_transformation=True by default for proper ICL
+            # 生成fresh 範例 即時
+            # Use same_transformation=True by 預設for proper ICL
             examples = self.generate_examples(
                 num_examples, 
                 transformations, 
@@ -262,7 +262,7 @@ class StringAnalogyTask(BaseTask):
             )
             return examples
         else:
-            # Use the standard BaseTask logic with stored data
+            # Use the standard BaseTask logic with stored 資料
             return super().get_icl_examples(
                 num_examples=num_examples,
                 shuffle=shuffle,
@@ -271,10 +271,10 @@ class StringAnalogyTask(BaseTask):
             )
 
     def build_prompt(self, instance: Dict[str, str], num_shots: int = 5) -> str:
-        """Build prompt with analogy-formatted demonstrations.
+        """建立提示 with analogy-formatted 示範.
 
-        If transformation metadata is available, prefer demonstrations that use the
-        same transformation to keep few-shot context coherent.
+        If transformation metadata is 可用, prefer 示範 that use the
+        相同 transformation to keep few-shot 上下文 coherent.
         """
         prompt = ""
 
@@ -293,7 +293,7 @@ class StringAnalogyTask(BaseTask):
                 if transformation:
                     rows = [r for r in rows if r.get("transformation") == transformation]
 
-                # Avoid leaking the exact query row into demonstrations.
+                # Avoid leaking the exact query row into 示範.
                 rows = [r for r in rows if r.get("input") != instance.get("input")]
 
                 rng = random.Random(42)
@@ -308,7 +308,7 @@ class StringAnalogyTask(BaseTask):
         return prompt
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy."""
+        """以完全匹配準確率評估預測."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
@@ -317,10 +317,10 @@ class StringAnalogyTask(BaseTask):
                 f"ground truth count ({len(ground_truth)})"
             )
         
-        # Preprocess predictions
+        # 預處理 預測
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate exact match accuracy
+        # Calculate 完全匹配 準確率
         correct = sum(
             1 for pred, gt in zip(processed_predictions, ground_truth)
             if pred.strip().lower() == gt.strip().lower()
@@ -333,7 +333,7 @@ class StringAnalogyTask(BaseTask):
             "total": len(ground_truth)
         }
         
-        # Add per-transformation accuracy if available
+        # Add per-transformation 準確率 若可用
         data = self.get_split(split)
         if any("transformation" in item for item in data):
             trans_results = {}
@@ -346,7 +346,7 @@ class StringAnalogyTask(BaseTask):
                 if pred.strip().lower() == gt.strip().lower():
                     trans_results[trans]["correct"] += 1
             
-            # Calculate per-transformation accuracy
+            # Calculate per-transformation 準確率
             for trans, stats in trans_results.items():
                 results[f"accuracy_{trans}"] = stats["correct"] / stats["total"]
         
@@ -358,20 +358,20 @@ def make_string_analogy_task(
     use_generator: bool = False,
     use_fixed_examples: bool = True
 ) -> StringAnalogyTask:
-    """Factory function to create a StringAnalogyTask.
+    """工廠函式 to 建立一個StringAnalogyTask.
     
-    Args:
-        config: Optional TaskConfig. If None, creates default config.
-        use_generator: If True, generate synthetic examples for ICL.
-        use_fixed_examples: If True and config is None, use Mitchell's curated examples.
+    參數：
+        設定: 可選TaskConfig. If None, creates 預設config.
+        use_generator: If True, 生成synthetic 範例 for ICL.
+        use_fixed_examples: If True and 設定 is None, use Mitchell's curated 範例.
     
-    Returns:
-        StringAnalogyTask instance
+    回傳：
+        StringAnalogyTask 實例
     """
     if config is None:
         if use_fixed_examples:
-            # Melanie Mitchell's curated string analogy examples
-            # Format: source -> target, query -> answer
+            # Melanie Mitchell's curated 字串 類比 範例
+            # 格式: source -> target, query -> 答案
             mitchell_data = [
                 {"input": "abc -> abd, ijk -> ?", "output": "ijl", "source": "abc", "target": "abd", "query": "ijk", "answer": "ijl", "transformation": "successor_last"},
                 {"input": "abc -> abd, xyz -> ?", "output": "xya", "source": "abc", "target": "abd", "query": "xyz", "answer": "xya", "transformation": "successor_last"},
@@ -395,7 +395,7 @@ def make_string_analogy_task(
                 num_demonstrations=5,
             )
         else:
-            # Minimal default for generator mode
+            # Minimal 預設for generator mode
             config = TaskConfig(
                 name="string_analogy",
                 description="String analogy task with generated examples",

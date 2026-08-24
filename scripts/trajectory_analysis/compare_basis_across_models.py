@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Compare pairwise distances between tasks in basis-coordinate space across models.
+Compare pairwise distances between 任務 in basis-coordinate space across 模型.
 
-For each model, every task FV is projected onto its SVD basis to get a k-dimensional
+For each 模型, every 任務 FV is projected onto its SVD basis to 取得a k-dimensional
 coordinate vector. Pairwise cosine distances are computed in this coordinate space.
-Then we correlate the two distance matrices over shared tasks to measure how
-consistent the basis geometry is between models (e.g., 1B vs 7B).
+Then we correlate the two distance matrices over shared 任務 to measure how
+consistent the basis geometry is between 模型 (e.g., 1B vs 7B).
 
-Usage:
+用法：
     python scripts/trajectory_analysis/compare_basis_across_models.py \
-        --dir_a function_vecs/results/olmo2_1b_compositional_holdout \
-        --dir_b function_vecs/results/olmo2_7b_compositional_holdout \
+        --dir_a function_vecs/結果/olmo2_1b_compositional_holdout \
+        --dir_b function_vecs/結果/olmo2_7b_compositional_holdout \
         --label_a "OLMo-2 1B" --label_b "OLMo-2 7B" \
         --output_dir plots/basis_comparison
 """
@@ -35,17 +35,17 @@ from matplotlib.colors import Normalize
 
 def load_basis_and_coords(result_dir: str) -> Tuple[Dict[str, np.ndarray], List[str], np.ndarray]:
     """
-    Load basis from an FV results directory and compute basis coordinates
-    for all tasks (train + test).
+    載入basis from an FV 結果 目錄 and compute basis coordinates
+    for all 任務 (train + test).
 
-    Returns:
-        coords: dict mapping task_name -> coordinate vector (k,)
-        task_names: ordered list of task names
+    回傳：
+        coords: 字典 mapping task_name -> coordinate vector (k,)
+        task_names: ordered 列表 of 任務 名稱
         U: the basis matrix (d_model, k)
     """
     result_dir = Path(result_dir)
 
-    # Load basis
+    # 載入basis
     basis = np.load(result_dir / "skill_basis.npz", allow_pickle=True)
     U = basis["U"]             # (d_model, k)
     S = basis["S"]             # (k,)
@@ -57,14 +57,14 @@ def load_basis_and_coords(result_dir: str) -> Tuple[Dict[str, np.ndarray], List[
     k = U.shape[1]
 
     # Reconstruct train FVs: columns of U @ diag(S) @ Vt
-    # Each column j of (U @ diag(S) @ Vt) is the train FV for task j
+    # Each column j of (U @ diag(S) @ Vt) is the train FV for 任務 j
     train_fv_matrix = U @ np.diag(S) @ Vt  # (d_model, n_train)
     if has_mean:
         train_fv_matrix += mean  # un-center
 
     coords = {}
 
-    # Train task coordinates: project back onto basis
+    # Train 任務 coordinates: project back onto basis
     for i, name in enumerate(train_names):
         fv = train_fv_matrix[:, i]
         if has_mean:
@@ -74,7 +74,7 @@ def load_basis_and_coords(result_dir: str) -> Tuple[Dict[str, np.ndarray], List[
         c = U.T @ fv_centered  # (k,)
         coords[name] = c
 
-    # Test task coordinates
+    # Test 任務 coordinates
     test_dir = result_dir / "test_vectors"
     if test_dir.exists():
         for f in sorted(test_dir.glob("*.npz")):
@@ -95,7 +95,7 @@ def load_basis_and_coords(result_dir: str) -> Tuple[Dict[str, np.ndarray], List[
 
 
 def compute_pairwise_cosine(coords: Dict[str, np.ndarray], task_order: List[str]) -> np.ndarray:
-    """Compute pairwise cosine distance matrix for tasks in the given order."""
+    """Compute pairwise cosine distance matrix for 任務 in the given order."""
     k = next(iter(coords.values())).shape[0]
     n = len(task_order)
     mat = np.zeros((n, k))
@@ -122,7 +122,7 @@ def compute_pairwise_euclidean(coords: Dict[str, np.ndarray], task_order: List[s
 
 
 def shorten_name(name: str) -> str:
-    """Shorten task names for plot labels."""
+    """Shorten 任務 名稱 for plot labels."""
     # Remove common prefixes
     for prefix in ["compositional:", "simple_icl:", "textfrct:"]:
         if name.startswith(prefix):
@@ -149,17 +149,17 @@ def plot_distance_matrix(dists: np.ndarray, task_names: List[str], title: str, a
 def plot_correlation_scatter(dists_a: np.ndarray, dists_b: np.ndarray,
                               label_a: str, label_b: str,
                               task_names: List[str], ax=None):
-    """Scatter plot of pairwise distances from model A vs model B."""
+    """Scatter plot of pairwise distances from 模型 A vs 模型 B."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 7))
 
-    # Extract upper triangle (unique pairs)
+    # 擷取 upper triangle (unique pairs)
     n = dists_a.shape[0]
     triu_idx = np.triu_indices(n, k=1)
     x = dists_a[triu_idx]
     y = dists_b[triu_idx]
 
-    # Color by task category
+    # Color by 任務 類別
     pair_labels = []
     for i, j in zip(*triu_idx):
         ni, nj = task_names[i], task_names[j]
@@ -183,7 +183,7 @@ def plot_correlation_scatter(dists_a: np.ndarray, dists_b: np.ndarray,
     r_pearson, p_pearson = pearsonr(x, y)
     r_spearman, p_spearman = spearmanr(x, y)
 
-    # Identity line
+    # Identity 行
     lim = max(x.max(), y.max()) * 1.05
     ax.plot([0, lim], [0, lim], "k--", alpha=0.3, lw=1)
 
@@ -201,14 +201,14 @@ def plot_correlation_scatter(dists_a: np.ndarray, dists_b: np.ndarray,
 
 def plot_rank_comparison(dists_a: np.ndarray, dists_b: np.ndarray,
                           task_names: List[str], label_a: str, label_b: str, ax=None):
-    """For each task, compare its nearest-neighbor ranking across models."""
+    """For each 任務, compare its nearest-neighbor ranking across 模型."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
 
     n = len(task_names)
     short_names = [shorten_name(t) for t in task_names]
 
-    # For each task, get its nearest neighbor in each model
+    # For each 任務, 取得its nearest neighbor in each 模型
     nn_agree = 0
     top3_overlap = []
     for i in range(n):
@@ -249,14 +249,14 @@ def orthogonal_procrustes(X: np.ndarray, Y: np.ndarray):
     """
     Find the orthogonal matrix Q that minimizes ||XQ - Y||_F.
 
-    Both X,Y are (n, k) after zero-padding to the same k.
-    Returns Q, disparity (sum-of-squares residual), and the
+    Both X,Y are (n, k) after zero-padding to the 相同 k.
+    回傳Q, disparity (sum-of-squares residual), and the
     Procrustes distance (disparity normalized by ||Y||^2).
 
     The algorithm:
         1. Center both matrices (subtract row-means)
         2. Compute SVD of X^T Y = U S V^T
-        3. Q* = V U^T  (optimal orthogonal mapping)
+        3. Q* = V U^T (optimal orthogonal mapping)
         4. disparity = ||X Q* - Y||_F^2
     """
     # Center
@@ -276,7 +276,7 @@ def orthogonal_procrustes(X: np.ndarray, Y: np.ndarray):
 
     # Ensure proper rotation (det = +1), not reflection
     if np.linalg.det(Q) < 0:
-        # Flip sign of last column of U
+        # Flip sign of 最後一個 column of U
         U[:, -1] *= -1
         Q = U @ Vt
 
@@ -298,12 +298,12 @@ def plot_procrustes_alignment(X_aligned: np.ndarray, Y_norm: np.ndarray,
                                 output_dir: str):
     """
     Visualize the Procrustes-aligned coordinates.
-    Shows first 2 (and first 3) PCs of the aligned spaces overlaid.
+    Shows 第一個 2 (and 第一個 3) PCs of the aligned spaces overlaid.
     """
     short_names = [shorten_name(t) for t in task_names]
 
     # --- 2D projection (PC1 vs PC2 of the aligned space) ---
-    # Use PCA on concatenated data for a shared projection
+    # Use PCA on concatenated 資料 for a shared projection
     combined = np.vstack([X_aligned, Y_norm])  # (2n, k)
     mean_c = combined.mean(axis=0)
     combined_c = combined - mean_c
@@ -314,7 +314,7 @@ def plot_procrustes_alignment(X_aligned: np.ndarray, Y_norm: np.ndarray,
 
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    # Color by category
+    # Color by 類別
     is_comp = [t.startswith("compositional") for t in task_names]
 
     for i, name in enumerate(task_names):
@@ -396,7 +396,7 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Load coordinates
+    # 載入coordinates
     print(f"Loading {args.label_a} from {args.dir_a}...")
     coords_a, U_a, S_a = load_basis_and_coords(args.dir_a)
     print(f"  {len(coords_a)} tasks, basis dim k={U_a.shape[1]}")
@@ -408,14 +408,14 @@ def main():
     # Truncate to common dimension for fair comparison
     k_a, k_b = U_a.shape[1], U_b.shape[1]
     max_k = args.max_k if args.max_k is not None else min(k_a, k_b)
-    max_k = min(max_k, k_a, k_b)  # can't exceed either model's actual k
+    max_k = min(max_k, k_a, k_b)  # can't exceed either 模型's actual k
     if max_k < k_a or max_k < k_b:
         print(f"\nTruncating coordinates to top-{max_k} basis dims "
               f"(from {k_a} and {k_b}) for fair comparison")
         coords_a = {t: c[:max_k] for t, c in coords_a.items()}
         coords_b = {t: c[:max_k] for t, c in coords_b.items()}
 
-    # Find shared tasks
+    # Find shared 任務
     shared = sorted(set(coords_a.keys()) & set(coords_b.keys()))
 
     if args.exclude_pattern:
@@ -447,7 +447,7 @@ def main():
     dists_b = compute_pairwise_cosine(coords_b, shared)
 
     # ======================================================================
-    # Print summary statistics
+    # Print 摘要 statistics
     # ======================================================================
     triu = np.triu_indices(len(shared), k=1)
     da = dists_a[triu]
@@ -462,7 +462,7 @@ def main():
     print(f"  Spearman ρ = {r_s:.4f}  (p = {p_s:.2e})")
     print(f"  N pairs    = {len(da)}")
 
-    # Break down by category
+    # Break down by 類別
     comp_mask = np.array([t.startswith("compositional") for t in shared])
     elem_mask = ~comp_mask
     n_comp = comp_mask.sum()
@@ -511,7 +511,7 @@ def main():
     print(f"ORTHOGONAL PROCRUSTES ANALYSIS")
     print(f"{'='*60}")
 
-    # Build coordinate matrices (n_tasks × max_k) — already truncated to same dim above
+    # 建立coordinate matrices (n_tasks × max_k) — already truncated to 相同 dim above
     k_a = next(iter(coords_a.values())).shape[0]
     k_b = next(iter(coords_b.values())).shape[0]
     assert k_a == k_b, f"coords should be same dim after truncation: {k_a} vs {k_b}"
@@ -537,7 +537,7 @@ def main():
         cat = "compositional" if shared[idx].startswith("compositional") else "elemental"
         print(f"  {shorten_name(shared[idx]):<35s} {displacements[idx]:>12.4f}  {cat:>12s}")
 
-    # Category-level summary
+    # Category-level 摘要
     comp_idx = [i for i, t in enumerate(shared) if t.startswith("compositional")]
     elem_idx = [i for i, t in enumerate(shared) if not t.startswith("compositional")]
     if comp_idx:
@@ -592,7 +592,7 @@ def main():
     print(f"Saved: {args.output_dir}/distance_difference.png")
     plt.close(fig)
 
-    # 5) Singular value comparison (how many factors needed)
+    # 5) Singular 值 comparison (how many factors needed)
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     for ax, S, label in [(axes[0], S_a, args.label_a), (axes[1], S_b, args.label_b)]:
         var_explained = (S**2) / (S**2).sum()

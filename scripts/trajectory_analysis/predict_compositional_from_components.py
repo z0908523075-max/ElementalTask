@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Analyze if compositional task learning can be predicted from component tasks.
+"""Analyze if 組合式 任務 learning can be predicted from component 任務.
 
 This script:
-1. Identifies compositional tasks and their atomic components
-2. Loads accuracy trajectories for both
-3. Tests different prediction models:
+1. Identifies 組合式 任務 and their atomic components
+2. 載入accuracy trajectories for both
+3. Tests different 預測 模型:
    - Linear combination: acc(A∘B) = α·acc(A) + β·acc(B) + γ
    - Multiplicative: acc(A∘B) = acc(A) × acc(B)
    - Min (bottleneck): acc(A∘B) = min(acc(A), acc(B))
    - Max emergence: emergence(A∘B) = max(emergence(A), emergence(B))
-4. Visualizes predictions vs actual trajectories
+4. Visualizes 預測 vs actual trajectories
 
-Usage:
+用法：
     python scripts/trajectory_analysis/predict_compositional_from_components.py \
-        --results_dir results/olmo2_continuous_1b_early_revised \
+        --results_dir 結果/olmo2_continuous_1b_early_revised \
         --output_dir plots/compositional_prediction \
         --method all
 """
@@ -43,13 +43,13 @@ from get_emergence_point import (
 
 @dataclass
 class TaskTrajectory:
-    """Accuracy trajectory for a task."""
+    """準確率 trajectory for a 任務."""
     task_name: str
     tokens: np.ndarray  # in billions
     accuracy: np.ndarray
     
     def interpolate(self, target_tokens: np.ndarray) -> np.ndarray:
-        """Interpolate accuracy at target token counts."""
+        """Interpolate 準確率 at tar取得token counts."""
         return np.interp(target_tokens, self.tokens, self.accuracy)
 
 
@@ -57,16 +57,16 @@ class TaskTrajectory:
 # Component Mapping
 # ============================================================================
 
-# Map compositional task suffixes to their atomic component tasks
-# NOTE: Most simple_icl tasks use underscores (simple_icl_uppercase)
+# Map 組合式 任務 suffixes to their atomic component 任務
+# NOTE: Most simple_icl 任務 use underscores (simple_icl_uppercase)
 # but present_to_gerund uses a colon (simple_icl:present_to_gerund)
 COMPONENT_MAP = {
-    # String operations
+    # 字串 操作
     'upper': 'simple_icl:uppercase',
     'lower': 'simple_icl:lowercase',
     'reverse': 'token_reversal',
     
-    # Grammatical
+    # 語法
     'plural': 'simple_icl:singular_to_plural',
     'gerund': 'simple_icl:present_to_gerund',
     
@@ -76,34 +76,34 @@ COMPONENT_MAP = {
     'translate_sp_eng': 'simple_icl:translate_sp_eng',
     'translate_eng_sp': 'simple_icl:translate_eng_sp',
     
-    # Extraction
+    # 擷取
     'first': 'simple_icl:first_letter',
     'last': 'simple_icl:last_letter',
 }
 
 
 def parse_compositional_task(task_name: str) -> Optional[List[str]]:
-    """Parse compositional task name into component operations.
+    """Parse 組合式 任務 名稱 into component 操作.
     
-    Args:
+    參數：
         task_name: e.g., "compositional:plural_upper" or "compositional:translate_eng_fr_reverse"
     
-    Returns:
-        List of operations in order, e.g., ["plural", "upper"]
-        Returns None if not a compositional task
+    回傳：
+        列表 of 操作 in order, e.g., ["plural", "upper"]
+        回傳None if not a 組合式 任務
     """
     if not task_name.startswith("compositional:"):
         return None
     
     suffix = task_name.replace("compositional:", "")
     
-    # Handle translation specially (it has underscores in the operation name)
+    # Handle translation specially (it has underscores in the 操作 名稱)
     if "translate" in suffix:
         # e.g., "translate_eng_fr_upper" -> ["translate_eng_fr", "upper"]
         parts = []
         remaining = suffix
         
-        # Extract translation operations first (in order of longest match)
+        # 擷取 translation 操作 第一個 (in order of longest match)
         for trans in ['translate_eng_fr', 'translate_fr_eng', 'translate_sp_eng', 'translate_eng_sp']:
             if remaining.startswith(trans):
                 parts.append(trans)
@@ -112,26 +112,26 @@ def parse_compositional_task(task_name: str) -> Optional[List[str]]:
                     remaining = remaining[1:]
                 break
         
-        # Split remaining by underscore
+        # 切分 remaining by underscore
         if remaining:
             parts.extend(remaining.split('_'))
         
         return parts if parts else None
     
-    # Simple case: split by underscore
+    # 簡單 case: 切分 by underscore
     parts = suffix.split('_')
     return parts if len(parts) >= 2 else None
 
 
 def get_component_tasks(compositional_task: str) -> Optional[List[str]]:
-    """Get the atomic component task names for a compositional task.
+    """取得atomic component 任務 名稱 for a 組合式 任務.
     
-    Args:
+    參數：
         compositional_task: e.g., "compositional:plural_upper"
     
-    Returns:
-        List of component task names, e.g., ["simple_icl:singular_to_plural", "simple_icl:uppercase"]
-        Returns None if components cannot be identified
+    回傳：
+        列表 of component 任務 名稱, e.g., ["simple_icl:singular_to_plural", "simple_icl:uppercase"]
+        回傳None if components cannot be identified
     """
     operations = parse_compositional_task(compositional_task)
     if operations is None:
@@ -142,7 +142,7 @@ def get_component_tasks(compositional_task: str) -> Optional[List[str]]:
         if op in COMPONENT_MAP:
             components.append(COMPONENT_MAP[op])
         else:
-            # Unknown operation - might need to add to COMPONENT_MAP
+            # Unknown 操作 - might need to add to COMPONENT_MAP
             print(f"  Warning: Unknown operation '{op}' in {compositional_task}")
             return None
     
@@ -150,13 +150,13 @@ def get_component_tasks(compositional_task: str) -> Optional[List[str]]:
 
 
 # ============================================================================
-# Loading Data
+# 載入 資料
 # ============================================================================
 
 def normalize_task_name(task_name: str) -> str:
-    """Normalize task names so both 'compositional_X' and 'compositional:X' use colon format.
-    Same for 'simple_icl_X' -> 'simple_icl:X'."""
-    # Known multi-word subtask suffixes (after the task prefix)
+    """Normalize 任務 名稱 so both 'compositional_X' and 'compositional:X' use colon 格式.
+    相同 for 'simple_icl_X' -> 'simple_icl:X'."""
+    # Known multi-word subtask suffixes (after the 任務 prefix)
     SIMPLE_ICL_SUBTASKS = [
         'country_to_capital', 'country_to_currency',
         'first_letter', 'last_letter',
@@ -166,13 +166,13 @@ def normalize_task_name(task_name: str) -> str:
         'uppercase', 'lowercase',
     ]
     
-    # Normalize simple_icl tasks: simple_icl_uppercase -> simple_icl:uppercase
+    # Normalize simple_icl 任務: simple_icl_uppercase -> simple_icl:uppercase
     if task_name.startswith("simple_icl_") or task_name.startswith("simple_icl:"):
         for subtask in SIMPLE_ICL_SUBTASKS:
             if task_name == f"simple_icl_{subtask}" or task_name == f"simple_icl:{subtask}":
                 return f"simple_icl:{subtask}"
     
-    # Normalize compositional tasks: compositional_gerund_lower -> compositional:gerund_lower
+    # Normalize 組合式 任務: compositional_gerund_lower -> 組合式:gerund_lower
     if task_name.startswith("compositional_"):
         suffix = task_name[len("compositional_"):]
         return f"compositional:{suffix}"
@@ -181,10 +181,10 @@ def normalize_task_name(task_name: str) -> str:
 
 
 def load_all_trajectories(results_dir: Path) -> Dict[str, TaskTrajectory]:
-    """Load accuracy trajectories for all tasks."""
+    """載入accuracy trajectories for all 任務."""
     trajectories = {}
 
-    # First try per-task pivot files
+    # 第一個 try per-task pivot 檔案
     pivot_files = list(results_dir.glob("accuracy_pivot_*.csv"))
 
     if pivot_files:
@@ -204,7 +204,7 @@ def load_all_trajectories(results_dir: Path) -> Dict[str, TaskTrajectory]:
             except Exception as e:
                 print(f"Warning: Failed to load {pivot_file.name}: {e}")
     else:
-        # Try combined pivot file
+        # Try combined pivot 檔案
         combined_file = results_dir / "accuracy_pivot.csv"
         if combined_file.exists():
             print(f"  Using combined pivot file: {combined_file}")
@@ -228,10 +228,10 @@ def load_all_trajectories(results_dir: Path) -> Dict[str, TaskTrajectory]:
 def discover_compositional_tasks(
     trajectories: Dict[str, TaskTrajectory]
 ) -> Dict[str, List[str]]:
-    """Find all compositional tasks and their components.
+    """Find all 組合式 任務 and their components.
     
-    Returns:
-        Dict mapping compositional_task -> [component1, component2, ...]
+    回傳：
+        字典 mapping compositional_task -> [component1, component2, ...]
     """
     compositional = {}
     
@@ -243,7 +243,7 @@ def discover_compositional_tasks(
         if components is None:
             continue
         
-        # Check if all components exist in our data
+        # 檢查if all components exist in our 資料
         if all(comp in trajectories for comp in components):
             compositional[task_name] = components
         else:
@@ -254,13 +254,13 @@ def discover_compositional_tasks(
 
 
 # ============================================================================
-# Prediction Models
+# 預測 模型
 # ============================================================================
 
 def predict_multiplicative(
     component_accs: List[np.ndarray]
 ) -> np.ndarray:
-    """Predict compositional accuracy as product of components.
+    """Predict 組合式 準確率 as product of components.
     
     acc(A∘B) = acc(A) × acc(B)
     
@@ -275,11 +275,11 @@ def predict_multiplicative(
 def predict_min(
     component_accs: List[np.ndarray]
 ) -> np.ndarray:
-    """Predict compositional accuracy as minimum of components.
+    """Predict 組合式 準確率 as minimum of components.
     
     acc(A∘B) = min(acc(A), acc(B))
     
-    Bottleneck model: limited by hardest component.
+    Bottleneck 模型: limited by hardest component.
     """
     return np.minimum.reduce(component_accs)
 
@@ -287,7 +287,7 @@ def predict_min(
 def predict_mean(
     component_accs: List[np.ndarray]
 ) -> np.ndarray:
-    """Predict compositional accuracy as mean of components.
+    """Predict 組合式 準確率 as mean of components.
     
     acc(A∘B) = (acc(A) + acc(B)) / 2
     """
@@ -297,9 +297,9 @@ def predict_mean(
 def predict_harmonic_mean(
     component_accs: List[np.ndarray]
 ) -> np.ndarray:
-    """Predict compositional accuracy as harmonic mean of components.
+    """Predict 組合式 準確率 as harmonic mean of components.
     
-    Harmonic mean gives more weight to lower values, similar to bottleneck.
+    Harmonic mean gives more weight to lower 值, similar to bottleneck.
     """
     # Avoid division by zero
     safe_accs = [np.maximum(acc, 1e-6) for acc in component_accs]
@@ -309,7 +309,7 @@ def predict_harmonic_mean(
 def predict_geometric_mean(
     component_accs: List[np.ndarray]
 ) -> np.ndarray:
-    """Predict compositional accuracy as geometric mean of components.
+    """Predict 組合式 準確率 as geometric mean of components.
     
     Similar to multiplicative but with a root: (acc_A × acc_B)^(1/n)
     """
@@ -325,12 +325,12 @@ def fit_linear_combination(
 ) -> Tuple[np.ndarray, float, np.ndarray]:
     """Fit linear combination: acc(A∘B) = α·acc(A) + β·acc(B) + γ.
     
-    Returns:
+    回傳：
         coefficients: [α, β, ..., γ]
         r2_score: R² of fit
-        prediction: Predicted accuracy
+        預測: Predicted 準確率
     """
-    # Build design matrix
+    # 建立design matrix
     X = np.column_stack(component_accs + [np.ones_like(target_acc)])
     
     # Solve least squares
@@ -349,7 +349,7 @@ def evaluate_prediction(
     predicted: np.ndarray,
     actual: np.ndarray
 ) -> Dict[str, float]:
-    """Evaluate prediction quality."""
+    """評估prediction quality."""
     # Compute metrics
     mse = np.mean((predicted - actual) ** 2)
     mae = np.mean(np.abs(predicted - actual))
@@ -384,7 +384,7 @@ def predict_emergence_max(
 ) -> Optional[float]:
     """Predict emergence as max of component emergences.
     
-    Hypothesis: compositional task emerges when last component has emerged.
+    Hypothesis: 組合式 任務 emerges when 最後一個 component has emerged.
     """
     emergences = []
     for traj in component_trajectories:
@@ -429,24 +429,24 @@ def plot_prediction_comparison(
     output_path: Path,
     smooth_sigma: float = 1.0,
 ):
-    """Plot actual vs predicted trajectories with component accuracy panels.
+    """Plot actual vs predicted trajectories with component 準確率 panels.
     
     Layout:
-        Left (large): Compositional task actual vs predicted trajectories
-        Right (stacked): Individual component task accuracy trajectories
+        Left (large): 組合式 任務 actual vs predicted trajectories
+        Right (stacked): Individual component 任務 準確率 trajectories
     
-    Args:
-        comp_task_name: Name of the compositional task
-        actual_traj: Actual trajectory for the compositional task
-        component_trajs: Trajectories for component tasks
-        predictions: Dict mapping method -> predicted accuracy
-        metrics: Dict mapping method -> evaluation metrics
-        output_path: Where to save the plot
+    參數：
+        comp_task_name: 名稱 of the 組合式 任務
+        actual_traj: Actual trajectory for the 組合式 任務
+        component_trajs: Trajectories for component 任務
+        預測: 字典 mapping method -> predicted 準確率
+        metrics: 字典 mapping method -> 評估 metrics
+        output_path: Where to 儲存the plot
         smooth_sigma: Smoothing sigma used (for display in title)
     """
     n_components = len(component_trajs)
     
-    # Create layout: large left panel + stacked right mini-panels
+    # 建立layout: large left panel + stacked right mini-panels
     fig = plt.figure(figsize=(18, 6))
     gs = fig.add_gridspec(n_components, 2, width_ratios=[2, 1], hspace=0.4, wspace=0.3)
     
@@ -458,11 +458,11 @@ def plot_prediction_comparison(
     
     tokens = actual_traj.tokens
     
-    # Component colors (consistent between main and mini-panels)
+    # Component colors (consistent between 主要 and mini-panels)
     comp_colors = plt.cm.Set2(np.linspace(0, 0.6, n_components))
     
-    # ===== Left plot: Compositional trajectories =====
-    # Plot components (faint) on main panel for reference
+    # ===== Left plot: 組合式 trajectories =====
+    # Plot components (faint) on 主要 panel for reference
     for i, comp_traj in enumerate(component_trajs):
         comp_interp = comp_traj.interpolate(tokens)
         comp_smooth = smooth_trajectory(comp_interp, sigma=smooth_sigma)
@@ -471,13 +471,13 @@ def plot_prediction_comparison(
         ax_main.plot(tokens, comp_smooth, '--', alpha=0.35, linewidth=1.5,
                      color=comp_colors[i], label=f'{comp_label}')
     
-    # Plot actual compositional (both raw and smoothed)
+    # Plot actual 組合式 (both raw and smoothed)
     ax_main.scatter(tokens, actual_traj.accuracy, s=30, alpha=0.3, color='black', marker='o', zorder=9)
     actual_smooth = smooth_trajectory(actual_traj.accuracy, sigma=smooth_sigma)
     ax_main.plot(tokens, actual_smooth, 'k-', linewidth=3, alpha=0.8,
             label='Actual (smoothed)', marker='o', markersize=6, markevery=max(1, len(tokens)//10), zorder=10)
     
-    # Plot predictions
+    # Plot 預測
     pred_colors = {
         'multiplicative': 'blue',
         'min': 'red',
@@ -487,7 +487,7 @@ def plot_prediction_comparison(
         'geometric_mean': 'brown'
     }
     
-    # Sort by R² to show best prediction most prominently
+    # Sort by R² to show best 預測 most prominently
     sorted_methods = sorted(predictions.keys(), 
                            key=lambda m: metrics[m]['r2'], 
                            reverse=True)
@@ -518,10 +518,10 @@ def plot_prediction_comparison(
         
         # Raw dots
         ax_comp.scatter(tokens, comp_interp, s=15, alpha=0.25, color=comp_colors[i])
-        # Smoothed line
+        # Smoothed 行
         ax_comp.plot(tokens, comp_smooth, '-', linewidth=2, color=comp_colors[i], alpha=0.9)
         
-        # Final accuracy annotation
+        # Final 準確率 annotation
         final_acc = comp_smooth[-1] if len(comp_smooth) > 0 else 0
         ax_comp.annotate(f'{final_acc:.2f}', xy=(tokens[-1], final_acc),
                         fontsize=9, fontweight='bold', color=comp_colors[i],
@@ -551,7 +551,7 @@ def plot_emergence_comparison(
     """Plot predicted vs actual emergence points."""
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     
-    # Filter rows with valid actual emergence
+    # 篩選 rows with 有效 actual emergence
     df = results_df[results_df['actual_emergence'].notna()].copy()
     
     if len(df) == 0:
@@ -576,7 +576,7 @@ def plot_emergence_comparison(
         ax.scatter(df.loc[valid, method_col], df.loc[valid, 'actual_emergence'],
                   alpha=0.6, s=80, label=method_name, color=color)
     
-    # Diagonal line (perfect prediction)
+    # Diagonal 行 (perfect 預測)
     lims = [
         df[['actual_emergence'] + pred_methods].min().min(),
         df[['actual_emergence'] + pred_methods].max().max(),
@@ -589,7 +589,7 @@ def plot_emergence_comparison(
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3)
     
-    # ===== Right: Prediction Error Distribution =====
+    # ===== Right: 預測 Error Distribution =====
     ax = axes[1]
     
     for method_col in pred_methods:
@@ -619,7 +619,7 @@ def plot_method_comparison_summary(
     results_df: pd.DataFrame,
     output_path: Path,
 ):
-    """Create summary plot comparing all prediction methods."""
+    """建立summary plot comparing all 預測 methods."""
     fig, axes = plt.subplots(2, 2, figsize=(14, 12))
     
     methods = ['multiplicative', 'min', 'mean', 'harmonic_mean', 'geometric_mean']
@@ -648,7 +648,7 @@ def plot_method_comparison_summary(
     ax.grid(True, alpha=0.3, axis='y')
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
     
-    # ===== Bottom Left: Best method per task =====
+    # ===== Bottom Left: Best method per 任務 =====
     ax = axes[1, 0]
     best_methods = []
     for _, row in results_df.iterrows():
@@ -665,7 +665,7 @@ def plot_method_comparison_summary(
         ax.set_title('Best Method (highest R²) per Task', fontsize=14)
         ax.grid(True, alpha=0.3, axis='y')
     
-    # ===== Bottom Right: R² vs number of components =====
+    # ===== Bottom Right: R² vs 數字 of components =====
     ax = axes[1, 1]
     if 'n_components' in results_df.columns:
         for method, col in method_cols.items():
@@ -683,7 +683,7 @@ def plot_method_comparison_summary(
 
 
 # ============================================================================
-# Main Analysis
+# 主要 Analysis
 # ============================================================================
 
 def analyze_compositional_predictions(
@@ -693,13 +693,13 @@ def analyze_compositional_predictions(
     emergence_threshold: float = 0.5,
     smooth_sigma: float = 1.0,
 ):
-    """Main analysis function.
+    """主要 analysis function.
     
-    Args:
-        results_dir: Directory containing accuracy_pivot_*.csv files
-        output_dir: Output directory for plots and results
-        methods: List of prediction methods to test
-        emergence_threshold: Accuracy threshold for emergence detection
+    參數：
+        results_dir: 目錄 containing accuracy_pivot_*.csv 檔案
+        output_dir: 輸出 目錄 for plots and 結果
+        methods: 列表 of 預測 methods to test
+        emergence_threshold: 準確率 threshold for emergence detection
         smooth_sigma: Gaussian smoothing sigma (0 = no smoothing)
     """
     output_dir = Path(output_dir)
@@ -713,12 +713,12 @@ def analyze_compositional_predictions(
     print(f"Smoothing sigma: {smooth_sigma}")
     print()
     
-    # Load all trajectories
+    # 載入all trajectories
     print("Loading trajectories...")
     trajectories = load_all_trajectories(results_dir)
     print(f"  Loaded {len(trajectories)} tasks")
     
-    # Discover compositional tasks
+    # Discover 組合式 任務
     print("\nDiscovering compositional tasks...")
     compositional_tasks = discover_compositional_tasks(trajectories)
     print(f"  Found {len(compositional_tasks)} compositional tasks with all components")
@@ -727,14 +727,14 @@ def analyze_compositional_predictions(
         print("No compositional tasks found!")
         return
     
-    # Print task→component mapping
+    # Print 任務→component mapping
     print("\nCompositional task structure:")
     for comp_task, components in sorted(compositional_tasks.items()):
         print(f"  {comp_task}")
         for i, comp in enumerate(components, 1):
             print(f"    {i}. {comp}")
     
-    # Analyze each compositional task
+    # Analyze each 組合式 任務
     results = []
     
     print("\nAnalyzing predictions...")
@@ -744,7 +744,7 @@ def analyze_compositional_predictions(
         actual_traj = trajectories[comp_task]
         component_trajs = [trajectories[name] for name in component_names]
         
-        # Get common token grid (interpolate to finest resolution)
+        # 取得common token grid (interpolate to finest resolution)
         all_tokens = np.unique(np.concatenate([t.tokens for t in [actual_traj] + component_trajs]))
         
         # Interpolate components to common grid
@@ -755,7 +755,7 @@ def analyze_compositional_predictions(
         component_accs = [smooth_trajectory(acc, sigma=smooth_sigma) for acc in component_accs_raw]
         actual_acc = smooth_trajectory(actual_acc_raw, sigma=smooth_sigma)
         
-        # Make predictions
+        # Make 預測
         predictions = {}
         
         if 'all' in methods or 'multiplicative' in methods:
@@ -776,12 +776,12 @@ def analyze_compositional_predictions(
         # Linear is commented out — per-task fitted coefficients make it unfairly flexible
         # if 'all' in methods or 'linear' in methods:
         #     coeffs, r2, pred = fit_linear_combination(component_accs, actual_acc)
-        #     predictions['linear'] = pred
+        #     預測['linear'] = pred
         #     linear_coeffs = coeffs
         # else:
         linear_coeffs = None
         
-        # Evaluate predictions
+        # 評估預測
         metrics = {}
         print("  Prediction quality:")
         for method, pred_acc in predictions.items():
@@ -793,7 +793,7 @@ def analyze_compositional_predictions(
         if linear_coeffs is not None:
             print(f"  Linear model: acc = ", end="")
             for i, (comp_name, coeff) in enumerate(zip(component_names, linear_coeffs[:-1])):
-                comp_short = comp_name.split(':')[-1].split('_')[-1]  # Get last part of name
+                comp_short = comp_name.split(':')[-1].split('_')[-1]  # 取得last part of 名稱
                 sign = "+" if coeff >= 0 else ""
                 print(f"{sign}{coeff:.3f}·{comp_short} ", end="")
             # Intercept
@@ -821,7 +821,7 @@ def analyze_compositional_predictions(
                 error_sum = pred_emergence_sum - actual_emergence
                 print(f"  Emergence (sum): actual={actual_emergence:.0f}B, predicted={pred_emergence_sum:.0f}B, error={error_sum:+.0f}B")
         
-        # Save results
+        # 儲存results
         result_row = {
             'task': comp_task,
             'n_components': len(component_names),
@@ -848,10 +848,10 @@ def analyze_compositional_predictions(
             predictions, metrics, plot_path, smooth_sigma=smooth_sigma
         )
     
-    # Create summary dataframe
+    # 建立summary dataframe
     results_df = pd.DataFrame(results)
     
-    # Save results
+    # 儲存results
     csv_path = output_dir / "prediction_results.csv"
     results_df.to_csv(csv_path, index=False)
     print(f"\n✅ Saved results to: {csv_path}")
@@ -861,12 +861,12 @@ def analyze_compositional_predictions(
     plot_emergence_comparison(results_df, emergence_plot_path)
     print(f"✅ Saved emergence plot to: {emergence_plot_path}")
     
-    # Plot method comparison summary
+    # Plot method comparison 摘要
     summary_plot_path = output_dir / "method_comparison_summary.png"
     plot_method_comparison_summary(results_df, summary_plot_path)
     print(f"✅ Saved method comparison to: {summary_plot_path}")
     
-    # Summary statistics
+    # 摘要 statistics
     print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
@@ -881,7 +881,7 @@ def analyze_compositional_predictions(
             print(f"  Best task (highest R²): {results_df.loc[results_df[r2_col].idxmax(), 'task']} (R²={results_df[r2_col].max():.3f})")
             print(f"  Worst task (lowest R²): {results_df.loc[results_df[r2_col].idxmin(), 'task']} (R²={results_df[r2_col].min():.3f})")
     
-    # Best method summary
+    # Best method 摘要
     if 'best_method' in results_df.columns:
         print(f"\nBEST METHOD DISTRIBUTION:")
         method_counts = results_df['best_method'].value_counts()
@@ -889,7 +889,7 @@ def analyze_compositional_predictions(
             pct = count / len(results_df) * 100
             print(f"  {method:15s}: {count:2d} tasks ({pct:5.1f}%)")
     
-    # Emergence prediction summary
+    # Emergence 預測 摘要
     for pred_col, pred_name in [('max_pred_emergence', 'MAX'), ('sum_pred_emergence', 'SUM')]:
         if pred_col in results_df.columns:
             valid = results_df[['actual_emergence', pred_col]].notna().all(axis=1)
@@ -902,7 +902,7 @@ def analyze_compositional_predictions(
     
     print(f"\n✅ All plots saved to: {output_dir}")
 
-    # Write human-readable summary.md
+    # Write 人類可讀 summary.md
     write_summary_md(results_df, compositional_tasks, output_dir, results_dir, smooth_sigma)
 
 
@@ -913,7 +913,7 @@ def write_summary_md(
     results_dir: Path,
     smooth_sigma: float,
 ):
-    """Write a human-readable summary.md of the prediction results."""
+    """Write a 人類可讀 summary.md of the 預測 結果."""
     lines = []
     lines.append("# Compositional Task Prediction — Summary\n")
     lines.append(f"> `results_dir`: `{results_dir}`  \n")
@@ -971,7 +971,7 @@ def write_summary_md(
         lines.append(col_line + "\n")
     lines.append("```\n")
 
-    # ── Emergence predictions ──────────────────────────────────────────────
+    # ── Emergence 預測 ──────────────────────────────────────────────
     for pred_col, pred_name in [('max_pred_emergence', 'MAX'), ('sum_pred_emergence', 'SUM')]:
         if pred_col not in results_df.columns:
             continue
@@ -996,7 +996,7 @@ def write_summary_md(
                 f" | {row[pred_col]:.0f}B | {err:+.0f}B |\n"
             )
 
-    # ── Task structure ─────────────────────────────────────────────────────
+    # ── 任務 structure ─────────────────────────────────────────────────────
     lines.append("\n---\n")
     lines.append("## Task → Component Mapping\n")
     lines.append("```\n")

@@ -25,7 +25,7 @@ def get_mlp(block: nn.Module) -> nn.Module:
     raise RuntimeError(f"No MLP/FFN module in {type(block)}")
 
 def infer_head_dims(model: nn.Module, block: nn.Module, attn: nn.Module):
-    # Try attention module first (present for GPT-2, LLaMA, NeoX families)
+    # Try attention module 第一個 (present for GPT-2, LLaMA, NeoX families)
     if hasattr(attn, "num_heads"):
         num_heads = int(attn.num_heads)
     elif hasattr(model.config, "num_attention_heads"):
@@ -64,7 +64,7 @@ def get_post_attn_norm(block: nn.Module) -> nn.Module:
     raise RuntimeError("Cannot find post-attention layernorm in block")
 
 def get_o_proj(attn: nn.Module) -> Optional[nn.Module]:
-    # Optional hook on the attention output projection
+    # 可選hook on the attention 輸出 projection
     if hasattr(attn, "o_proj"):
         return attn.o_proj          # LLaMA/Qwen/OPT/OLMo-2
     if hasattr(attn, "c_proj"):
@@ -90,10 +90,10 @@ class ResidualCapture:
         self._handles = []
 
     def _block_pre(self, _m, args):
-        self.cache["resid_pre_attn"] = args[0].detach()  # input to block
+        self.cache["resid_pre_attn"] = args[0].detach()  # 輸入 to block
 
     def _post_attn_norm_pre(self, _m, args):
-        # input to the post-attn layernorm == residual AFTER attention add
+        # 輸入 to the post-attn layernorm == residual AFTER attention add
         self.cache["resid_after_attn_add"] = args[0].detach()
 
     def _oproj_fwd(self, _m, _inp, out):

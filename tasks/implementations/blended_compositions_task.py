@@ -1,10 +1,10 @@
-"""Blended compositions task combining multiple reasoning primitives.
+"""Blended 組合 任務 combining multiple 推理 primitives.
 
-These items are designed to look more downstream-like than pure string transforms:
+These items are designed to look more downstream-like than 純字串 transforms:
 - coref_tracking_query: resolve pronouns, then do entity-state tracking
-- opplan_solve: choose operation sequence, then compute numeric result
-- decipher_apply_reason: infer token mapping and apply it to a new query
-- extract_verify: extract facts from text and verify a claim
+- opplan_solve: choose 操作 sequence, then compute numeric 結果
+- decipher_apply_reason: infer token mapping and apply it to a 新的 query
+- extract_verify: 擷取 facts from 文字 and verify a claim
 """
 
 from typing import Any, Dict, List
@@ -13,7 +13,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class BlendedCompositionsTask(BaseTask):
-    """Task with hand-authored blended reasoning compositions."""
+    """任務 with hand-authored blended 推理 組合."""
 
     TASK_NAME = "blended_compositions"
 
@@ -172,7 +172,7 @@ class BlendedCompositionsTask(BaseTask):
 
         data = pd.DataFrame(rows)
 
-        # Support get_task("blended_compositions:cat1,cat2") via config.name fallback path.
+        # 支援 get_task("blended_compositions:cat1,cat2") via config.name fallback 路徑.
         name = str(getattr(self.config, "name", ""))
         if ":" in name:
             _, spec = name.split(":", 1)
@@ -237,7 +237,7 @@ def create_blended_compositions_task(
     category: str = None,
     name: str = "blended_compositions",
 ) -> BlendedCompositionsTask:
-    """Create blended compositions task; optionally filter to a category."""
+    """建立blended 組合 任務; optionally 篩選 to a 類別."""
     data = None
     if category and category in BlendedCompositionsTask.CATEGORY_DATA:
         data = [

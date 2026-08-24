@@ -1,4 +1,4 @@
-"""Basic arithmetic task with simple addition/subtraction/multiplication/division."""
+"""Basic 算術 任務 with 簡單 addition/subtraction/multiplication/division."""
 
 from typing import Dict, List, Any
 import re
@@ -7,22 +7,22 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class BasicArithmeticTask(BaseTask):
-    """Task for basic arithmetic operations."""
+    """用於basic 算術 操作."""
     
-    TASK_NAME = "basic_arithmetic"  # Auto-discovery key
+    TASK_NAME = "basic_arithmetic"  # 自動發現鍵
     
     def __init__(self, config: TaskConfig):
         super().__init__(config)
     
     def _load_data(self):
-        """Load arithmetic problems - uses in-memory data if provided, otherwise defaults."""
+        """載入arithmetic problems - uses 記憶體內 資料 若有提供, otherwise 預設."""
         import pandas as pd
         
         if self.config.in_memory_data:
             self.data = pd.DataFrame(self.config.in_memory_data)
             return
         
-        # Default arithmetic problems
+        # 預設 算術 problems
         default_problems = [
             {"question": "What is 5 + 3?", "answer": "8"},
             {"question": "What is 12 - 7?", "answer": "5"},
@@ -39,39 +39,39 @@ class BasicArithmeticTask(BaseTask):
         self.data = pd.DataFrame(default_problems)
     
     def get_split(self, split: str = "test") -> List[Dict[str, Any]]:
-        # Convert DataFrame to list of dictionaries for iteration
+        # 轉換DataFrame to 列表 of dictionaries for iteration
         if hasattr(self.data, 'to_dict'):
             return self.data.to_dict('records')
         return self.data
     
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
-        """Build prompt for arithmetic problems with optional ICL examples.
+        """建立提示 for 算術 problems with 可選ICL 範例.
         
-        Args:
-            instance: The instance to build a prompt for
-            num_shots: Number of in-context learning examples (default: 5)
+        參數：
+            實例: The 實例 to 建立提示 for
+            num_shots: 數字 of in-context learning 範例 (預設: 5)
         
-        Returns:
-            Formatted prompt string
+        回傳：
+            格式化 提示 字串
         """
         prompt = ""
         
-        # Add ICL examples if requested and we have demonstrations
+        # Add ICL 範例 if requested and we have 示範
         if num_shots > 0 and self.demonstrations:
-            # Use the first num_shots demonstrations
+            # Use the 第一個 num_shots 示範
             prompt += ""
             for demo in self.demonstrations[:num_shots]:
                 prompt += f"{demo}\n"
             prompt += "\n"
         
-        # Add instruction and current problem
+        # Add instruction and 當前 problem
         question = instance[self.config.input_column]
         prompt += f"Input: {question}\nOutput:"
         
         return prompt
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate arithmetic predictions by extracting numbers."""
+        """評估arithmetic 預測 by extracting 數字."""
         data = self.get_split(split)
         
         if len(predictions) != len(data):
@@ -87,7 +87,7 @@ class BasicArithmeticTask(BaseTask):
         for pred, example in zip(predictions, data):
             expected = example[self.config.output_column]
             
-            # Extract number from prediction (handle various formats)
+            # 擷取 數字 from 預測 (handle various formats)
             pred_number = self._extract_number(pred)
             expected_number = self._extract_number(expected)
             
@@ -113,11 +113,11 @@ class BasicArithmeticTask(BaseTask):
         }
     
     def _extract_number(self, text: str) -> float:
-        """Extract the first number from text."""
+        """擷取 the 第一個 數字 from 文字."""
         if not text:
             return None
         
-        # Try to find integers or floats in the text
+        # Try to find integers or floats in the 文字
         numbers = re.findall(r'-?\d+\.?\d*', str(text).strip())
         
         if numbers:
@@ -133,8 +133,8 @@ def create_basic_arithmetic_task(
     problems: List[Dict[str, str]] = None,
     name: str = "basic_arithmetic"
 ) -> BasicArithmeticTask:
-    """Create a BasicArithmeticTask instance."""
-    # Define static demonstrations (separate from test set)
+    """建立一個BasicArithmeticTask 實例."""
+    # Define 靜態 示範 (separate from test set)
     demonstrations = [
         "Input: What is 7 + 5?\nOutput: 12",
         "Input: What is 18 - 9?\nOutput: 9",
@@ -147,8 +147,8 @@ def create_basic_arithmetic_task(
         name=name,
         description="Basic arithmetic evaluation task",
         data_format="memory",
-        in_memory_data=problems,  # Use provided problems or None for defaults
-        in_memory_demonstrations=demonstrations,  # Static ICL examples
+        in_memory_data=problems,  # Use provided problems or None for 預設
+        in_memory_demonstrations=demonstrations,  # 靜態 ICL 範例
         input_column="question",
         output_column="answer",
         evaluation_metrics=["accuracy"],

@@ -1,16 +1,16 @@
-"""Ignoring Context Task - Information retrieval with distractors.
+"""Ignoring 上下文 任務 - Information retrieval with distractors.
 
-Tests the model's ability to extract relevant information while ignoring
-irrelevant context. Similar to "needle in a haystack" but simpler.
+Tests the 模型's ability to 擷取 relevant information while ignoring
+irrelevant 上下文. Similar to "needle in a haystack" but simpler.
 
-Format:
-    [Filler text] KEY FACT [More filler] Question: [Query about KEY FACT]
-    Answer: [Extracted information]
+格式：
+    [Filler 文字] KEY FACT [More filler] 問題: [Query about KEY FACT]
+    答案: [Extracted information]
 
-Example:
-    Some text here. X = 5. More text here.
-    Question: What is X?
-    Answer: 5
+範例：
+    Some 文字 here. X = 5. More 文字 here.
+    問題: What is X?
+    答案: 5
 
 This tests selective attention and information retrieval capabilities.
 """
@@ -23,29 +23,29 @@ from tasks.base_task import BaseTask, TaskConfig
 
 class IgnoringContextTask(BaseTask):
     """
-    Task testing the ability to extract key information from irrelevant context.
+    任務 testing the ability to 擷取 key information from irrelevant 上下文.
     
-    The model must find and extract a variable assignment buried in filler text.
+    The 模型 must find and 擷取 a 變數 assignment buried in filler 文字.
     """
     TASK_NAME = "ignoring_context"
     
     def __init__(self, config: TaskConfig, use_generator: bool = False):
         """
-        Initialize IgnoringContextTask.
+        初始化IgnoringContextTask.
         
-        Args:
-            config: TaskConfig with task settings
-            use_generator: If True, generate synthetic examples with random variables
+        參數：
+            設定: TaskConfig with 任務 settings
+            use_generator: If True, 生成synthetic 範例 with 隨機 變數
         """
         self.use_generator = use_generator
         super().__init__(config)
     
     def _generate_filler_text(self, num_words: int = 5, seed: Optional[int] = None) -> str:
-        """Generate random filler text."""
+        """生成random filler 文字."""
         if seed is not None:
             random.seed(seed)
         
-        # Simple words for filler
+        # 簡單 詞 for filler
         filler_words = [
             "the", "a", "is", "was", "are", "were", "has", "have", "had",
             "today", "yesterday", "tomorrow", "here", "there", "then", "now",
@@ -65,37 +65,37 @@ class IgnoringContextTask(BaseTask):
         filler_after: int = 5,
         seed: Optional[int] = None
     ) -> Dict[str, str]:
-        """Generate a single example with a variable assignment buried in context.
+        """生成a single 範例 with a 變數 assignment buried in 上下文.
         
-        Args:
-            variable: Variable name (e.g., "X"). If None, randomly chosen.
-            value: Value to assign. If None, random integer 1-20.
-            filler_before: Number of filler words before the key fact.
-            filler_after: Number of filler words after the key fact.
-            seed: Random seed for reproducibility.
+        參數：
+            變數: 變數 名稱 (e.g., "X"). If None, randomly chosen.
+            值: 值 to assign. If None, 隨機 integer 1-20.
+            filler_before: 數字 of filler 詞 before the key fact.
+            filler_after: 數字 of filler 詞 after the key fact.
+            種子: 隨機種子 以確保可重現性.
             
-        Returns:
-            Dict with input, output, variable, and value.
+        回傳：
+            字典 with 輸入, 輸出, 變數, and 值.
         """
         if seed is not None:
             random.seed(seed)
         
-        # Generate variable and value if not provided
+        # 生成variable and 值 if not provided
         if variable is None:
             variable = random.choice(['X', 'Y', 'Z', 'A', 'B', 'N', 'M'])
         
         if value is None:
             value = random.randint(1, 20)
         
-        # Generate filler text
+        # 生成filler 文字
         before = self._generate_filler_text(filler_before, seed)
         after = self._generate_filler_text(filler_after, seed=(seed+1) if seed else None)
         
-        # Create the context with embedded fact
+        # 建立the 上下文 with embedded fact
         context = f"{before} {variable} = {value}. {after}"
         question = f"Question: What is {variable}?"
         
-        # Combined input
+        # Combined 輸入
         input_str = f"{context}\n{question}"
         
         return {
@@ -112,15 +112,15 @@ class IgnoringContextTask(BaseTask):
         filler_range: tuple = (3, 8),
         seed: Optional[int] = None
     ) -> List[Dict[str, str]]:
-        """Generate multiple examples with varying context lengths.
+        """生成multiple 範例 with varying 上下文 lengths.
         
-        Args:
-            num_examples: Number of examples to generate.
-            filler_range: (min, max) words for filler text.
-            seed: Random seed for reproducibility.
+        參數：
+            num_examples: 數字 of 範例 to 生成.
+            filler_range: (min, max) 詞 for filler 文字.
+            種子: 隨機種子 以確保可重現性.
             
-        Returns:
-            List of example dictionaries.
+        回傳：
+            列表 of 範例 dictionaries.
         """
         if seed is not None:
             random.seed(seed)
@@ -146,26 +146,26 @@ class IgnoringContextTask(BaseTask):
         filler_range: tuple = (3, 8),
     ) -> List[Dict[str, str]]:
         """
-        Return ICL-formatted examples.
+        回傳 ICL 格式的範例.
         
-        If use_generator=True, generates synthetic examples.
-        Otherwise, uses the standard BaseTask logic with stored data.
+        If use_generator=True, 生成 合成 範例.
+        Otherwise, uses the standard BaseTask logic with stored 資料.
         
-        Args:
-            num_examples: Number of examples to return.
-            shuffle: Whether to shuffle (ignored if use_generator=True).
-            seed: Random seed for reproducibility.
-            fresh: Whether to prefer unused examples (ignored if use_generator=True).
-            filler_range: (min, max) words for filler text in generated examples.
+        參數：
+            num_examples: 數字 of 範例 to 回傳.
+            打亂: Whether to 打亂 (ignored if use_generator=True).
+            種子: 隨機種子 以確保可重現性.
+            新的: Whether to prefer 未使用 範例 (ignored if use_generator=True).
+            filler_range: (min, max) 詞 for filler 文字 in 已生成 範例.
             
-        Returns:
-            List of example dictionaries with 'input' and 'output' keys.
+        回傳：
+            列表 of 範例 dictionaries with 'input' and 'output' keys.
         """
         if self.use_generator:
-            # Generate fresh examples on-the-fly
+            # 生成fresh 範例 即時
             return self.generate_examples(num_examples, filler_range, seed)
         else:
-            # Use the standard BaseTask logic with stored data
+            # Use the standard BaseTask logic with stored 資料
             return super().get_icl_examples(
                 num_examples=num_examples,
                 shuffle=shuffle,
@@ -174,7 +174,7 @@ class IgnoringContextTask(BaseTask):
             )
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy."""
+        """以完全匹配準確率評估預測."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
@@ -183,10 +183,10 @@ class IgnoringContextTask(BaseTask):
                 f"ground truth count ({len(ground_truth)})"
             )
         
-        # Preprocess predictions
+        # 預處理 預測
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate exact match accuracy
+        # Calculate 完全匹配 準確率
         correct = sum(
             1 for pred, gt in zip(processed_predictions, ground_truth)
             if pred.strip() == gt.strip()
@@ -204,18 +204,18 @@ def make_ignoring_context_task(
     config: TaskConfig = None,
     use_generator: bool = False,
 ) -> IgnoringContextTask:
-    """Factory function to create an IgnoringContextTask.
+    """工廠函式 to 建立一個IgnoringContextTask.
     
-    Args:
-        config: Optional TaskConfig. If None, creates default config with examples.
-        use_generator: If True, generate synthetic examples on-the-fly.
+    參數：
+        設定: 可選TaskConfig. If None, creates 預設config with 範例.
+        use_generator: If True, 生成synthetic 範例 即時.
     
-    Returns:
-        IgnoringContextTask instance.
+    回傳：
+        IgnoringContextTask 實例.
     """
     if config is None:
         if use_generator:
-            # Minimal config for generator mode
+            # Minimal 設定 for generator mode
             default_examples = [
                 {
                     "input": "Some text here. X = 5. More text.\nQuestion: What is X?",
@@ -223,7 +223,7 @@ def make_ignoring_context_task(
                 }
             ]
         else:
-            # Static examples with varying context lengths
+            # 靜態 範例 with varying 上下文 lengths
             default_examples = [
                 {
                     "input": "The cat sat. X = 3. A dog ran.\nQuestion: What is X?",

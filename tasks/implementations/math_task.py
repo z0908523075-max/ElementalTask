@@ -1,4 +1,4 @@
-"""Example of a custom task with automatic discovery."""
+"""範例 of a 自訂 任務 with 自動 發現."""
 
 from ..base_task import BaseTask, TaskConfig
 import re
@@ -6,22 +6,22 @@ from typing import List, Dict
 
 
 class MathTask(BaseTask):
-    """A task for simple math problems."""
+    """A 用於simple 數學 problems."""
     
-    TASK_NAME = "math"  # This is all that's needed for automatic registration!
+    TASK_NAME = "math"  # This is all that's needed for 自動 註冊!
     
     def __init__(self, config: TaskConfig):
         super().__init__(config)
     
     def _load_data(self):
-        """Generate synthetic math problems for testing."""
+        """生成synthetic 數學 problems for testing."""
         import pandas as pd
         import random
         
-        random.seed(42)  # For reproducibility
+        random.seed(42)  # 以確保可重現性
         problems = []
         
-        # Generate 20 simple arithmetic problems
+        # 生成20 簡單 算術 problems
         for _ in range(20):
             a, b = random.randint(1, 20), random.randint(1, 20)
             op = random.choice(['+', '-', '*'])
@@ -42,9 +42,9 @@ class MathTask(BaseTask):
 
     
     def get_icl_examples(self, num_examples: int = 10, shuffle: bool = True, seed: int = None, fresh: bool = True) -> List[Dict[str, str]]:
-        """Generate simple arithmetic examples for ICL.
+        """生成simple 算術 範例 for ICL.
 
-        Note: `fresh` is ignored for synthetic/generated tasks (there's no stable dataset indices to track).
+        Note: `fresh` is ignored for 合成/已生成 任務 (there's no stable 資料集 indices to track).
         """
         import random
         if seed is not None:
@@ -56,21 +56,21 @@ class MathTask(BaseTask):
             examples.append({"input": f"{a} + {b}", "output": str(a + b)})
 
         if shuffle:
-            # shuffle in-place for diversity
+            # 打亂 in-place for diversity
             random.shuffle(examples)
 
         return examples[:num_examples]
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate math predictions."""
+        """評估math 預測."""
         correct = 0
         total = len(predictions)
         
         if total == 0:
             return {"accuracy": 0.0}
         
-        # Get the targets for this split
-        data_split = self.data if split == "test" else self.data  # For now, use same data
+        # 取得targets for this 切分
+        data_split = self.data if split == "test" else self.data  # For now, use 相同 資料
         targets = data_split[self.config.output_column].tolist()
         
         if len(predictions) != len(targets):
@@ -92,11 +92,11 @@ class MathTask(BaseTask):
         }
     
     def evaluate_response(self, response: str, target: str) -> dict:
-        """Evaluate a math response with number extraction."""
+        """評估a 數學 response with 數字 擷取."""
         
         def extract_number(text: str) -> float:
-            """Extract the first number from text."""
-            # Look for numbers (including decimals)
+            """擷取 the 第一個 數字 from 文字."""
+            # Look for 數字 (including decimals)
             match = re.search(r'-?\d+\.?\d*', text.strip())
             if match:
                 return float(match.group())
@@ -113,7 +113,7 @@ class MathTask(BaseTask):
                 "target_extracted": target_num
             }
         
-        # Check if they're equal (with small tolerance for floating point)
+        # 檢查if they're equal (with small tolerance for floating point)
         correct = abs(response_num - target_num) < 0.001
         
         return {
@@ -125,7 +125,7 @@ class MathTask(BaseTask):
         }
     
     def generate_prompt(self, row: dict, demonstrations: list = None) -> str:
-        """Generate a prompt for math problems."""
+        """生成a 提示 for 數學 problems."""
         prompt = "Solve the following math problem:\n\n"
         
         if demonstrations:

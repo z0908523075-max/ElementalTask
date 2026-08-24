@@ -17,7 +17,7 @@ import torch.nn as nn
 class ExtractConfig:
     # function vector related arguments
     model_name: str = "EleutherAI/gpt-j-6B"
-    checkpoint: Optional[str] = None  # Model checkpoint/revision (e.g., "step1000-tokens5B" for OLMo-2)
+    checkpoint: Optional[str] = None  # 模型 checkpoint/revision (e.g., "step1000-tokens5B" for OLMo-2)
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     batch_size: int = 8
     seed: int = 42
@@ -27,7 +27,7 @@ class ExtractConfig:
     num_shuffled_controls_per_task: int = 10
     head_selection: Literal["topk", "soft"] = "topk"
     topk_heads: int = 10
-    cached_headset_path: Optional[str] = None # use a cached set of heads to save computation time
+    cached_headset_path: Optional[str] = None # use a cached set of heads to 儲存computation time
     score_metric: str = "logprob"  # "logprob" or "margin" for AIE computation
 
     # basis related arguments
@@ -35,16 +35,16 @@ class ExtractConfig:
     basis_dim: int = 20
     eps: float = 0.01 # for eps-rank, see notes
     
-    # Filtering options - results_dir contains all checkpoints for a model
-    only_correct: bool = False  # Only use instances where model prediction was correct
-    results_dir: Optional[str] = None  # Path to results dir (e.g., "results/olmo2_continuous_1b_early_revised")
+    # Filtering options - results_dir contains all checkpoints for a 模型
+    only_correct: bool = False  # Only use 實例 where 模型 預測 was 正確
+    results_dir: Optional[str] = None  # 路徑 to 結果 dir (e.g., "results/olmo2_continuous_1b_early_revised")
     # Note: uses 'checkpoint' field above for filtering when only_correct=True
 
 @dataclass
 class Headset:
     mode: Literal["topk", "soft"]
-    heads: List[Tuple[int, int]] = field(default_factory=list)  # list of (layer, head) tuples
-    weights: Optional[np.ndarray] = None  # Optional weights for each head
+    heads: List[Tuple[int, int]] = field(default_factory=list)  # 列表 of (layer, head) tuples
+    weights: Optional[np.ndarray] = None  # 可選weights for each head
 
 @dataclass
 class TaskHeadMeans:
@@ -78,14 +78,14 @@ class SkillBasis:
         normalize: bool = True
     ) -> np.ndarray:
         """
-        Reconstruct a task vector using top-k basis vectors.
+        Reconstruct a 任務 vector using top-k basis vectors.
         
-        Args:
+        參數：
             task_vec: Vector to reconstruct
-            k: Number of basis vectors to use (None = use all available)
+            k: 數字 of basis vectors to use (None = use all 可用)
             normalize: Whether to normalize the reconstruction (for cosine-based analysis)
             
-        Returns:
+        回傳：
             Reconstructed vector (d_model,)
         """
         v = np.asarray(task_vec.function_vec, dtype=np.float64)
@@ -129,23 +129,23 @@ class SkillBasis:
         """
         Find minimum k basis vectors needed to reconstruct task_vec within epsilon.
         
-        Args:
-            task_vec: The task function vector to reconstruct
-            epsilon: Error threshold (default 0.01 = 1%)
+        參數：
+            task_vec: The 任務 function vector to reconstruct
+            epsilon: Error threshold (預設0.01 = 1%)
             metric: Error metric to use:
                 - "cosine": 1 - cosine_similarity (best for normalized vectors, range [0,2])
-                - "relative": ||v - v̂|| / ||v|| (L2 relative error, range [0,1])  
+                - "relative": ||v - v̂|| / ||v|| (L2 relative error, range [0,1]) 
                 - "absolute": ||v - v̂|| (raw L2 error)
-            return_details: If True, return dict with errors, projections, etc.
+            return_details: If True, 回傳dict with errors, projections, etc.
             
-        Returns:
+        回傳：
             If return_details=False: just the epsilon-rank (int)
-            If return_details=True: dict with {
+            If return_details=True: 字典 with {
                 "epsilon_rank": int,
-                "errors": np.ndarray,  # error for k=0, 1, 2, ..., max_k
-                "cosine_errors": np.ndarray,  # cosine distance
-                "projections": np.ndarray,  # coordinates in basis
-                "reconstruction": np.ndarray  # reconstructed vector at epsilon_rank
+                "errors": np.ndarray, # error for k=0, 1, 2, ..., max_k
+                "cosine_errors": np.ndarray, # cosine distance
+                "projections": np.ndarray, # coordinates in basis
+                "reconstruction": np.ndarray # reconstructed vector at epsilon_rank
             }
         """
         v = np.asarray(task_vec.function_vec, dtype=np.float64)
@@ -170,7 +170,7 @@ class SkillBasis:
         l2_errors[0] = v_norm
         cosine_errors[0] = 1.0  # Worst case: orthogonal
         
-        epsilon_rank = max_k  # default if threshold never met
+        epsilon_rank = max_k  # 預設if threshold never met
         
         for k in range(1, max_k + 1):
             # Reconstruct with top k vectors
@@ -192,10 +192,10 @@ class SkillBasis:
                 else:
                     cosine_errors[k] = 1.0
             else:
-                # For centered data, cosine doesn't make as much sense
+                # For centered 資料, cosine doesn't make as much sense
                 cosine_errors[k] = l2_errors[k] / (v_norm + 1e-10)
             
-            # Check if we've met the threshold
+            # 檢查if we've met the threshold
             if metric == "cosine":
                 error_val = cosine_errors[k]
             elif metric == "relative":
@@ -230,15 +230,15 @@ class SkillBasis:
         metric: Literal["cosine", "relative", "absolute"] = "cosine"
     ) -> Dict[str, int]:
         """
-        Compute epsilon-rank for multiple task vectors efficiently.
+        Compute epsilon-rank for multiple 任務 vectors efficiently.
         
-        Args:
-            task_vecs: List of task function vectors to analyze
+        參數：
+            task_vecs: 列表 of 任務 function vectors to analyze
             epsilon: Error threshold
             metric: Error metric to use ("cosine", "relative", or "absolute")
             
-        Returns:
-            Dictionary mapping task_name -> epsilon_rank
+        回傳：
+            字典 mapping task_name -> epsilon_rank
         """
         results = {}
         for task_vec in task_vecs:
@@ -249,17 +249,17 @@ class SkillBasis:
     
     def explained_variance_ratio(self) -> np.ndarray:
         """
-        Return the cumulative fraction of variance explained by first k components.
+        回傳the cumulative fraction of variance explained by 第一個 k components.
         Useful for scree plots.
         
-        Returns:
+        回傳：
             Array of shape (k,) with cumulative variance ratios
         """
         variance_explained = self.S**2 / np.sum(self.S**2)
         return np.cumsum(variance_explained)
 
 def save_function_vec(vec: TaskFunctionVec, filepath: str):
-    """Save a TaskFunctionVec to .npz file."""
+    """儲存a TaskFunctionVec to .npz 檔案."""
     np.savez_compressed(
         filepath,
         task_name=vec.task_name,
@@ -268,7 +268,7 @@ def save_function_vec(vec: TaskFunctionVec, filepath: str):
     )
 
 def load_function_vec(filepath: str) -> TaskFunctionVec:
-    """Load a TaskFunctionVec from .npz file."""
+    """載入a TaskFunctionVec from .npz 檔案."""
     data = np.load(filepath, allow_pickle=True)
     return TaskFunctionVec(
         task_name=str(data['task_name']),
@@ -277,7 +277,7 @@ def load_function_vec(filepath: str) -> TaskFunctionVec:
     )
 
 def save_skill_basis(basis: SkillBasis, filepath: str):
-    """Save a SkillBasis to .npz file."""
+    """儲存a SkillBasis to .npz 檔案."""
     np.savez_compressed(
         filepath,
         method=basis.method,
@@ -289,7 +289,7 @@ def save_skill_basis(basis: SkillBasis, filepath: str):
     )
 
 def load_skill_basis(filepath: str) -> SkillBasis:
-    """Load a SkillBasis from .npz file."""
+    """載入a SkillBasis from .npz 檔案."""
     data = np.load(filepath, allow_pickle=True)
     mean = data['mean'] if data['mean'].size > 0 else None
     return SkillBasis(
@@ -319,20 +319,20 @@ def _score_batch(
     gold_ids: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """
-    Score the model on each prompt at the decision token (last non-pad).
-    If gold_ids is provided (B,), return log p(gold) or margin at that token.
+    Score the 模型 on each 提示 at the 決策 token (最後一個 non-pad).
+    If gold_ids is provided (B,), 回傳log p(gold) or margin at that token.
     """
     batch = tokenizer(texts, return_tensors="pt", padding=True, truncation=False).to(device)
     out = model(**batch, use_cache=False, return_dict=True)
 
-    # decision index = last non-pad
+    # decision index = 最後一個 non-pad
     t_star = (batch["attention_mask"].sum(dim=1) - 1).clamp(min=0)  # (B,)
     B = t_star.shape[0]
     logits = out.logits[torch.arange(B, device=device), t_star, :]   # (B,V)
     logp = torch.log_softmax(logits, dim=-1)
 
     if gold_ids is None:
-        # Fallback (not recommended for AIE): next token in the input sequence
+        # Fallback (not recommended for AIE): 下一個 token in the 輸入 sequence
         ids = batch["input_ids"]
         gold = ids[torch.arange(B, device=device), (t_star + 1).clamp(max=ids.shape[1]-1)]
     else:
@@ -361,8 +361,8 @@ def _batch_per_head_contribs(
     device: str = "cuda",
 ) -> torch.Tensor:
     """
-    Returns per-head contributions to the residual at the decision token
-    using your hook-only path. Shape: (B, H, D)
+    回傳per-head contributions to the residual at the 決策 token
+    using your hook-only 路徑. Shape: (B, H, D)
     """
     # tokenize
     batch = tokenizer(batch_texts, return_tensors="pt", padding=True, truncation=False).to(device)
@@ -389,7 +389,7 @@ def first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
     ids = []
     for a in answers:
         enc = tokenizer(a, add_special_tokens=False, return_tensors="pt")
-        # guard against empty strings
+        # guard against empty 字串
         if enc.input_ids.numel() == 0:
             # fall back to EOS if empty
             tok = tokenizer.eos_token_id
@@ -399,7 +399,7 @@ def first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
     return torch.tensor(ids, dtype=torch.long)
 
 def discover_all_tasks():
-    """Discover and list all available tasks."""
+    """Discover and 列表 all 可用 任務."""
     print("Listing available tasks...")
     tasks = discover_tasks()
     print(f"Found {len(tasks)} tasks:")
@@ -410,12 +410,12 @@ def discover_all_tasks():
     
     return list(tasks.keys())
 
-# --- token index to use (last non-pad) ---
+# --- token index to use (最後一個 non-pad) ---
 def _decision_index(attn_mask: torch.Tensor) -> torch.Tensor:
     # attn_mask: (B, T) with 1 for real tokens
     return (attn_mask.sum(dim=1) - 1).clamp(min=0)
 
-# --- prompt sampling from your BaseTask ---
+# --- 提示 sampling from your BaseTask ---
 def _sample_task_prompts(
     task: BaseTask, 
     n: int, 
@@ -424,21 +424,21 @@ def _sample_task_prompts(
     only_correct: bool = False,
     strict: bool = False
 ) -> List[str]:
-    """Sample prompts from a task, optionally filtering to only correct instances.
+    """Sample 提示 from a 任務, optionally filtering to only 正確 實例.
     
-    Args:
-        task: Task object
-        n: Number of samples to return
-        results_dir: Path to results dir for filtering correct instances
+    參數：
+        任務: 任務 object
+        n: 數字 of samples to 回傳
+        results_dir: 路徑 to 結果 dir for filtering 正確 實例
         checkpoint: Checkpoint to use when filtering
-        only_correct: If True, only use instances that were correct
-        strict: If True and only_correct=True but no correct instances found, return empty list
-                instead of falling back to all instances
+        only_correct: If True, only use 實例 that were 正確
+        strict: If True and only_correct=True but no 正確 實例 found, 回傳empty 列表
+                instead of falling back to all 實例
     """
-    # Get the full task name (e.g., "simple_icl:uppercase" instead of just "simple_icl")
+    # 取得full 任務 名稱 (e.g., "simple_icl:uppercase" instead of just "simple_icl")
     full_task_name = getattr(task, '_full_name', task.config.name)
     
-    # If only_correct and we have results_dir, load from detailed results
+    # If only_correct and we have results_dir, 載入from detailed 結果
     if only_correct and results_dir:
         correct_instances = load_correct_instances_from_detailed_results(
             results_dir, full_task_name, checkpoint
@@ -447,11 +447,11 @@ def _sample_task_prompts(
             n = min(n, len(correct_instances))
             instances = correct_instances[:n]
             
-            # Build prompts — prefer the original eval prompt from JSONL
-            # (it already has proper demonstrations), fall back to build_prompt
+            # 建立提示s — prefer the original eval 提示 from JSONL
+            # (it already has proper 示範), fall back to build_prompt
             prompts = []
             for inst in instances:
-                # 1) Use the stored prompt from the JSONL if available
+                # 1) Use the stored 提示 from the JSONL 若可用
                 if inst.get('prompt'):
                     prompts.append(inst['prompt'])
                     continue
@@ -469,23 +469,23 @@ def _sample_task_prompts(
                 try:
                     prompts.append(task.build_prompt(row))
                 except:
-                    # Fallback: just use the question directly
+                    # Fallback: just use the 問題 directly
                     prompts.append(inst['question'])
             return prompts
         else:
             if strict:
-                # In strict mode, return empty list to signal no valid data
+                # In strict mode, 回傳empty 列表 to signal no 有效 資料
                 print(f"  ⚠️  No correct instances found for {full_task_name}, skipping (strict mode)")
                 return []
             else:
                 print(f"  ⚠️  No correct instances found, falling back to all instances")
     
-    # Original behavior: use all instances
+    # Original behavior: use all 實例
     rows = task.get_split("test")
     if len(rows) == 0:
         return []
     n = min(n, len(rows))
-    # simple: take first n; you can randomize if you like
+    # 簡單: take 第一個 n; you can randomize if you like
     prompts = []
     for r in rows[:n]:
         prompts.append(task.build_prompt(r))
@@ -499,30 +499,30 @@ def load_correct_instances_from_detailed_results(
     category: str = None
 ) -> Optional[List[Dict[str, Any]]]:
     """
-    Load only the correct instances from detailed results JSONL files.
+    載入only the 正確 實例 from detailed 結果 JSONL 檔案.
     
-    Args:
-        results_dir: Path to results directory (e.g., "results/olmo2_continuous_1b_early_revised")
-        task_name: Task name (e.g., "basic_arithmetic" or "simple_icl:translate_eng_fr")
-        checkpoint: Checkpoint to filter by (e.g., "main" or "stage1-step10000-tokens21B")
-        category: Optional category name for subtasks (e.g., "translate_eng_fr")
+    參數：
+        results_dir: 路徑 to 結果 目錄 (e.g., "results/olmo2_continuous_1b_early_revised")
+        task_name: 任務 名稱 (e.g., "basic_arithmetic" or "simple_icl:translate_eng_fr")
+        checkpoint: Checkpoint to 篩選 by (e.g., "main" or "stage1-step10000-tokens21B")
+        類別: 可選category 名稱 for subtasks (e.g., "translate_eng_fr")
     
-    Returns:
-        List of correct instances with 'question', 'expected', and metadata keys, or None if not found
+    回傳：
+        列表 of 正確 實例 with 'question', 'expected', and metadata keys, or None if not found
     """
     import json
     import glob
     
     results_path = Path(results_dir)
     
-    # Parse task name - could be "simple_icl:translate_eng_fr" or just "basic_arithmetic"
+    # Parse 任務 名稱 - could be "simple_icl:translate_eng_fr" or just "basic_arithmetic"
     if ':' in task_name:
         base_task, category = task_name.split(':', 1)
     else:
         base_task = task_name
     
-    # Find the checkpoint directory
-    # Directory naming: {model_short_name}_{checkpoint}
+    # Find the checkpoint 目錄
+    # 目錄 naming: {model_short_name}_{checkpoint}
     # e.g., OLMo-2-0425-1B_main or OLMo-2-0425-1B_stage1-step10000-tokens21B
     checkpoint_dirs = list(results_path.glob(f"*_{checkpoint}"))
     
@@ -532,22 +532,22 @@ def load_correct_instances_from_detailed_results(
     
     checkpoint_dir = checkpoint_dirs[0]
     
-    # Find the detailed JSONL file
+    # Find the detailed JSONL 檔案
     # Naming patterns:
-    # - For tasks with categories: {model}_{checkpoint}_{task}_{category}_detailed.jsonl
-    # - For simple tasks: {model}_{checkpoint}_{task}_detailed.jsonl
-    # - New compositional tasks:  {model}_{checkpoint}_{task}_{category}_{category}_detailed.jsonl
-    #   (doubled name, e.g., compositional_gerund_lower_gerund_lower_detailed.jsonl)
+    # - For 任務 with 類別: {model}_{checkpoint}_{task}_{category}_detailed.jsonl
+    # - For 簡單 任務: {model}_{checkpoint}_{task}_detailed.jsonl
+    # - 新的 組合式 任務: {model}_{checkpoint}_{task}_{category}_{category}_detailed.jsonl
+    #   (doubled 名稱, e.g., compositional_gerund_lower_gerund_lower_detailed.jsonl)
     task_sanitized = base_task.replace(":", "_").replace(",", "_")
     
     candidates = []
     if category:
         category_sanitized = category.replace(":", "_").replace(",", "_").replace(" ", "_")
-        # Try standard pattern first
+        # Try standard pattern 第一個
         candidates.append(f"*_{task_sanitized}_{category_sanitized}_detailed.jsonl")
-        # Try doubled-name pattern (new compositional tasks)
+        # Try doubled-name pattern (新的 組合式 任務)
         candidates.append(f"*_{task_sanitized}_{category_sanitized}_{category_sanitized}_detailed.jsonl")
-    # Fallback: just the base task
+    # Fallback: just the 基礎 任務
     candidates.append(f"*_{task_sanitized}_detailed.jsonl")
     
     jsonl_files = []
@@ -568,7 +568,7 @@ def load_correct_instances_from_detailed_results(
     try:
         correct_instances = []
         total_instances = 0
-        category_instances = 0  # Track instances matching the category filter
+        category_instances = 0  # Track 實例 matching the 類別 篩選
         
         with open(jsonl_file, 'r', encoding='utf-8') as f:
             for line in f:
@@ -577,13 +577,13 @@ def load_correct_instances_from_detailed_results(
                 item = json.loads(line)
                 total_instances += 1
                 
-                # Get item's category from metadata
+                # 取得item's 類別 from metadata
                 metadata = item.get('metadata', {})
                 item_category = metadata.get('category_name', '')
                 item_category_id = metadata.get('category_id', '')
                 
-                # If we're filtering by category, skip non-matching items
-                # Match against both category_name and category_id (e.g., "Scrambled Words" vs "CV1")
+                # If we're filtering by 類別, skip non-matching items
+                # Match against both category_name and category_id (e.g., "Scrambled 詞" vs "CV1")
                 if category and item_category and item_category_id:
                     if item_category != category and item_category_id != category:
                         continue
@@ -592,21 +592,21 @@ def load_correct_instances_from_detailed_results(
                 
                 category_instances += 1
                 
-                # Check if correct field exists, or compute it
+                # 檢查if 正確 field exists, or compute it
                 if 'correct' in item:
                     is_correct = item['correct']
                 else:
-                    # Compute correctness by comparing prediction to target
+                    # Compute correctness by comparing 預測 to target
                     prediction = item.get('prediction', '')
                     target = item.get('target', item.get('ground_truth', ''))
                     
-                    # Clean prediction (take first line, strip whitespace)
+                    # Clean 預測 (take 第一個 行, strip whitespace)
                     pred_clean = prediction.split('\n')[0].strip().lower() if prediction else ""
                     target_clean = target.strip().lower() if target else ""
                     is_correct = (pred_clean == target_clean)
                 
                 if is_correct:
-                    # Extract question and expected answer
+                    # 擷取 問題 and expected 答案
                     question = metadata.get('question', item.get('input', ''))
                     expected = item.get('target', metadata.get('answer', item.get('ground_truth', '')))
                     
@@ -614,7 +614,7 @@ def load_correct_instances_from_detailed_results(
                         'question': question,
                         'expected': expected,
                         'category_name': item_category or category,
-                        'prompt': item.get('prompt', None),  # Use original eval prompt if available
+                        'prompt': item.get('prompt', None),  # Use original eval 提示 若可用
                         'metadata': metadata
                     })
         
@@ -641,21 +641,21 @@ def _sample_prompts_and_answers(
     only_correct: bool = False,
     strict: bool = False,
 ):
-    """Sample prompts and their corresponding answers.
+    """Sample 提示 and their corresponding 答案.
     
-    Args:
-        task: Task object
-        n: Number of samples to return
-        results_dir: Path to results dir for filtering correct instances
+    參數：
+        任務: 任務 object
+        n: 數字 of samples to 回傳
+        results_dir: 路徑 to 結果 dir for filtering 正確 實例
         checkpoint: Checkpoint to use when filtering (e.g., "main" or "stage1-step10000-tokens21B")
-        only_correct: If True, only use instances that were correct
-        strict: If True and only_correct=True but no correct instances found, return None
-                instead of falling back to all instances
+        only_correct: If True, only use 實例 that were 正確
+        strict: If True and only_correct=True but no 正確 實例 found, 回傳None
+                instead of falling back to all 實例
     """
-    # Get the full task name (e.g., "simple_icl:uppercase" instead of just "simple_icl")
+    # 取得full 任務 名稱 (e.g., "simple_icl:uppercase" instead of just "simple_icl")
     full_task_name = getattr(task, '_full_name', task.config.name)
     
-    # If only_correct and we have results_dir, load from detailed results
+    # If only_correct and we have results_dir, 載入from detailed 結果
     if only_correct and results_dir:
         correct_instances = load_correct_instances_from_detailed_results(
             results_dir, full_task_name, checkpoint
@@ -664,11 +664,11 @@ def _sample_prompts_and_answers(
             n = min(n, len(correct_instances))
             instances = correct_instances[:n]
             
-            # Build prompts — prefer the original eval prompt from JSONL
+            # 建立提示s — prefer the original eval 提示 from JSONL
             texts = []
             answers = []
             for inst in instances:
-                # 1) Use the stored prompt from the JSONL if available
+                # 1) Use the stored 提示 from the JSONL 若可用
                 if inst.get('prompt'):
                     texts.append(inst['prompt'])
                 else:
@@ -685,32 +685,32 @@ def _sample_prompts_and_answers(
                     try:
                         texts.append(task.build_prompt(row))
                     except:
-                        # Fallback: just use the question directly
+                        # Fallback: just use the 問題 directly
                         texts.append(inst['question'])
                 answers.append(inst['expected'])
             
             return texts, answers
         else:
             if strict:
-                # In strict mode, return None to signal no valid data
+                # In strict mode, 回傳None to signal no 有效 資料
                 return None, None
             else:
                 print(f"  ⚠️  No correct instances found, falling back to all instances")
     
-    # Original behavior: use all instances
+    # Original behavior: use all 實例
     rows = task.get_split("test")[:n]
     texts = [task.build_prompt(r) for r in rows]
     
-    # Try to get answers from the output column
+    # Try to 取得answers from the 輸出 column
     try:
         answers = [r[task.config.output_column] for r in rows]
     except (KeyError, TypeError) as e:
-        # Debug: print task info
+        # Debug: print 任務 info
         print(f"  ⚠️  Task '{task.config.name}' - column '{task.config.output_column}' not found")
         if rows:
             print(f"     Available columns: {list(rows[0].keys())}")
         
-        # Try common alternative column names
+        # Try common alternative column 名稱
         for alt_col in ['answer', 'target', 'label', 'gold', 'expected', 'answerKey']:
             try:
                 answers = [r[alt_col] for r in rows]
@@ -719,34 +719,34 @@ def _sample_prompts_and_answers(
             except (KeyError, TypeError):
                 continue
         else:
-            # If no alternative works, return None to signal skip
+            # If no alternative works, 回傳None to signal skip
             print(f"     ✗ No compatible column found - will skip this task")
             return None, None
     
     return texts, answers
     
-# --- simple shuffled controls (permute targets) ---
+# --- 簡單 已打亂 controls (permute targets) ---
 def get_shuffled_prompts(task: BaseTask, n: int) -> List[str]:
     rows = task.get_split("test")
     n = min(n, len(rows))
     rows = rows[:n]
     
-    # Get original inputs and outputs
+    # 取得original inputs and outputs
     inputs = [r[task.config.input_column] for r in rows]
     outputs = [r[task.config.output_column] for r in rows]
     
-    # Shuffle the outputs to break input->output mapping
+    # 打亂 the outputs to break 輸入->輸出 mapping
     import random
     shuffled_outputs = outputs.copy()
     random.Random(0).shuffle(shuffled_outputs)
     
-    # Build new prompts with shuffled mappings
+    # 建立new 提示 with 已打亂 mappings
     ctrl_prompts = []
     for i, row in enumerate(rows):
-        # Create varied broken demonstration examples for each prompt
+        # 建立varied broken 示範 範例 for each 提示
         prompt = ""
         
-        # Use different demonstration pairs for each prompt to add variety
+        # Use different 示範 pairs for each 提示 to add variety
         num_demos = min(2, len(inputs))
         demo_start_idx = i % max(1, len(inputs) - 1)  # Rotate starting position
         
@@ -754,11 +754,11 @@ def get_shuffled_prompts(task: BaseTask, n: int) -> List[str]:
             demo_idx = (demo_start_idx + j) % len(inputs)
             shuffled_idx = (demo_idx + 1) % len(shuffled_outputs)  # Offset for more randomness
             
-            # Pair input[demo_idx] with shuffled_output[shuffled_idx] to break the pattern
+            # Pair 輸入[demo_idx] with shuffled_output[shuffled_idx] to break the pattern
             broken_demo = f"{inputs[demo_idx]} -> {shuffled_outputs[shuffled_idx]}"
             prompt += f"{broken_demo}\n"
         
-        # Add the test input
+        # Add the test 輸入
         prompt += f"{row[task.config.input_column]} ->"
         ctrl_prompts.append(prompt)
     
@@ -766,11 +766,11 @@ def get_shuffled_prompts(task: BaseTask, n: int) -> List[str]:
 
 @torch.no_grad()
 def _first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
-    """Return a (B,) tensor with the first non-special token id of each answer (EOS if empty)."""
+    """回傳a (B,) tensor with the 第一個 non-special token id of each 答案 (EOS if empty)."""
     vocab_size = tokenizer.vocab_size
     ids = []
     for a in answers:
-        # Handle None or empty answers
+        # Handle None or empty 答案
         if a is None or (isinstance(a, str) and len(a.strip()) == 0):
             tok = tokenizer.eos_token_id
         else:
@@ -780,7 +780,7 @@ def _first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
             else:
                 tok = enc.input_ids[0, 0].item()
         
-        # Validate token is in vocabulary bounds
+        # 有效ate token is in 詞彙 bounds
         if tok is None or tok < 0 or tok >= vocab_size:
             print(f"  Warning: Invalid token ID {tok} for answer '{a}', using EOS")
             tok = tokenizer.eos_token_id
@@ -793,7 +793,7 @@ def compute_aie_for_layer(
     model: nn.Module,
     tokenizer,
     icl_texts: List[str],
-    icl_answers: List[str],     # NEW: true answers aligned with icl_texts
+    icl_answers: List[str],     # 新的: true 答案 aligned with icl_texts
     ctrl_texts: List[str],
     layer_idx: int,
     device: str = "cuda",
@@ -802,22 +802,22 @@ def compute_aie_for_layer(
     """
     Attention-importance estimate (AIE) per head at a given layer.
 
-    Args:
-        model, tokenizer: HF CausalLM + tokenizer (eval mode).
-        icl_texts: list of ICL prompts (B items).
-        icl_answers: list of gold answers (B items), same order as icl_texts.
-        ctrl_texts: control prompts (B items), same length as icl_texts.
+    參數：
+        模型, tokenizer: HF CausalLM + tokenizer (eval mode).
+        icl_texts: 列表 of ICL 提示 (B items).
+        icl_answers: 列表 of gold 答案 (B items), 相同 order as icl_texts.
+        ctrl_texts: control 提示 (B items), 相同 length as icl_texts.
         layer_idx: which transformer block to analyze.
         device: torch device.
         score_metric: "logprob" or "margin".
 
-    Returns:
+    回傳：
         aie: (H,) tensor with mean score drop when head h is swapped.
     """
     # ---- 0) Prep and sanity checks
     assert len(icl_texts) == len(ctrl_texts) == len(icl_answers), "Batch sizes must match"
     
-    # Filter out any None or empty answers
+    # 篩選 out any None or empty 答案
     valid_indices = []
     for i, ans in enumerate(icl_answers):
         if ans is not None and (not isinstance(ans, str) or len(str(ans).strip()) > 0):
@@ -830,7 +830,7 @@ def compute_aie_for_layer(
         ctrl_texts = [ctrl_texts[i] for i in valid_indices]
     
     if len(icl_texts) == 0:
-        # Return zeros if no valid samples
+        # 回傳zeros if no 有效 samples
         blocks = get_blocks(model)
         block = blocks[layer_idx]
         attn = get_attn(block)
@@ -843,11 +843,11 @@ def compute_aie_for_layer(
     batch_icl = tokenizer(icl_texts, return_tensors="pt", padding=True, truncation=False).to(device)
     t_star = (batch_icl["attention_mask"].sum(dim=1) - 1).clamp(min=0)       # (B,)
 
-    # ---- 1) Base scores on ICL using the true gold token
+    # ---- 1) 基礎 scores on ICL using the true gold token
     s_icl = _score_batch(model, tokenizer, icl_texts, device, score_metric, gold_ids=gold_ids)  # (B,)
 
     # ---- 2) Cache pre-projection tensors for ICL and control (B,T,D)
-    # We hook the o_proj pre-hook to capture its input ("attn_pre_proj")
+    # We hook the o_proj pre-hook to capture its 輸入 ("attn_pre_proj")
     with ResidualCapture(model, layer_idx) as cap_icl:
         _ = model(**batch_icl, use_cache=False, return_dict=True)
     attn_pre_icl = cap_icl.cache["attn_pre_proj"]                             # (B,T,D)
@@ -872,7 +872,7 @@ def compute_aie_for_layer(
         raise RuntimeError("Attention module has no explicit output projection")
 
     for h in range(H):
-        # Build a pre-hook that replaces the h-th head slice (at decision token) with control
+        # 建立a pre-hook that replaces the h-th head slice (at 決策 token) with control
         swapper = HeadSwap(attn_pre_ctrl, mask_ctrl, H, Hd).make_hook(h, t_star)
         handle = o_proj.register_forward_pre_hook(swapper)
         try:
@@ -880,7 +880,7 @@ def compute_aie_for_layer(
         finally:
             handle.remove()
 
-        # Mean drop = base - swapped
+        # Mean drop = 基礎 - swapped
         aie[h] = (s_icl - s_swapped).mean()
 
     return aie  # (H,)
@@ -889,23 +889,23 @@ def compute_aie_for_layer(
 def extract_informative_heads(
     config: ExtractConfig, 
     tasks: List[BaseTask],
-    max_screen_tasks: int = None,  # None = use all tasks
-    min_screen_tasks: int = 5,     # Minimum tasks to successfully screen
-    model=None,       # Pre-loaded model (optional, avoids reloading)
-    tokenizer=None,   # Pre-loaded tokenizer (optional)
+    max_screen_tasks: int = None,  # None = use all 任務
+    min_screen_tasks: int = 5,     # Minimum 任務 to successfully screen
+    model=None,       # Pre-loaded 模型 (可選, avoids reloading)
+    tokenizer=None,   # Pre-loaded tokenizer (可選)
 ) -> Headset:
     """
     Select informative attention heads using AIE metric.
     
-    Args:
-        config: Extraction configuration
-        tasks: List of tasks to screen
-        max_screen_tasks: Maximum number of tasks to try screening (None = all)
-        min_screen_tasks: Minimum number of tasks that must be successfully screened
-        model: Pre-loaded model (if None, loads from config)
-        tokenizer: Pre-loaded tokenizer (if None, loads from config)
+    參數：
+        設定: 擷取 設定
+        任務: 列表 of 任務 to screen
+        max_screen_tasks: Maximum 數字 of 任務 to try screening (None = all)
+        min_screen_tasks: Minimum 數字 of 任務 that must be successfully screened
+        模型: Pre-loaded 模型 (if None, 載入from 設定)
+        tokenizer: Pre-loaded tokenizer (if None, 載入from 設定)
     
-    Returns:
+    回傳：
         Headset with top-k informative heads
     """
     from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -925,7 +925,7 @@ def extract_informative_heads(
     blocks = get_blocks(model)
     layers = config.layers if config.layers is not None else [len(blocks)-1]
 
-    # Determine how many tasks to try
+    # Determine how many 任務 to try
     if max_screen_tasks is None:
         max_screen_tasks = len(tasks)
     
@@ -941,22 +941,22 @@ def extract_informative_heads(
             
         tasks_tried += 1
         
-        # Skip known incompatible tasks
+        # Skip known incompatible 任務
         if t.config.name in ['ioi_task']:
             print(f"  [{tasks_tried}] Skipping: {t.config.name} (known incompatible format)")
             continue
         
-        # Try to get prompts and answers
+        # Try to 取得prompts and 答案
         icl, answers = _sample_prompts_and_answers(
             t, 
             config.num_samples_per_task,
             results_dir=config.results_dir,
             checkpoint=getattr(config, 'checkpoint', 'main'),
             only_correct=config.only_correct,
-            strict=True  # Don't fall back to all instances
+            strict=True  # Don't fall back to all 實例
         )
         
-        # Skip if no valid data (e.g., no correct instances when only_correct=True)
+        # Skip if no 有效 資料 (e.g., no 正確 實例 when only_correct=True)
         if icl is None or answers is None or len(icl) == 0:
             print(f"  [{tasks_tried}] Skipping: {t.config.name} (no valid instances)")
             continue
@@ -1000,7 +1000,7 @@ def extract_task_function_vec(
 ) -> TaskFunctionVec:
     torch.manual_seed(config.seed); np.random.seed(config.seed)
 
-    # Load once if not provided (lets you reuse across tasks)
+    # 載入once if not provided (lets you reuse across 任務)
     if model is None:
         from transformers import AutoModelForCausalLM, AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained(
@@ -1019,20 +1019,20 @@ def extract_task_function_vec(
     else:
         assert tokenizer is not None
 
-    # 1) sample prompts (+ optional shuffled)
+    # 1) sample 提示 (+ 可選shuffled)
     prompts = _sample_task_prompts(
         task, 
         config.num_samples_per_task,
         results_dir=config.results_dir,
         checkpoint=config.checkpoint,
         only_correct=config.only_correct,
-        strict=config.only_correct  # strict mode when filtering by correct instances
+        strict=config.only_correct  # strict mode when filtering by 正確 實例
     )
     if len(prompts) == 0:
         raise ValueError(f"No data for task {task.config.name} (no correct instances when only_correct=True)")
 
     # 2) collect per-head contributions and average across batch
-    # By default: only one layer; if config.layers is None, take the last layer.
+    # By 預設: only one layer; if config.layers is None, take the 最後一個 layer.
     blocks = get_blocks(model)
     layers = config.layers if config.layers is not None else [len(blocks) - 1]
 
@@ -1058,7 +1058,7 @@ def extract_task_function_vec(
         count += 1
 
     residual_means = (means_sum / count).astype(np.float32)   # (d, H)
-    # Use full task name if available (e.g., "simple_icl:uppercase" instead of "simple_icl")
+    # Use full 任務 名稱 若可用 (e.g., "simple_icl:uppercase" instead of "simple_icl")
     task_name = getattr(task, '_full_name', task.config.name)
     head_means = TaskHeadMeans(task_name=task_name, residual_means=residual_means)
 
@@ -1083,7 +1083,7 @@ def get_task_head_means(
         results_dir=config.results_dir,
         checkpoint=config.checkpoint,
         only_correct=config.only_correct,
-        strict=config.only_correct  # strict mode when filtering by correct instances
+        strict=config.only_correct  # strict mode when filtering by 正確 實例
     )
     
     if len(prompts) == 0:
@@ -1106,7 +1106,7 @@ def get_task_head_means(
         count += B
 
     res_means = (means_sum / count).astype(np.float32)
-    # Use full task name if available
+    # Use full 任務 名稱 若可用
     task_name = getattr(task, '_full_name', task.config.name)
     return TaskHeadMeans(task_name=task_name, residual_means=res_means)
 
@@ -1116,14 +1116,14 @@ def per_head_contributions_from_hooks(
     model: nn.Module,
     layer_idx: int,
     cap: "ResidualCapture",
-    t_star: torch.Tensor,           # (B,) last non-pad (or other decision token per sample)
+    t_star: torch.Tensor,           # (B,) 最後一個 non-pad (or other 決策 token per sample)
     check_sum: bool = True,
     atol: float = 1e-5,
     rtol: float = 1e-4,
 ) -> torch.Tensor:
     """
-    Compute per-head contributions to the residual at the decision token using only hooked tensors.
-    Returns: (B, H, D)
+    Compute per-head contributions to the residual at the 決策 token using only hooked tensors.
+    回傳: (B, H, D)
     """
     assert "attn_pre_proj" in cap.cache, "Enable o_proj pre-hook to capture attn_pre_proj"
     assert "attn_out_proj" in cap.cache, "Enable o_proj fwd-hook to capture attn_out_proj"
@@ -1142,7 +1142,7 @@ def per_head_contributions_from_hooks(
     assert hidden_size == D, "Projection width must match hidden_size"
     assert D == H * Hd, f"Expected D == H*Hd, got {D} vs {H}*{Hd}"
 
-    # 1) pick decision token and split into heads
+    # 1) pick 決策 token and 切分 into heads
     attn_pre = cap.cache["attn_pre_proj"]              # (B, T, D)
     B, T, _ = attn_pre.shape
     device = attn_pre.device
@@ -1174,7 +1174,7 @@ def build_function_vec_from_means(
         normalization: Literal["l2", "none"] = "l2"
 ) -> TaskFunctionVec:
     """
-    Combine the per-head residual stream means into a single function vector representing the task.
+    Combine the per-head residual stream means into a single function vector representing the 任務.
     """
     means = np.asarray(head_means.residual_means)
     assert means.ndim == 2, "Residual means should be a 2D array"
@@ -1202,25 +1202,25 @@ def stack_function_vecs(task_vecs: List[TaskFunctionVec]) -> TaskMatrix:
     return TaskMatrix(V=v_space, task_names=[tv.task_name for tv in task_vecs])
 
 def build_skill_basis(task_vec_matrix: TaskMatrix, method="svd", k=-1, center=False) -> SkillBasis:
-    """Build a skill basis from a set of function vectors.
+    """建立a skill basis from a set of function vectors.
     
     Mathematical note: SVD with centering IS equivalent to PCA!
     - method="svd" with center=False: SVD on original (normalized) vectors
-    - method="svd" with center=True: PCA (SVD on centered vectors)  
+    - method="svd" with center=True: PCA (SVD on centered vectors) 
     - method="pca": Forces center=True and uses SVD (mathematically equivalent to PCA)
     
-    Args:
-        task_vec_matrix: Matrix of task function vectors (d_model x n_tasks)
+    參數：
+        task_vec_matrix: Matrix of 任務 function vectors (d_model x n_tasks)
         method: Method to use ("svd" or "pca")
                 - "svd": Use raw SVD, respecting the center parameter
-                - "pca": Force centering (standard PCA), ignores center=False if provided
-        k: Number of components to keep (-1 for 95% variance threshold)
-        center: Whether to center the data before decomposition.
-               - False (default): No centering, good for L2-normalized vectors (cosine-based metrics)
-               - True: Center data (standard PCA), good for unnormalized data
+                - "pca": Force centering (standard PCA), ignores center=False 若有提供
+        k: 數字 of components to keep (-1 for 95% variance threshold)
+        center: Whether to center the 資料 before decomposition.
+               - False (預設): No centering, good for L2-normalized vectors (cosine-based metrics)
+               - True: Center 資料 (standard PCA), good for unnormalized 資料
                Note: Ignored if method="pca" (always centers)
     
-    Returns:
+    回傳：
         SkillBasis with the computed basis vectors in U
     """
     V = np.asarray(task_vec_matrix.V, dtype=np.float64)
@@ -1241,7 +1241,7 @@ def build_skill_basis(task_vec_matrix: TaskMatrix, method="svd", k=-1, center=Fa
         mean = None
         V_centered = V
 
-    # Perform SVD (which is PCA if data is centered)
+    # Perform SVD (which is PCA if 資料 is centered)
     U, S, Vt = np.linalg.svd(V_centered, full_matrices=False)
 
     if k == -1: # select based on energy
@@ -1276,26 +1276,26 @@ def extract_function_vector_simple(
     """
     Simplified one-stop interface for extracting function vectors.
     
-    Args:
-        task_name: Name of task (e.g., "simple_icl", "math")
-        task_config: Optional custom config, will use defaults if None
-        model_name: Model to use for extraction
-        checkpoint: Model checkpoint/revision (e.g., "step1000-tokens5B" for OLMo-2, or "CrystalCoder_phase1_checkpoint_055500" for Crystal)
-        num_samples: Number of examples to use
+    參數：
+        task_name: 名稱 of 任務 (e.g., "simple_icl", "math")
+        task_config: 可選custom 設定, will use 預設 if None
+        model_name: 模型 to use for 擷取
+        checkpoint: 模型 checkpoint/revision (e.g., "step1000-tokens5B" for OLMo-2, or "CrystalCoder_phase1_checkpoint_055500" for Crystal)
+        num_samples: 數字 of 範例 to use
         device: Device to run on ("auto", "cuda", "cpu")
         
-    Returns:
+    回傳：
         TaskFunctionVec with the extracted function vector
     """
     if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    # Create task
+    # 建立task
     if task_config is None:
         task_config = TaskConfig(name=task_name)
     task = get_task(task_name, task_config)
     
-    # Load model and tokenizer
+    # 載入model and tokenizer
     from transformers import AutoTokenizer, AutoModelForCausalLM
     tokenizer = AutoTokenizer.from_pretrained(
         model_name,
@@ -1307,7 +1307,7 @@ def extract_function_vector_simple(
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(model_name).to(device).eval()
     
-    # Simple config
+    # 簡單 設定
     config = ExtractConfig(
         model_name=model_name,
         checkpoint=checkpoint,
@@ -1316,17 +1316,17 @@ def extract_function_vector_simple(
         batch_size=min(8, num_samples)
     )
     
-    # Auto-select heads from layer 0 (simple approach)
+    # Auto-select heads from layer 0 (簡單 approach)
     num_heads = model.config.num_attention_heads
     head_set = Headset(
         mode="topk", 
-        heads=[(0, h) for h in range(min(num_heads, 5))]  # Use first 5 heads from layer 0
+        heads=[(0, h) for h in range(min(num_heads, 5))]  # Use 第一個 5 heads from layer 0
     )
     
-    # Extract function vector
+    # 擷取 function vector
     return extract_task_function_vec(task, config, head_set, model, tokenizer)
 
 
 if __name__ == "__main__":
-    # Discover and list all tasks
+    # Discover and 列表 all 任務
     discover_all_tasks()

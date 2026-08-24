@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
-"""Predict compositional task performance using function vector decomposition.
+"""Predict 組合式 任務 performance using function vector decomposition.
 
 This script extends the behavioral baseline (predict_compositional_from_components.py)
-by using FV-derived weights from the skill basis to improve predictions.
+by using FV-derived weights from the skill basis to improve 預測.
 
 The key idea:
-  1. At the mature checkpoint, extract FVs for all tasks and build a skill basis.
+  1. At the mature checkpoint, 擷取 FVs for all 任務 and 建立a skill basis.
      (Already done by analyze_real_tasks.py)
-  2. For each compositional task, compute its FV's similarity to each elemental FV.
+  2. For each 組合式 任務, compute its FV's similarity to each elemental FV.
      These similarities become weights w_i — how much each elemental skill contributes.
-  3. Use these weights + elemental accuracy curves a_i(t) to predict compositional
-     accuracy across all training checkpoints.
+  3. Use these weights + elemental 準確率 curves a_i(t) to predict 組合式
+     準確率 across all training checkpoints.
 
-Three levels of prediction:
+Three levels of 預測:
   - BEHAVIORAL BASELINE: Unweighted combination of known components (from COMPONENT_MAP)
   - FV-WEIGHTED: Use FV similarities as weights on known components
-  - FV-DISCOVERED: Discover which elemental tasks matter purely from FV similarities
+  - FV-DISCOVERED: Discover which elemental 任務 matter purely from FV similarities
     (no human-specified decomposition needed)
 
-Usage:
+用法：
     python scripts/trajectory_analysis/predict_with_fv_decomposition.py \\
-        --fv_dir function_vecs/results/olmo2_1b_correct_only \\
-        --results_dir results/olmo2_continuous_1b_early_revised \\
+        --fv_dir function_vecs/結果/olmo2_1b_correct_only \\
+        --results_dir 結果/olmo2_continuous_1b_early_revised \\
         --output_dir plots/fv_prediction_1b
 """
 
@@ -39,7 +39,7 @@ import matplotlib
 matplotlib.use('Agg')
 from scipy.stats import pearsonr
 
-# Add project root to path
+# Add project root to 路徑
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from function_vecs.extract_function_vecs import (
@@ -64,18 +64,18 @@ from scripts.trajectory_analysis.predict_compositional_from_components import (
 
 
 # ============================================================================
-# FV Loading & Weight Computation
+# FV 載入 & Weight Computation
 # ============================================================================
 
 @dataclass
 class FVDecomposition:
-    """Decomposition of a compositional FV into elemental FV components."""
+    """Decomposition of a 組合式 FV into elemental FV components."""
     comp_task: str
     # Weights from FV similarity (cosine sim to each elemental FV)
     elemental_weights: Dict[str, float]  # elemental_task_name -> weight
     # Known components from COMPONENT_MAP
     known_components: Optional[List[str]]
-    # Reconstruction quality of the compositional FV from elemental FVs
+    # Reconstruction quality of the 組合式 FV from elemental FVs
     reconstruction_cosine: float = 0.0
 
 
@@ -83,10 +83,10 @@ def load_all_fvs(
     basis: SkillBasis,
     test_vec_dir: Path,
 ) -> Dict[str, np.ndarray]:
-    """Load all FVs: reconstruct training FVs from basis, load test FVs from disk.
+    """載入all FVs: reconstruct training FVs from basis, 載入test FVs from disk.
 
-    Returns:
-        Dict mapping task_name -> FV (unit-norm np.ndarray)
+    回傳：
+        字典 mapping task_name -> FV (unit-norm np.ndarray)
     """
     fvs = {}
 
@@ -99,7 +99,7 @@ def load_all_fvs(
             fv = fv / norm
         fvs[name] = fv
 
-    # Load test vectors from disk
+    # 載入test vectors from disk
     if test_vec_dir.exists():
         for npz_file in test_vec_dir.glob("*.npz"):
             try:
@@ -115,16 +115,16 @@ def compute_fv_weights(
     comp_fv: np.ndarray,
     elemental_fvs: Dict[str, np.ndarray],
 ) -> Dict[str, float]:
-    """Compute FV-derived weights: cosine similarity of compositional FV to each elemental FV.
+    """Compute FV-derived weights: cosine similarity of 組合式 FV to each elemental FV.
 
     Since all FVs are L2-normalized, cosine similarity = dot product.
 
-    Args:
-        comp_fv: Compositional task's FV (unit norm)
-        elemental_fvs: Dict of elemental task name -> FV (unit norm)
+    參數：
+        comp_fv: 組合式 任務's FV (unit norm)
+        elemental_fvs: 字典 of elemental 任務 名稱 -> FV (unit norm)
 
-    Returns:
-        Dict mapping elemental task name -> cosine similarity weight
+    回傳：
+        字典 mapping elemental 任務 名稱 -> cosine similarity weight
     """
     weights = {}
     for name, efv in elemental_fvs.items():
@@ -136,22 +136,22 @@ def compute_least_squares_weights(
     comp_fv: np.ndarray,
     elemental_fvs: Dict[str, np.ndarray],
 ) -> Tuple[Dict[str, float], float]:
-    """Decompose compositional FV as linear combination of elemental FVs via least squares.
+    """Decompose 組合式 FV as linear combination of elemental FVs via least squares.
 
     v_comp ≈ Σ_i w_i * v_i
 
-    Args:
-        comp_fv: Compositional task's FV
-        elemental_fvs: Dict of elemental task name -> FV
+    參數：
+        comp_fv: 組合式 任務's FV
+        elemental_fvs: 字典 of elemental 任務 名稱 -> FV
 
-    Returns:
-        (weights dict, reconstruction cosine similarity)
+    回傳：
+        (weights 字典, reconstruction cosine similarity)
     """
     names = list(elemental_fvs.keys())
     if not names:
         return {}, 0.0
 
-    # Build matrix: each column is an elemental FV
+    # 建立matrix: each column is an elemental FV
     E = np.column_stack([elemental_fvs[n] for n in names])  # (d_model, n_elemental)
 
     # Solve: comp_fv ≈ E @ w
@@ -170,7 +170,7 @@ def compute_least_squares_weights(
 
 
 def get_elemental_task_names(all_fvs: Dict[str, np.ndarray]) -> List[str]:
-    """Get names of elemental (non-compositional) tasks that have FVs."""
+    """取得names of elemental (non-compositional) 任務 that have FVs."""
     elemental = []
     for name in all_fvs:
         if not name.startswith("compositional"):
@@ -184,16 +184,16 @@ def decompose_compositional_task(
     elemental_names: List[str],
     weight_method: str = "cosine",
 ) -> Optional[FVDecomposition]:
-    """Decompose a compositional task into elemental components using FVs.
+    """Decompose a 組合式 任務 into elemental components using FVs.
 
-    Args:
-        comp_task: Compositional task name
-        all_fvs: All FVs (both elemental and compositional)
-        elemental_names: List of elemental task names
+    參數：
+        comp_task: 組合式 任務 名稱
+        all_fvs: All FVs (both elemental and 組合式)
+        elemental_names: 列表 of elemental 任務 名稱
         weight_method: "cosine" for dot-product weights, "lstsq" for least-squares
 
-    Returns:
-        FVDecomposition or None if the compositional FV is not available
+    回傳：
+        FVDecomposition or None if the 組合式 FV is not 可用
     """
     if comp_task not in all_fvs:
         return None
@@ -209,7 +209,7 @@ def decompose_compositional_task(
         # Compute reconstruction quality using top components
         recon_cos = 0.0
 
-    # Get known components from COMPONENT_MAP
+    # 取得known components from COMPONENT_MAP
     known_components = get_component_tasks(comp_task)
 
     return FVDecomposition(
@@ -221,7 +221,7 @@ def decompose_compositional_task(
 
 
 # ============================================================================
-# FV-Weighted Prediction Models
+# FV-Weighted 預測 模型
 # ============================================================================
 
 def predict_fv_weighted_product(
@@ -253,9 +253,9 @@ def predict_fv_weighted_min(
 ) -> np.ndarray:
     """Predict using FV-weighted min: min_i (a_i(t) / need_i).
 
-    Components with higher weights are harder to satisfy — the model
+    Components with higher weights are harder to satisfy — the 模型
     needs more of that skill, so it's a tighter bottleneck.
-    The prediction is rescaled so it stays in [0, 1].
+    The 預測 is rescaled so it stays in [0, 1].
     """
     abs_weights = np.array([abs(w) for w in weights])
     max_w = abs_weights.max()
@@ -265,10 +265,10 @@ def predict_fv_weighted_min(
     # Scale weights to [0, 1] range
     scaled = abs_weights / max_w
 
-    # Weighted min: component with high weight and low accuracy is the bottleneck
+    # Weighted min: component with high weight and low 準確率 is the bottleneck
     adjusted = []
     for acc, w in zip(component_accs, scaled):
-        # Blend between "always 1" (w=0, doesn't matter) and raw accuracy (w=1)
+        # Blend between "always 1" (w=0, doesn't matter) and raw 準確率 (w=1)
         adjusted.append(1.0 * (1.0 - w) + acc * w)
 
     return np.minimum.reduce(adjusted)
@@ -296,8 +296,8 @@ def predict_fv_logit_linear(
 ) -> np.ndarray:
     """Predict by composing in logit space: σ(Σ_i w_i * logit(a_i(t))).
 
-    This models the idea that skills combine multiplicatively in log-odds space.
-    A natural model for AND-gate composition.
+    This 模型 the idea that skills combine multiplicatively in log-odds space.
+    A natural 模型 for AND-gate 組合.
     """
     abs_weights = np.array([abs(w) for w in weights])
     total = abs_weights.sum()
@@ -317,7 +317,7 @@ def predict_fv_logit_linear(
 
 
 # ============================================================================
-# FV-Discovered Prediction (No COMPONENT_MAP)
+# FV-Discovered 預測 (No COMPONENT_MAP)
 # ============================================================================
 
 def discover_components_from_fv(
@@ -326,15 +326,15 @@ def discover_components_from_fv(
     top_k: int = 5,
     threshold: float = 0.1,
 ) -> Tuple[List[str], List[float]]:
-    """Discover which elemental tasks are relevant purely from FV similarities.
+    """Discover which elemental 任務 are relevant purely from FV similarities.
 
-    Returns the top-k elemental tasks with highest |weight| above threshold,
-    filtered to only those that have accuracy trajectories.
+    回傳the top-k elemental 任務 with highest |weight| above threshold,
+    已篩選 to only those that have 準確率 trajectories.
 
-    Returns:
+    回傳：
         (task_names, weights) — sorted by |weight| descending
     """
-    # Filter to tasks with trajectories and significant weight
+    # 篩選 to 任務 with trajectories and significant weight
     candidates = []
     for name, w in decomposition.elemental_weights.items():
         if name in trajectories and abs(w) >= threshold:
@@ -367,14 +367,14 @@ def plot_fv_prediction(
     output_path: Path,
     smooth_sigma: float = 1.0,
 ):
-    """Plot FV-weighted predictions vs behavioral baselines."""
+    """Plot FV-weighted 預測 vs behavioral baselines."""
     n_components = len(component_trajs)
     n_rows = max(n_components, 2)
 
     fig = plt.figure(figsize=(20, max(7, n_rows * 2.5)))
     gs = fig.add_gridspec(n_rows, 3, width_ratios=[3, 1, 1], hspace=0.4, wspace=0.3)
 
-    # Left panel: predictions
+    # Left panel: 預測
     ax_main = fig.add_subplot(gs[:, 0])
 
     tokens = actual_traj.tokens
@@ -386,7 +386,7 @@ def plot_fv_prediction(
                  label='Actual', marker='o', markersize=5,
                  markevery=max(1, len(tokens) // 10), zorder=10)
 
-    # Color scheme: 3 categories with consistent palettes
+    # Color scheme: 3 類別 with consistent palettes
     #   Baseline (human-decided, unweighted) — grays, dashed
     #   FV + human mapping (known components, FV weights) — blues, solid
     #   FV-discovered (FV picks components & weights) — oranges/reds, dash-dot
@@ -411,7 +411,7 @@ def plot_fv_prediction(
         'discovered_min': (CATEGORY_COLORS['fv_disc']['discovered_min'], '-.', 2.0),
     }
 
-    # Category display names for legend grouping
+    # 類別 display 名稱 for legend grouping
     CATEGORY_LABELS = {
         'baseline': 'Baseline (unweighted)',
         'fv_known': 'FV + known components',
@@ -425,11 +425,11 @@ def plot_fv_prediction(
             return 'fv_known'
         return 'baseline'
 
-    # Plot predictions grouped by category
+    # Plot 預測 grouped by 類別
     sorted_methods = sorted(predictions.keys(),
                             key=lambda m: metrics[m]['r2'], reverse=True)
 
-    # Group by category for legend
+    # 群組 by 類別 for legend
     from itertools import groupby
     cat_order = ['baseline', 'fv_known', 'fv_disc']
     methods_by_cat = {c: [] for c in cat_order}
@@ -439,7 +439,7 @@ def plot_fv_prediction(
     for cat in cat_order:
         if not methods_by_cat[cat]:
             continue
-        # Add category header as invisible legend entry
+        # Add 類別 header as invisible legend entry
         ax_main.plot([], [], ' ', label=f'── {CATEGORY_LABELS[cat]} ──')
         for method in methods_by_cat[cat]:
             pred = predictions[method]
@@ -456,7 +456,7 @@ def plot_fv_prediction(
     ax_main.grid(True, alpha=0.3)
     ax_main.set_ylim(-0.05, 1.05)
 
-    # Middle column: Component accuracy panels
+    # Middle column: Component 準確率 panels
     comp_colors = plt.cm.Set2(np.linspace(0, 0.6, n_components))
     for i, comp_traj in enumerate(component_trajs):
         if i >= n_rows:
@@ -508,10 +508,10 @@ def plot_fv_vs_baseline_summary(
     results_df: pd.DataFrame,
     output_path: Path,
 ):
-    """Summary plot: does FV weighting improve over behavioral baselines?"""
+    """摘要 plot: does FV weighting improve over behavioral baselines?"""
     fig, axes = plt.subplots(2, 2, figsize=(14, 12))
 
-    # Consistent 3-category color scheme
+    # Consistent 3-類別 color scheme
     CAT_FACE = {'baseline': '#d9d9d9', 'fv_known': '#c6dbef', 'fv_disc': '#fdd0a2'}
     CAT_EDGE = {'baseline': '#888888', 'fv_known': '#1f77b4', 'fv_disc': '#e6550d'}
 
@@ -551,7 +551,7 @@ def plot_fv_vs_baseline_summary(
     ax.set_title('Prediction Quality (R²)', fontsize=13)
     ax.grid(True, alpha=0.3, axis='y')
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-    # Add category legend
+    # Add 類別 legend
     from matplotlib.patches import Patch
     cat_legend = [
         Patch(facecolor=CAT_FACE['baseline'], edgecolor=CAT_EDGE['baseline'], label='Baseline (unweighted)'),
@@ -629,7 +629,7 @@ def plot_fv_vs_baseline_summary(
 
 
 # ============================================================================
-# Main Analysis
+# 主要 Analysis
 # ============================================================================
 
 def main():
@@ -677,7 +677,7 @@ def main():
         print(f"Excluding:     {args.exclude_pattern}")
     print()
 
-    # ── Load data ────────────────────────────────────────────────────
+    # ── 載入data ────────────────────────────────────────────────────
     print("Loading skill basis...")
     basis = load_skill_basis(str(fv_dir / "skill_basis.npz"))
     print(f"  Basis: {basis.U.shape[1]} components from {len(basis.task_names)} training tasks")
@@ -696,7 +696,7 @@ def main():
     trajectories = load_all_trajectories(results_dir)
     print(f"  Loaded {len(trajectories)} trajectory files")
 
-    # ── Decompose each compositional task ────────────────────────────
+    # ── Decompose each 組合式 任務 ────────────────────────────
     print("\n" + "=" * 70)
     print("DECOMPOSING COMPOSITIONAL TASKS")
     print("=" * 70)
@@ -712,7 +712,7 @@ def main():
 
     print(f"\nDecomposed {len(decompositions)} compositional tasks")
 
-    # ── Apply exclusion filter ──
+    # ── Apply exclusion 篩選 ──
     if args.exclude_pattern:
         decompositions_filtered = {}
         excluded = []
@@ -741,7 +741,7 @@ def main():
             marker = " ★" if decomp.known_components and name in decomp.known_components else ""
             print(f"      {name:40s}: {w:+.4f}{marker}")
 
-    # ── Run predictions ──────────────────────────────────────────────
+    # ── Run 預測 ──────────────────────────────────────────────
     print("\n" + "=" * 70)
     print("PREDICTING COMPOSITIONAL ACCURACY TRAJECTORIES")
     print("=" * 70)
@@ -749,7 +749,7 @@ def main():
     results = []
 
     for comp_task, decomp in sorted(decompositions.items()):
-        # Check we have trajectory data
+        # 檢查we have trajectory 資料
         if comp_task not in trajectories:
             print(f"\n  ⚠️  No trajectory for {comp_task}, skipping")
             continue
@@ -810,7 +810,7 @@ def main():
             for n, w in zip(disc_names, disc_weights):
                 print(f"    {n:40s}: {w:+.4f}")
 
-        # ── Evaluate all predictions ──
+        # ── 評估all 預測 ──
         print(f"\n  Prediction quality:")
         for method, pred in predictions.items():
             m = evaluate_prediction(pred, actual_smooth)
@@ -821,7 +821,7 @@ def main():
             best = max(all_metrics, key=lambda m: all_metrics[m]['r2'])
             print(f"  → Best: {best} (R²={all_metrics[best]['r2']:.3f})")
 
-        # ── Save row ──
+        # ── 儲存row ──
         result_row = {
             'task': comp_task,
             'n_known_components': len(known_components) if known_components else 0,
@@ -861,7 +861,7 @@ def main():
             plot_path, smooth_sigma=args.smooth_sigma,
         )
 
-    # ── Summary ──────────────────────────────────────────────────────
+    # ── 摘要 ──────────────────────────────────────────────────────
     if not results:
         print("\nNo results to summarize!")
         return
@@ -872,12 +872,12 @@ def main():
     results_df.to_csv(csv_path, index=False)
     print(f"\n✅ Saved results to: {csv_path}")
 
-    # Summary plot
+    # 摘要 plot
     summary_path = output_dir / "fv_vs_baseline_summary.png"
     plot_fv_vs_baseline_summary(results_df, summary_path)
     print(f"✅ Saved summary plot to: {summary_path}")
 
-    # ── Print summary statistics ──
+    # ── Print 摘要 statistics ──
     print("\n" + "=" * 70)
     print("SUMMARY (all tasks, varying N per method)")
     print("=" * 70)
@@ -901,7 +901,7 @@ def main():
             print(f"{prefix}{method:<23s} {r2.mean():>8.3f} {mae.mean():>9.3f} {len(r2):>4d} {n_best:>5d}")
 
     # ── Fair head-to-head comparison ──
-    # Only average over tasks where ALL methods have predictions (apples-to-apples)
+    # Only average over 任務 where ALL methods have 預測 (apples-to-apples)
     print(f"\n{'=' * 70}")
     print("FAIR COMPARISON (only tasks where all methods have predictions)")
     print(f"{'=' * 70}")
@@ -996,11 +996,11 @@ def main():
 
 
 # ============================================================================
-# Summary Writer
+# 摘要 Writer
 # ============================================================================
 
 def write_summary_md(results_df: pd.DataFrame, output_dir: Path, args) -> None:
-    """Write a markdown summary of FV prediction results to summary.md."""
+    """Write a markdown 摘要 of FV 預測 結果 to summary.md."""
     baseline_methods = ['product', 'min', 'mean']
     fv_methods = ['fv_product', 'fv_min', 'fv_mean', 'fv_logit']
     discovered_methods = ['discovered_product', 'discovered_min']

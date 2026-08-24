@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-"""Find emergence points for tasks based on accuracy trajectories.
+"""Find emergence points for 任務 based on 準確率 trajectories.
 
-This script analyzes accuracy over training tokens to determine when
-a task "emerges" - i.e., when the model starts to successfully perform it.
+This script analyzes 準確率 over training tokens to determine when
+a 任務 "emerges" - i.e., when the 模型 starts to successfully perform it.
 
-Supports multiple detection methods:
-- fixed: First time accuracy exceeds a fixed threshold (e.g., 0.95)
-- relative: First time accuracy exceeds X% of maximum performance
+支援 multiple detection methods:
+- fixed: 第一個 time 準確率 exceeds a fixed threshold (e.g., 0.95)
+- relative: 第一個 time 準確率 exceeds X% of maximum performance
 - elbow: Elbow/knee point using Kneedle algorithm (recommended for emergence)
-- stable: First time accuracy stays above threshold for N consecutive checkpoints
+- stable: 第一個 time 準確率 stays above threshold for N consecutive checkpoints
 
-Usage:
+用法：
     python scripts/trajectory_analysis/get_emergence_point.py \
-        --results_dir results/olmo2_continuous_1b_early_revised \
+        --results_dir 結果/olmo2_continuous_1b_early_revised \
         --method relative \
         --threshold 0.5 \
-        --output emergence_points.csv
+        --輸出 emergence_points.csv
     
-    # Plot with multiple models
+    # Plot with multiple 模型
     python scripts/trajectory_analysis/get_emergence_point.py \
-        --results_dirs results/olmo2_continuous_1b_early_revised results/olmo2_continuous_7b_early_revised \
+        --results_dirs 結果/olmo2_continuous_1b_early_revised 結果/olmo2_continuous_7b_early_revised \
         --model_names "1B" "7B" \
         --method elbow \
         --plot --plot_dir plots/emergence
@@ -42,25 +42,25 @@ MODEL_MARKERS = ['o', 's', '^', 'D', 'v']
 
 
 def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = None) -> Optional[float]:
-    """Extract token count (in billions) from checkpoint name.
+    """擷取 token count (in billions) from checkpoint 名稱.
 
-    Supports multiple formats:
+    支援 multiple formats:
     - OLMo: 'stage1-step100000-tokens210B' -> 210
     - Amber: 'ckpt_XXX' where XXX is checkpoint index (~3.5B tokens per ckpt)
-    - Pythia: 'stepXXX' where XXX is training step number.
+    - Pythia: 'stepXXX' where XXX is training step 數字.
       Each step = 2,097,152 tokens (batch size 2M). 143K steps ≈ 300B total.
-    - K2-V2: 'base_1245000' -> checkpoint number in units of ~9.8M tokens/step
+    - K2-V2: 'base_1245000' -> checkpoint 數字 in units of ~9.8M tokens/step
     - Crystal: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}' -> cumulative tokens in B
     - 'main': Resolves to final token count if model_id is known.
 
-    Args:
-        checkpoint: Checkpoint name string
-        model_id: Optional model identifier (e.g. 'LLM360/Amber') to resolve 'main'
+    參數：
+        checkpoint: Checkpoint 名稱 字串
+        model_id: 可選model identifier (e.g. 'LLM360/Amber') to resolve 'main'
     """
-    # Known final token counts (in B) for 'main' branch by model
-    # Amber: 360 ckpts over ~1.26T tokens, main = ckpt_358 ≈ 1259B
+    # Known final token counts (in B) for 'main' branch by 模型
+    # Amber: 360 ckpts over ~1.26T tokens, 主要 = ckpt_358 ≈ 1259B
     # OLMo-2: both 1B and 7B trained on 4T tokens (stage1) + 50B (stage2)
-    # Pythia: 143K steps × 2M tokens/step ≈ 300B total; main = step143000
+    # Pythia: 143K steps × 2M tokens/step ≈ 300B total; 主要 = step143000
     MAIN_TOKENS = {
         'LLM360/Amber': 1259,
         'llm360/amber': 1259,
@@ -77,7 +77,7 @@ def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = No
                     return v
         return None
 
-    # Try explicit token count first (e.g., 'tokens210B')
+    # Try explicit token count 第一個 (e.g., 'tokens210B')
     match = re.search(r'tokens(\d+)B', checkpoint)
     if match:
         return int(match.group(1))
@@ -98,14 +98,14 @@ def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = No
 
     # Pythia-style: stepXXX
     # Each step = 2,097,152 tokens (2M batch size)
-    # Convert to billions: step * 2_097_152 / 1e9
+    # 轉換to billions: step * 2_097_152 / 1e9
     match = re.search(r'^step(\d+)$', checkpoint)
     if match:
         step_num = int(match.group(1))
         tokens_b = int(round(step_num * 2_097_152 / 1e9))
         return max(0, tokens_b)
 
-    # Try K2-V2 format: 'base_XXXXXXX' (step number)
+    # Try K2-V2 格式: 'base_XXXXXXX' (step 數字)
     # K2-V2 tech report: batch_size B = 9.8×10^6 tokens/step, T = 1.25×10^6 steps, D = 12.25T
     match = re.search(r'base_(\d+)', checkpoint)
     if match:
@@ -113,7 +113,7 @@ def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = No
         tokens_b = checkpoint_num * 9.8e6 / 1e9
         return tokens_b
 
-    # Try Crystal format: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}'
+    # Try Crystal 格式: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}'
     # 3-phase training: Phase 1 (345B), Phase 2 (927B), Phase 3 (110B)
     match = re.search(r'CrystalCoder_phase(\d+)_checkpoint_(\d+)', checkpoint)
     if match:
@@ -133,22 +133,22 @@ def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = No
 
 
 def load_accuracy_data(pivot_file: Path) -> Tuple[np.ndarray, np.ndarray, str]:
-    """Load and sort accuracy data from a pivot file.
+    """載入and sort 準確率 資料 from a pivot 檔案.
     
-    Returns:
+    回傳：
         tokens: Array of token counts (in billions)
-        accuracy: Array of accuracy values
-        task_name: Name of the task
+        準確率: Array of 準確率 值
+        task_name: 名稱 of the 任務
     """
     df = pd.read_csv(pivot_file)
     
-    # Get task name from column (third column after model, checkpoint)
+    # 取得task 名稱 from column (third column after 模型, checkpoint)
     task_name = [c for c in df.columns if c not in ['model', 'checkpoint']][0]
     
-    # Detect model_id from the data (for resolving 'main' checkpoint)
+    # Detect model_id from the 資料 (for resolving 'main' checkpoint)
     model_id = df['model'].iloc[0] if 'model' in df.columns and len(df) > 0 else None
     
-    # Extract tokens and filter out None
+    # 擷取 tokens and 篩選 out None
     df['tokens'] = df['checkpoint'].apply(lambda ckpt: extract_tokens_from_checkpoint(ckpt, model_id=model_id))
     df = df[df['tokens'].notna() & (df['tokens'] > 0)]
     df = df.sort_values('tokens')
@@ -160,17 +160,17 @@ def load_accuracy_data(pivot_file: Path) -> Tuple[np.ndarray, np.ndarray, str]:
 
 
 def load_combined_pivot(pivot_file: Path) -> Dict[str, Tuple[np.ndarray, np.ndarray]]:
-    """Load data from a combined accuracy_pivot.csv with multiple tasks as columns.
+    """載入data from a combined accuracy_pivot.csv with multiple 任務 as columns.
 
-    Args:
-        pivot_file: Path to combined pivot file with columns: model, checkpoint, task1, task2, ...
+    參數：
+        pivot_file: 路徑 to combined pivot 檔案 with columns: 模型, checkpoint, task1, task2, ...
 
-    Returns:
-        Dictionary mapping task_name -> (tokens_array, accuracy_array)
+    回傳：
+        字典 mapping task_name -> (tokens_array, accuracy_array)
     """
     df = pd.read_csv(pivot_file)
 
-    # Extract tokens from checkpoint names
+    # 擷取 tokens from checkpoint 名稱
     df['tokens'] = df['checkpoint'].apply(extract_tokens_from_checkpoint)
     df = df[df['tokens'].notna() & (df['tokens'] > 0)]
     df = df.sort_values('tokens')
@@ -178,7 +178,7 @@ def load_combined_pivot(pivot_file: Path) -> Dict[str, Tuple[np.ndarray, np.ndar
     if len(df) == 0:
         return {}
 
-    # Get task columns (everything except model, checkpoint, tokens)
+    # 取得task columns (everything except 模型, checkpoint, tokens)
     task_columns = [c for c in df.columns if c not in ['model', 'checkpoint', 'tokens']]
 
     result = {}
@@ -192,7 +192,7 @@ def load_combined_pivot(pivot_file: Path) -> Dict[str, Tuple[np.ndarray, np.ndar
 
 
 def smooth_trajectory(accuracy: np.ndarray, sigma: float = 1.0) -> np.ndarray:
-    """Apply Gaussian smoothing to accuracy trajectory."""
+    """Apply Gaussian smoothing to 準確率 trajectory."""
     if sigma <= 0:
         return accuracy
     return gaussian_filter1d(accuracy, sigma=sigma)
@@ -203,15 +203,15 @@ def find_emergence_fixed(
     accuracy: np.ndarray,
     threshold: float = 0.95,
 ) -> Optional[float]:
-    """Find first token count where accuracy exceeds fixed threshold.
+    """Find 第一個 token count where 準確率 exceeds fixed threshold.
     
-    Args:
-        tokens: Token counts
-        accuracy: Accuracy values (possibly smoothed)
-        threshold: Fixed accuracy threshold (e.g., 0.95)
+    參數：
+        tokens: token counts
+        準確率: 準確率 值 (possibly smoothed)
+        threshold: Fixed 準確率 threshold (e.g., 0.95)
     
-    Returns:
-        Token count at emergence, or None if never reached
+    回傳：
+        token count at emergence, or None if never reached
     """
     mask = accuracy >= threshold
     if not mask.any():
@@ -225,16 +225,16 @@ def find_emergence_relative(
     fraction: float = 0.5,
     use_max: bool = True,
 ) -> Optional[float]:
-    """Find first token count where accuracy exceeds fraction of final/max.
+    """Find 第一個 token count where 準確率 exceeds fraction of final/max.
     
-    Args:
-        tokens: Token counts
-        accuracy: Accuracy values (possibly smoothed)
+    參數：
+        tokens: token counts
+        準確率: 準確率 值 (possibly smoothed)
         fraction: Fraction of reference performance (e.g., 0.5 = 50%)
-        use_max: If True, use max accuracy as reference; else use final
+        use_max: If True, use max 準確率 as reference; else use final
     
-    Returns:
-        Token count at emergence, or None if never reached
+    回傳：
+        token count at emergence, or None if never reached
     """
     reference = accuracy.max() if use_max else accuracy[-1]
     target = reference * fraction
@@ -255,24 +255,24 @@ def find_emergence_inflection(
     This finds the point where the curve transitions from rapid improvement
     to slower improvement (or vice versa) - the "elbow" of the curve.
     
-    For accuracy curves (increasing), we look for a "knee" (concave curve).
+    For 準確率 curves (increasing), we look for a "knee" (concave curve).
     
-    Args:
-        tokens: Token counts
-        accuracy: Accuracy values (possibly smoothed)
+    參數：
+        tokens: token counts
+        準確率: 準確率 值 (possibly smoothed)
         smoothing_factor: Sensitivity parameter (S) for Kneedle. 
                           Higher = less sensitive, finds more prominent knees.
     
-    Returns:
-        Token count at elbow/knee point, or None if cannot be determined
+    回傳：
+        token count at elbow/knee point, or None if cannot be determined
     """
     if len(tokens) < 4:
         return None
     
     try:
         # KneeLocator finds the elbow/knee point
-        # curve="concave" for accuracy (starts slow, then fast, then slow)
-        # direction="increasing" for accuracy curves
+        # curve="concave" for 準確率 (starts slow, then fast, then slow)
+        # direction="increasing" for 準確率 curves
         # S is the sensitivity parameter
         kneedle = KneeLocator(
             tokens, 
@@ -310,22 +310,22 @@ def find_emergence_stable(
     threshold: float = 0.5,
     min_consecutive: int = 3,
 ) -> Optional[float]:
-    """Find first token count where accuracy stays above threshold for N checkpoints.
+    """Find 第一個 token count where 準確率 stays above threshold for N checkpoints.
     
     This is more robust to noise than single-crossing methods.
     
-    Args:
-        tokens: Token counts
-        accuracy: Accuracy values
-        threshold: Accuracy threshold to maintain
+    參數：
+        tokens: token counts
+        準確率: 準確率 值
+        threshold: 準確率 threshold to maintain
         min_consecutive: Minimum consecutive checkpoints above threshold
     
-    Returns:
-        Token count at stable emergence, or None if never reached
+    回傳：
+        token count at stable emergence, or None if never reached
     """
     above = accuracy >= threshold
     
-    # Find runs of consecutive True values
+    # Find runs of consecutive True 值
     for i in range(len(above) - min_consecutive + 1):
         if all(above[i:i + min_consecutive]):
             return float(tokens[i])
@@ -342,20 +342,20 @@ def find_emergence(
 ) -> Dict[str, Any]:
     """Find emergence point using specified method.
     
-    Args:
-        tokens: Token counts (in billions)
-        accuracy: Raw accuracy values
+    參數：
+        tokens: token counts (in billions)
+        準確率: Raw 準確率 值
         method: One of 'fixed', 'relative', 'inflection', 'stable'
         smooth_sigma: Gaussian smoothing sigma (0 = no smoothing)
         **kwargs: Method-specific parameters
     
-    Returns:
-        Dict with:
-        - emergence_tokens: Token count at emergence (None if not found)
+    回傳：
+        字典 with:
+        - emergence_tokens: token count at emergence (None if not found)
         - method: Method used
         - parameters: Parameters used
-        - max_accuracy: Maximum accuracy achieved
-        - final_accuracy: Final accuracy
+        - max_accuracy: Maximum 準確率 achieved
+        - final_accuracy: Final 準確率
     """
     # Apply smoothing
     accuracy_smooth = smooth_trajectory(accuracy, sigma=smooth_sigma)
@@ -404,28 +404,28 @@ def analyze_all_tasks(
     min_max_accuracy: float = 0.0,
     **kwargs,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Analyze emergence points for all tasks in a results directory.
+    """Analyze emergence points for all 任務 in a 結果 目錄.
 
-    Args:
-        results_dir: Directory containing accuracy_pivot_*.csv or accuracy_pivot.csv
+    參數：
+        results_dir: 目錄 containing accuracy_pivot_*.csv or accuracy_pivot.csv
         method: Emergence detection method
         smooth_sigma: Smoothing parameter
-        min_max_accuracy: Skip tasks with max accuracy below this threshold
+        min_max_accuracy: Skip 任務 with max 準確率 below this threshold
         **kwargs: Method-specific parameters
 
-    Returns:
+    回傳：
         Tuple of:
-        - DataFrame with emergence data for all tasks
-        - List of skipped task names (due to trivial performance)
+        - DataFrame with emergence 資料 for all 任務
+        - 列表 of skipped 任務 名稱 (due to trivial performance)
     """
     results = []
     skipped_tasks = []
 
-    # First try per-task pivot files
+    # 第一個 try per-task pivot 檔案
     pivot_files = sorted(results_dir.glob("accuracy_pivot_*.csv"))
 
     if pivot_files:
-        # Use per-task files
+        # Use per-task 檔案
         for pivot_file in pivot_files:
             try:
                 tokens, accuracy, task_name = load_accuracy_data(pivot_file)
@@ -435,7 +435,7 @@ def analyze_all_tasks(
 
                 max_acc = float(accuracy.max())
 
-                # Skip tasks with trivial performance
+                # Skip 任務 with trivial performance
                 if max_acc <= min_max_accuracy:
                     skipped_tasks.append(task_name)
                     continue
@@ -458,7 +458,7 @@ def analyze_all_tasks(
             except Exception as e:
                 print(f"Warning: Failed to process {pivot_file.name}: {e}")
     else:
-        # Try combined pivot file
+        # Try combined pivot 檔案
         combined_file = results_dir / "accuracy_pivot.csv"
         if combined_file.exists():
             print(f"Using combined pivot file: {combined_file}")
@@ -494,27 +494,27 @@ def analyze_all_tasks(
 
 def plot_task_emergence(
     task_name: str,
-    model_data: Dict[str, Tuple[np.ndarray, np.ndarray]],  # model_name -> (tokens, accuracy)
+    model_data: Dict[str, Tuple[np.ndarray, np.ndarray]],  # model_name -> (tokens, 準確率)
     method: str,
     smooth_sigma: float,
     output_path: Path,
     figsize: Tuple[int, int] = (12, 8),
     **kwargs,
 ):
-    """Plot emergence analysis for a single task with multiple models.
+    """Plot emergence analysis for a single 任務 with multiple 模型.
     
     Shows:
-    - Raw data points (faint)
-    - Smoothed curve (solid line)
-    - Emergence point (vertical dashed line)
-    - Inflection point (vertical red line, if method is inflection)
+    - Raw 資料 points (faint)
+    - Smoothed curve (solid 行)
+    - Emergence point (vertical dashed 行)
+    - Inflection point (vertical red 行, if method is inflection)
     
-    Args:
-        task_name: Name of the task for title
-        model_data: Dict mapping model_name -> (tokens, accuracy)
+    參數：
+        task_name: 名稱 of the 用於title
+        model_data: 字典 mapping model_name -> (tokens, 準確率)
         method: Emergence detection method
         smooth_sigma: Smoothing parameter used
-        output_path: Where to save the plot
+        output_path: Where to 儲存the plot
         figsize: Figure size
         **kwargs: Method-specific parameters
     """
@@ -528,7 +528,7 @@ def plot_task_emergence(
         color = MODEL_COLORS[idx % len(MODEL_COLORS)]
         marker = MODEL_MARKERS[idx % len(MODEL_MARKERS)]
         
-        # Plot raw data (faint)
+        # Plot raw 資料 (faint)
         ax.scatter(tokens, accuracy, 
                    color=color, marker=marker, alpha=0.3, s=40,
                    label=f"{model_name} (raw)")
@@ -581,25 +581,25 @@ def plot_all_tasks_emergence(
     tasks: Optional[List[str]] = None,
     **kwargs,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Plot emergence for all tasks across multiple models.
+    """Plot emergence for all 任務 across multiple 模型.
 
-    Args:
-        results_dirs: List of results directories (one per model)
-        model_names: List of model names (same order as results_dirs)
+    參數：
+        results_dirs: 列表 of 結果 目錄 (one per 模型)
+        model_names: 列表 of 模型 名稱 (相同 order as results_dirs)
         method: Emergence detection method
         smooth_sigma: Smoothing parameter
-        output_dir: Directory to save plots
-        min_max_accuracy: Skip tasks below this threshold
-        tasks: Optional list of specific tasks to plot
+        output_dir: 目錄 to 儲存plots
+        min_max_accuracy: Skip 任務 below this threshold
+        任務: 可選list of 特定 任務 to plot
         **kwargs: Method-specific parameters
 
-    Returns:
-        Tuple of (results DataFrame, skipped tasks list)
+    回傳：
+        Tuple of (結果 DataFrame, skipped 任務 列表)
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Discover all tasks across all directories
+    # Discover all 任務 across all 目錄
     # all_task_data: task_name -> {model_name -> (tokens, accuracy)}
     all_task_data = {}
 
@@ -609,12 +609,12 @@ def plot_all_tasks_emergence(
             print(f"Warning: {results_path} does not exist")
             continue
 
-        # First try per-task pivot files
+        # 第一個 try per-task pivot 檔案
         pivot_files = list(results_path.glob("accuracy_pivot_*.csv"))
 
         if pivot_files:
             for pivot_file in pivot_files:
-                # Extract task name from filename
+                # 擷取 任務 名稱 from filename
                 prefix = "accuracy_pivot_"
                 sanitized_task = pivot_file.stem.replace(prefix, "")
 
@@ -627,7 +627,7 @@ def plot_all_tasks_emergence(
                 except Exception as e:
                     print(f"Warning: Failed to load {pivot_file}: {e}")
         else:
-            # Try combined pivot file
+            # Try combined pivot 檔案
             combined_file = results_path / "accuracy_pivot.csv"
             if combined_file.exists():
                 print(f"Using combined pivot file for {model_name}: {combined_file}")
@@ -639,7 +639,7 @@ def plot_all_tasks_emergence(
                         all_task_data[sanitized_task] = {"_task_name": task_name}
                     all_task_data[sanitized_task][model_name] = (tokens, accuracy)
 
-    # Filter to requested tasks if specified
+    # 篩選 to requested 任務 if specified
     if tasks:
         sanitized_requested = {t.replace(":", "_").replace("/", "_") for t in tasks}
         all_task_data = {k: v for k, v in all_task_data.items() if k in sanitized_requested}
@@ -650,7 +650,7 @@ def plot_all_tasks_emergence(
     print(f"Processing {len(all_task_data)} tasks...")
 
     for sanitized_task, task_info in sorted(all_task_data.items()):
-        # Extract task name and model data
+        # 擷取 任務 名稱 and 模型 資料
         task_name = task_info.pop("_task_name", None)
         model_data = {k: v for k, v in task_info.items() if k != "_task_name"}
 
@@ -659,7 +659,7 @@ def plot_all_tasks_emergence(
 
         max_acc_any = max(acc.max() for _, acc in model_data.values())
 
-        # Skip if max accuracy is too low
+        # Skip if max 準確率 is too low
         if max_acc_any <= min_max_accuracy:
             skipped_tasks.append(task_name or sanitized_task)
             continue
@@ -667,7 +667,7 @@ def plot_all_tasks_emergence(
         display_name = task_name or sanitized_task.replace("_", ":", 1)
         print(f"  {display_name}")
 
-        # Create plot
+        # 建立plot
         output_path = output_dir / f"{sanitized_task}_emergence.png"
         plot_task_emergence(
             display_name,
@@ -678,7 +678,7 @@ def plot_all_tasks_emergence(
             **kwargs
         )
 
-        # Collect results for each model
+        # Collect 結果 for each 模型
         for model_name, (tokens, accuracy) in model_data.items():
             emergence_result = find_emergence(
                 tokens, accuracy,
@@ -730,7 +730,7 @@ Examples:
         """
     )
     
-    # Single model mode
+    # Single 模型 mode
     parser.add_argument("-d", "--results_dir", type=str, default=None,
                         help="Directory containing accuracy_pivot_*.csv files (single model mode)")
     
@@ -755,7 +755,7 @@ Examples:
     parser.add_argument("--use-final", action="store_true",
                         help="For 'relative' method, use final acc instead of max")
     
-    # Output settings
+    # 輸出 settings
     parser.add_argument("-o", "--output", type=str, default=None,
                         help="Output CSV file (default: print to stdout)")
     parser.add_argument("--task", type=str, default=None,
@@ -773,7 +773,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # Validate input modes
+    # 有效ate 輸入 modes
     if args.results_dirs and args.results_dir:
         parser.error("Cannot use both --results_dir and --results_dirs")
     
@@ -783,12 +783,12 @@ Examples:
             parser.error("--model_names must match --results_dirs in length")
         multi_model = True
     elif args.results_dir:
-        # Single model mode
+        # Single 模型 mode
         multi_model = False
     else:
         parser.error("Must provide either --results_dir or --results_dirs")
     
-    # Build kwargs for method
+    # 建立kwargs for method
     kwargs = {
         "threshold": args.threshold,
         "use_max": not args.use_final,
@@ -821,13 +821,13 @@ Examples:
             **kwargs
         )
         
-        # Report skipped tasks
+        # Report skipped 任務
         if skipped_tasks:
             print(f"\n⚠️  Skipped {len(skipped_tasks)} tasks with max accuracy <= {args.min_accuracy}:")
             for task in skipped_tasks:
                 print(f"    - {task}")
         
-        # Sort by emergence point (earliest first)
+        # Sort by emergence point (earliest 第一個)
         df = df.sort_values(["emergence_tokens_B", "task", "model"], na_position="last")
         
         if args.output:
@@ -839,7 +839,7 @@ Examples:
         print(f"\n✅ Plots saved to: {args.plot_dir}")
         
     elif args.task:
-        # Single task analysis
+        # Single 任務 analysis
         results_dir = Path(args.results_dir)
         pivot_file = results_dir / f"accuracy_pivot_{args.task.replace(':', '_')}.csv"
         if not pivot_file.exists():
@@ -848,7 +848,7 @@ Examples:
         
         tokens, accuracy, task_name = load_accuracy_data(pivot_file)
         
-        # Check for trivial performance
+        # 檢查for trivial performance
         if accuracy.max() <= args.min_accuracy:
             print(f"Task: {task_name}")
             print(f"⚠️  Skipped: max accuracy ({accuracy.max():.4f}) <= {args.min_accuracy}")
@@ -863,7 +863,7 @@ Examples:
         print(f"Final accuracy: {result['final_accuracy']:.4f}")
         print(f"Parameters: {result['parameters']}")
         
-        # Optionally plot single task
+        # Optionally plot single 任務
         if args.plot:
             plot_dir = Path(args.plot_dir)
             plot_dir.mkdir(parents=True, exist_ok=True)
@@ -879,7 +879,7 @@ Examples:
             print(f"\n✅ Plot saved to: {output_path}")
         
     else:
-        # Analyze all tasks (single model, no plotting or with plotting)
+        # Analyze all 任務 (single 模型, no plotting or with plotting)
         results_dir = Path(args.results_dir)
         if not results_dir.exists():
             print(f"Error: Directory {results_dir} does not exist")
@@ -889,7 +889,7 @@ Examples:
         print()
         
         if args.plot:
-            # Use multi-model plotting with single model
+            # Use multi-model plotting with single 模型
             df, skipped_tasks = plot_all_tasks_emergence(
                 results_dirs=[str(results_dir)],
                 model_names=["Model"],
@@ -910,14 +910,14 @@ Examples:
                 **kwargs
             )
         
-        # Report skipped tasks
+        # Report skipped 任務
         if skipped_tasks:
             print(f"\n⚠️  Skipped {len(skipped_tasks)} tasks with max accuracy <= {args.min_accuracy}:")
             for task in skipped_tasks:
                 print(f"    - {task}")
             print()
 
-        # Handle empty results
+        # Handle empty 結果
         if df.empty:
             print("\n⚠️  No tasks found or all tasks were skipped.")
             print("Check that your results directory contains accuracy_pivot_*.csv or accuracy_pivot.csv files.")
@@ -932,7 +932,7 @@ Examples:
         else:
             print(df.to_string(index=False))
 
-        # Summary stats
+        # 摘要 stats
         emerged = df["emergence_tokens_B"].notna().sum()
         print(f"\n{emerged}/{len(df)} tasks emerged")
         if emerged > 0:

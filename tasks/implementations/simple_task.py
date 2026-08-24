@@ -1,35 +1,35 @@
-"""Simple task implementation with basic exact match evaluation."""
+"""簡單 任務 實作 with basic 完全匹配 評估."""
 
 from typing import Dict, List, Any
 from ..base_task import BaseTask, TaskConfig
 
 
 class SimpleTask(BaseTask):
-    """A simple task implementation with basic exact match evaluation."""
+    """A 簡單 任務 實作 with basic 完全匹配 評估."""
     
-    TASK_NAME = "simple"  # Auto-registration name
+    TASK_NAME = "simple"  # 自動註冊名稱
     
     def _load_data(self):
-        """Load data from CSV file."""
+        """載入data from CSV 檔案."""
         import pandas as pd
         
         if self.config.data_path:
             self.data = pd.read_csv(self.config.data_path)
         else:
-            # If no data path, create empty DataFrame
+            # If no 資料 路徑, 建立empty DataFrame
             self.data = pd.DataFrame(columns=[self.config.input_column, self.config.output_column])
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy."""
+        """以完全匹配準確率評估預測."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
             raise ValueError(f"Prediction count ({len(predictions)}) doesn't match ground truth count ({len(ground_truth)})")
         
-        # Preprocess predictions
+        # 預處理 預測
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate exact match accuracy
+        # Calculate 完全匹配 準確率
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
                      if pred.lower().strip() == gt.lower().strip())
         accuracy = correct / len(ground_truth)
@@ -40,7 +40,7 @@ class SimpleTask(BaseTask):
             "total": len(ground_truth)
         }
         
-        # Add per-category accuracy if available
+        # Add per-category 準確率 若可用
         data = self.get_split(split)
         if any("category" in item for item in data):
             category_results = {}
@@ -53,7 +53,7 @@ class SimpleTask(BaseTask):
                 if pred.lower().strip() == gt.lower().strip():
                     category_results[category]["correct"] += 1
             
-            # Calculate per-category accuracy
+            # Calculate per-category 準確率
             for category, stats in category_results.items():
                 results[f"accuracy_{category}"] = stats["correct"] / stats["total"]
         

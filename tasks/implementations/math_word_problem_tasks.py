@@ -1,23 +1,23 @@
-"""GSM8K sub-skill probe tasks.
+"""GSM8K sub-skill probe 任務.
 
-Each task isolates one linguistic/conceptual sub-skill required for multi-step
-math word problems, while deliberately staying far simpler than any GSM8K item.
+Each 任務 isolates one linguistic/conceptual sub-skill required for 多步驟
+數學 文字題s, while deliberately staying far simpler than any GSM8K item.
 
-Design principle: identical minimal template across all items so that a model
+Design principle: identical minimal template across all items so that a 模型
 can only succeed by understanding the targeted sub-skill, not by pattern-matching
-narrative context.  Numbers are small positive integers (≤35); answers are
+narrative 上下文. 數字 are small positive integers (≤35); 答案 are
 always exact integers.
 
-Tasks
+任務
 -----
-word_problem_single_step  — NL-wrapped single arithmetic op (add/subtract/multiply/divide)
-quantity_comparison        — relational quantities (more_than/fewer_than/twice_as_many/half_as_many)
-rate_unit                  — unit-rate schema  ("If A items cost C, how much do B?")
-multi_entity_tracking      — two agents, 1–2 transfers, ask final count of one agent
+word_problem_single_step — NL-wrapped single 算術 op (add/subtract/multiply/divide)
+quantity_comparison    — relational quantities (more_than/fewer_than/twice_as_many/half_as_many)
+rate_unit         — 單位比率 schema ("If A items cost C, how much do B?")
+multi_entity_tracking   — two agents, 1–2 transfers, ask final count of one agent
 
-Format (ICL):
-    Input: <sentence>
-    Output: <integer>
+格式化(ICL):
+    輸入: <sentence>
+    輸出: <integer>
 """
 
 from typing import Dict, List, Any
@@ -26,11 +26,11 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 # ---------------------------------------------------------------------------
-# Task 1: word_problem_single_step
+# 任務 1: word_problem_single_step
 # ---------------------------------------------------------------------------
 
 class WordProblemSingleStep(BaseTask):
-    """Single-operation arithmetic presented as a one-sentence word problem."""
+    """Single-operation 算術 presented as a one-sentence 文字題."""
 
     TASK_NAME = "word_problem_single_step"
 
@@ -171,7 +171,7 @@ def create_word_problem_single_step_task(
 
 
 # ---------------------------------------------------------------------------
-# Task 2: quantity_comparison
+# 任務 2: quantity_comparison
 # ---------------------------------------------------------------------------
 
 class QuantityComparison(BaseTask):
@@ -316,14 +316,14 @@ def create_quantity_comparison_task(
 
 
 # ---------------------------------------------------------------------------
-# Task 3: rate_unit
+# 任務 3: rate_unit
 # ---------------------------------------------------------------------------
 
 class RateUnit(BaseTask):
-    """Unit-rate schema: given (A items cost C cents), find cost of B items.
+    """單位比率 schema: given (A items cost C cents), find cost of B items.
 
-    All rates are whole numbers; answers are exact integers.
-    Single schema repeated across all 20 items — only the numbers change.
+    All rates are whole 數字; 答案 are exact integers.
+    Single schema repeated across all 20 items — only the 數字 change.
     """
 
     TASK_NAME = "rate_unit"
@@ -414,14 +414,14 @@ def create_rate_unit_task(
 
 
 # ---------------------------------------------------------------------------
-# Task 4: multi_entity_tracking
+# 任務 4: multi_entity_tracking
 # ---------------------------------------------------------------------------
 
 class MultiEntityTracking(BaseTask):
-    """Two-agent state tracking across 1–2 give operations.
+    """Two-agent state tracking across 1–2 give 操作.
 
     one_transfer: agent A gives k to agent B; ask for A or B's final count.
-    two_transfer: two give operations between A and B; ask for one agent's final count.
+    two_transfer: two give 操作 between A and B; ask for one agent's final count.
     """
 
     TASK_NAME = "multi_entity_tracking"

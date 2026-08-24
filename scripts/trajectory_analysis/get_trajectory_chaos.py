@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analyze the "noisiness" or "chaoticness" of accuracy trajectories.
+"""Analyze the "noisiness" or "chaoticness" of 準確率 trajectories.
 
 This script computes a normalized total variation metric to measure how
 chaotic/noisy a learning curve is, vs how smooth/monotonic it is.
@@ -11,18 +11,18 @@ Metrics computed:
 - Chaoticness (C_tv): 1 - S (0 = perfectly monotonic, 1 = pure noise)
 
 A perfectly monotonic increasing curve has S=1, C_tv=0.
-A curve that oscillates wildly but ends up at the same place has S≈0, C_tv≈1.
+A curve that oscillates wildly but ends up at the 相同 place has S≈0, C_tv≈1.
 
-Usage:
+用法：
     python scripts/trajectory_analysis/get_trajectory_chaos.py \
-        --results_dir results/olmo2_continuous_1b_early_revised \
-        --output chaos_metrics.csv
+        --results_dir 結果/olmo2_continuous_1b_early_revised \
+        --輸出 chaos_metrics.csv
     
-    # Compare multiple models
+    # Compare multiple 模型
     python scripts/trajectory_analysis/get_trajectory_chaos.py \
-        --results_dirs results/olmo2_continuous_1b_early_revised results/olmo2_continuous_7b_early_revised \
+        --results_dirs 結果/olmo2_continuous_1b_early_revised 結果/olmo2_continuous_7b_early_revised \
         --model_names "1B" "7B" \
-        --output chaos_comparison.csv
+        --輸出 chaos_comparison.csv
 """
 
 import argparse
@@ -35,23 +35,23 @@ import pandas as pd
 
 
 def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
-    """Extract token count (in billions) from checkpoint name.
+    """擷取 token count (in billions) from checkpoint 名稱.
 
-    Supports multiple formats:
+    支援 multiple formats:
     - OLMo: 'stage1-step100000-tokens210B' -> 210
-    - K2-V2: 'base_1245000' -> 12450B (12.45T) - checkpoint number in units of 10M tokens
+    - K2-V2: 'base_1245000' -> 12450B (12.45T) - checkpoint 數字 in units of 10M tokens
     - Crystal: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}' -> cumulative tokens in B
     - Generic: 'tokens100B' -> 100
     """
     if checkpoint in ("main", "base_final", "final"):
         return None
 
-    # Try explicit token count first (e.g., 'tokens210B')
+    # Try explicit token count 第一個 (e.g., 'tokens210B')
     match = re.search(r'tokens(\d+)B', checkpoint)
     if match:
         return int(match.group(1))
 
-    # Try K2-V2 format: 'base_XXXXXXX' (step number)
+    # Try K2-V2 格式: 'base_XXXXXXX' (step 數字)
     # K2-V2 tech report: batch_size B = 9.8×10^6 tokens/step, T = 1.25×10^6 steps, D = 12.25T
     # e.g., base_1245000 = 1,245,000 * 9.8M = 12.201T tokens = 12201B
     match = re.search(r'base_(\d+)', checkpoint)
@@ -61,9 +61,9 @@ def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
         tokens_b = checkpoint_num * 9.8e6 / 1e9
         return tokens_b
 
-    # Try Crystal format: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}'
+    # Try Crystal 格式: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}'
     # 3-phase training: Phase 1 (345B), Phase 2 (927B), Phase 3 (110B)
-    # Tokens per step: ~4.33M (phase 1-2), ~3.97M (phase 3)
+    # tokens per step: ~4.33M (phase 1-2), ~3.97M (phase 3)
     match = re.search(r'CrystalCoder_phase(\d+)_checkpoint_(\d+)', checkpoint)
     if match:
         phase = int(match.group(1))
@@ -78,7 +78,7 @@ def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
             return None
         return tokens_b
 
-    # Try generic step format: 'step100000'
+    # Try generic step 格式: 'step100000'
     match = re.search(r'step(\d+)', checkpoint)
     if match:
         return int(match.group(1))
@@ -87,19 +87,19 @@ def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
 
 
 def load_accuracy_data(pivot_file: Path) -> Tuple[np.ndarray, np.ndarray, str]:
-    """Load and sort accuracy data from a pivot file.
+    """載入and sort 準確率 資料 from a pivot 檔案.
     
-    Returns:
+    回傳：
         tokens: Array of token counts (in billions)
-        accuracy: Array of accuracy values
-        task_name: Name of the task
+        準確率: Array of 準確率 值
+        task_name: 名稱 of the 任務
     """
     df = pd.read_csv(pivot_file)
     
-    # Get task name from column (third column after model, checkpoint)
+    # 取得task 名稱 from column (third column after 模型, checkpoint)
     task_name = [c for c in df.columns if c not in ['model', 'checkpoint']][0]
     
-    # Extract tokens and filter out None/main
+    # 擷取 tokens and 篩選 out None/主要
     df['tokens'] = df['checkpoint'].apply(extract_tokens_from_checkpoint)
     df = df[df['tokens'].notna() & (df['tokens'] > 0)]
     df = df.sort_values('tokens')
@@ -113,18 +113,18 @@ def load_accuracy_data(pivot_file: Path) -> Tuple[np.ndarray, np.ndarray, str]:
 def compute_chaos_metrics(accuracy: np.ndarray) -> Dict[str, float]:
     """Compute chaoticness/smoothness metrics for a trajectory.
     
-    Args:
-        accuracy: Array of accuracy values (unsmoothed, sorted by tokens)
+    參數：
+        準確率: Array of 準確率 值 (unsmoothed, sorted by tokens)
     
-    Returns:
-        Dict with:
+    回傳：
+        字典 with:
         - total_variation: Sum of |Δ_i|
         - net_change: y_n - y_1
         - smoothness: |Δ_net| / TV (1 = monotonic, 0 = chaotic)
         - chaoticness: 1 - smoothness
-        - n_checkpoints: Number of checkpoints
-        - n_increases: Number of times accuracy increased
-        - n_decreases: Number of times accuracy decreased
+        - n_checkpoints: 數字 of checkpoints
+        - n_increases: 數字 of times 準確率 increased
+        - n_decreases: 數字 of times 準確率 decreased
     """
     if len(accuracy) < 2:
         return {
@@ -137,7 +137,7 @@ def compute_chaos_metrics(accuracy: np.ndarray) -> Dict[str, float]:
             "n_decreases": 0,
         }
     
-    # First differences
+    # 第一個 differences
     deltas = np.diff(accuracy)
     
     # Total variation
@@ -174,16 +174,16 @@ def analyze_single_dir(
     results_dir: Path,
     min_max_accuracy: float = 0.0,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Analyze chaos metrics for all tasks in a results directory.
+    """Analyze chaos metrics for all 任務 in a 結果 目錄.
     
-    Args:
-        results_dir: Directory containing accuracy_pivot_*.csv files
-        min_max_accuracy: Skip tasks with max accuracy below this threshold
+    參數：
+        results_dir: 目錄 containing accuracy_pivot_*.csv 檔案
+        min_max_accuracy: Skip 任務 with max 準確率 below this threshold
     
-    Returns:
+    回傳：
         Tuple of:
-        - DataFrame with chaos metrics for all tasks
-        - List of skipped task names
+        - DataFrame with chaos metrics for all 任務
+        - 列表 of skipped 任務 名稱
     """
     results = []
     skipped_tasks = []
@@ -197,7 +197,7 @@ def analyze_single_dir(
             
             max_acc = float(accuracy.max())
             
-            # Skip tasks with trivial performance
+            # Skip 任務 with trivial performance
             if max_acc <= min_max_accuracy:
                 skipped_tasks.append(task_name)
                 continue
@@ -224,18 +224,18 @@ def analyze_multiple_dirs(
     min_max_accuracy: float = 0.0,
     tasks: Optional[List[str]] = None,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Analyze chaos metrics for all tasks across multiple models.
+    """Analyze chaos metrics for all 任務 across multiple 模型.
     
-    Args:
-        results_dirs: List of results directories (one per model)
-        model_names: List of model names (same order as results_dirs)
-        min_max_accuracy: Skip tasks below this threshold
-        tasks: Optional list of specific tasks to analyze
+    參數：
+        results_dirs: 列表 of 結果 目錄 (one per 模型)
+        model_names: 列表 of 模型 名稱 (相同 order as results_dirs)
+        min_max_accuracy: Skip 任務 below this threshold
+        任務: 可選list of 特定 任務 to analyze
     
-    Returns:
-        Tuple of (results DataFrame, skipped tasks list)
+    回傳：
+        Tuple of (結果 DataFrame, skipped 任務 列表)
     """
-    # Discover all tasks across all directories
+    # Discover all 任務 across all 目錄
     all_task_files = {}  # sanitized_task -> {model_name -> pivot_file}
     
     for results_dir, model_name in zip(results_dirs, model_names):
@@ -252,7 +252,7 @@ def analyze_multiple_dirs(
                 all_task_files[sanitized_task] = {}
             all_task_files[sanitized_task][model_name] = pivot_file
     
-    # Filter to requested tasks if specified
+    # 篩選 to requested 任務 if specified
     if tasks:
         sanitized_requested = {t.replace(":", "_").replace("/", "_") for t in tasks}
         all_task_files = {k: v for k, v in all_task_files.items() if k in sanitized_requested}
@@ -264,7 +264,7 @@ def analyze_multiple_dirs(
         task_name = None
         max_acc_any = 0.0
         
-        # First pass: check max accuracy across all models
+        # 第一個 pass: 檢查max 準確率 across all 模型
         for model_name, pivot_file in model_files.items():
             try:
                 _, accuracy, task_name = load_accuracy_data(pivot_file)
@@ -273,14 +273,14 @@ def analyze_multiple_dirs(
             except:
                 pass
         
-        # Skip if max accuracy is too low
+        # Skip if max 準確率 is too low
         if max_acc_any <= min_max_accuracy:
             skipped_tasks.append(task_name or sanitized_task)
             continue
         
         display_name = task_name or sanitized_task.replace("_", ":", 1)
         
-        # Analyze each model
+        # Analyze each 模型
         for model_name, pivot_file in model_files.items():
             try:
                 tokens, accuracy, _ = load_accuracy_data(pivot_file)
@@ -331,7 +331,7 @@ Examples:
         """
     )
     
-    # Single model mode
+    # Single 模型 mode
     parser.add_argument("-d", "--results_dir", type=str, default=None,
                         help="Directory containing accuracy_pivot_*.csv files")
     
@@ -347,7 +347,7 @@ Examples:
     parser.add_argument("--tasks", nargs="+", default=None,
                         help="Specific tasks to analyze")
     
-    # Output
+    # 輸出
     parser.add_argument("-o", "--output", type=str, default=None,
                         help="Output CSV file (default: print to stdout)")
     parser.add_argument("--sort-by", type=str, default="chaoticness",
@@ -358,7 +358,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # Validate input modes
+    # 有效ate 輸入 modes
     if args.results_dirs and args.results_dir:
         parser.error("Cannot use both --results_dir and --results_dirs")
     
@@ -399,10 +399,10 @@ Examples:
             min_max_accuracy=args.min_accuracy,
         )
     
-    # Report skipped tasks
+    # Report skipped 任務
     if skipped_tasks:
         print(f"⚠️  Skipped {len(skipped_tasks)} tasks with max accuracy <= {args.min_accuracy}:")
-        for task in skipped_tasks[:10]:  # Show first 10
+        for task in skipped_tasks[:10]:  # Show 第一個 10
             print(f"    - {task}")
         if len(skipped_tasks) > 10:
             print(f"    ... and {len(skipped_tasks) - 10} more")
@@ -412,10 +412,10 @@ Examples:
         print("No tasks to analyze!")
         return 1
     
-    # Sort results
+    # Sort 結果
     ascending = args.ascending if args.sort_by == "task" else args.ascending
     if args.sort_by != "task" and not args.ascending:
-        ascending = False  # Default descending for metrics
+        ascending = False  # 預設 descending for metrics
     df = df.sort_values(args.sort_by, ascending=ascending, na_position="last")
     
     # Select columns for display
@@ -434,7 +434,7 @@ Examples:
     
     print(df_display.to_string(index=False))
     
-    # Summary statistics
+    # 摘要 statistics
     print(f"\n{'='*60}")
     print("SUMMARY STATISTICS")
     print(f"{'='*60}")

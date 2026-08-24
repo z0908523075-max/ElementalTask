@@ -1,10 +1,10 @@
-"""Antonym elemental task — map a word to its antonym.
+"""Antonym elemental 任務 — map a 詞 to its antonym.
 
-This is a Phase-I elemental ICL task (see README "Synonyms/antonyms").
-The model is shown demonstrations of the form `Input: X\nOutput: Y` where
-`Y` is the antonym of `X`, then queried with a new `X`.
+This is a Phase-I elemental ICL 任務 (see README "Synonyms/antonyms").
+The 模型 is shown 示範 of the form `Input: X\nOutput: Y` where
+`Y` is the antonym of `X`, then queried with a 新的 `X`.
 
-Follows the same in-memory / registry pattern as `token_reversal.py` and
+Follows the 相同 記憶體內 / registry pattern as `token_reversal.py` and
 `copying_task.py`.
 """
 
@@ -14,15 +14,15 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class AntonymTask(BaseTask):
-    """Task for mapping a word to its antonym."""
+    """用於mapping a 詞 to its antonym."""
 
-    TASK_NAME = "antonym"  # Auto-discovery key
+    TASK_NAME = "antonym"  # 自動發現鍵
 
     def __init__(self, config: TaskConfig):
         super().__init__(config)
 
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy (case-insensitive, trimmed)."""
+        """以完全匹配準確率評估預測 (不區分大小寫, 去除首尾空白)."""
         ground_truth = self.get_ground_truth(split)
 
         if len(predictions) != len(ground_truth):
@@ -48,7 +48,7 @@ class AntonymTask(BaseTask):
         }
 
 
-# Default antonym pairs — kept small, unambiguous, single-token where possible.
+# 預設 antonym pairs — kept small, unambiguous, 單 token where possible.
 _DEFAULT_ANTONYM_PAIRS: List[Dict[str, str]] = [
     {"input": "hot", "output": "cold"},
     {"input": "big", "output": "small"},
@@ -82,14 +82,14 @@ def create_antonym_task(
     examples: Optional[List[Dict[str, str]]] = None,
     name: str = "antonym",
 ) -> AntonymTask:
-    """Create an ``AntonymTask`` instance.
+    """建立一個``AntonymTask`` 實例.
 
-    Args:
-        examples: Optional list of ``{"input": word, "output": antonym}`` dicts.
-                  If None, uses a built-in default set.
-        name: Task name to register/report.
+    參數：
+        範例: 可選list of ``{"input": word, "output": antonym}`` dicts.
+                  If None, uses a built-in 預設set.
+        名稱: 任務 名稱 to 註冊/report.
 
-    Returns:
+    回傳：
         An initialized ``AntonymTask``.
     """
     config = TaskConfig(
