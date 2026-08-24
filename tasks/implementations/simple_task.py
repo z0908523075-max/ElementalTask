@@ -1,26 +1,26 @@
-"""Simple task implementation with basic exact match evaluation."""
+"""simple task implementation with basic exact-match Evaluate."""
 
 from typing import Dict, List, Any
 from ..base_task import BaseTask, TaskConfig
 
 
 class SimpleTask(BaseTask):
-    """A simple task implementation with basic exact match evaluation."""
+    """A simple task implementation with basic exact-match evaluation."""
     
-    TASK_NAME = "simple"  # Auto-registration name
+    TASK_NAME = "simple"  # automaticregistername
     
     def _load_data(self):
-        """Load data from CSV file."""
+        """Loaddata from CSV file."""
         import pandas as pd
         
         if self.config.data_path:
             self.data = pd.read_csv(self.config.data_path)
         else:
-            # If no data path, create empty DataFrame
+            # If no data path, Buildempty DataFrame
             self.data = pd.DataFrame(columns=[self.config.input_column, self.config.output_column])
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy."""
+        """Evaluate predictions using exact-match accuracy."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
@@ -29,7 +29,7 @@ class SimpleTask(BaseTask):
         # Preprocess predictions
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate exact match accuracy
+        # Calculate exact-match accuracy
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
                      if pred.lower().strip() == gt.lower().strip())
         accuracy = correct / len(ground_truth)

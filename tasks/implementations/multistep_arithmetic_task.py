@@ -1,18 +1,18 @@
-"""Multi-step arithmetic — chained computation primitive.
+"""multi-step arithmetic — chained computation primitive.
 
-Tests the model's ability to perform sequential arithmetic operations,
+Tests the model's ability to perform sequential arithmetic operation,
 a prerequisite for GSM8k-style math reasoning.
 
-Categories:
-  - two_step:    "3 + 4, then multiply by 2" → "14"
-  - three_step:  "Start with 10, subtract 3, then multiply by 4" → "28"
+Categories: 
+  - two_step:  "3 + 4, then multiply by 2" → "14"
+  - three_step: "Start with 10, subtract 3, then multiply by 4" → "28"
 
 All operands and results are small positive integers (≤200) to keep the
 task about *chaining* rather than large-number arithmetic.
 
 Format (ICL):
-    Input: 3 + 4, then multiply by 2
-    Output: 14
+    input: 3 + 4, then multiply by 2
+    output: 14
 """
 
 import random
@@ -22,7 +22,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class MultistepArithmeticTask(BaseTask):
-    """Multi-step (chained) arithmetic task."""
+    """multi-step (chained) arithmetic task."""
 
     TASK_NAME = "multistep_arithmetic"
 
@@ -174,7 +174,7 @@ def create_multistep_arithmetic_task(
     category: str = None,
     name: str = "multistep_arithmetic",
 ) -> MultistepArithmeticTask:
-    """Create a MultistepArithmeticTask, optionally filtered to one category."""
+    """Create a MultistepArithmeticTask, optionally filtered to one class."""
     data = None
     if category and category in MultistepArithmeticTask.CATEGORY_DATA:
         data = [

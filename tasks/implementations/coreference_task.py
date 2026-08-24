@@ -1,14 +1,14 @@
-"""Coreference / pronoun resolution — elemental reading comprehension.
+"""coreference / pronoun resolution — elemental reading comprehension.
 
 Tests the model's ability to resolve pronouns and other referring expressions
 to their antecedents. This is a prerequisite for WinoGrande-style benchmarks
 and general reading comprehension.
 
-Categories:
-  - pronoun_simple:  Unambiguous pronoun resolution (he/she/they)
-  - pronoun_hard:    Winograd-style where world knowledge is needed
+Categories: 
+  - pronoun_simple: Unambiguous pronoun resolution (he/she/they)
+  - pronoun_hard:  Winograd-style where world knowledge is needed
 
-All cases are *unambiguous* — there is exactly one correct answer.
+All cases are *unambiguous* — there is exactly one correct Answer.
 
 Format (ICL):
     Sentence: "Alice told Bob that she would be late."
@@ -168,7 +168,7 @@ def create_coreference_task(
     category: str = None,
     name: str = "coreference",
 ) -> CoreferenceTask:
-    """Create a CoreferenceTask, optionally filtered to one category."""
+    """Create a CoreferenceTask, optionally filtered to one class."""
     data = None
     if category and category in CoreferenceTask.CATEGORY_DATA:
         data = [

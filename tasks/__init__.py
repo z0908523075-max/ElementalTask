@@ -1,4 +1,4 @@
-"""Task evaluation system with automatic task discovery."""
+"""task Evaluate system with automatic task discover."""
 
 from .base_task import BaseTask, TaskConfig
 from .evaluator import TaskEvaluator, ModelConfig, EvaluationConfig
@@ -11,7 +11,7 @@ from .registry import (
     get_task_info
 )
 
-# Automatically discover and register all tasks
+# automatically discover and register all task
 print("Discovering tasks...")
 discover_tasks()
 

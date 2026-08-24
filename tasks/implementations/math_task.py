@@ -1,4 +1,4 @@
-"""Example of a custom task with automatic discovery."""
+"""example of a custom task with automatic discover."""
 
 from ..base_task import BaseTask, TaskConfig
 import re
@@ -6,9 +6,9 @@ from typing import List, Dict
 
 
 class MathTask(BaseTask):
-    """A task for simple math problems."""
+    """Task for simple math problems."""
     
-    TASK_NAME = "math"  # This is all that's needed for automatic registration!
+    TASK_NAME = "math"  # This is all that's needed for automatic register!
     
     def __init__(self, config: TaskConfig):
         super().__init__(config)
@@ -18,7 +18,7 @@ class MathTask(BaseTask):
         import pandas as pd
         import random
         
-        random.seed(42)  # For reproducibility
+        random.seed(42)  # for reproducibility
         problems = []
         
         # Generate 20 simple arithmetic problems
@@ -42,9 +42,9 @@ class MathTask(BaseTask):
 
     
     def get_icl_examples(self, num_examples: int = 10, shuffle: bool = True, seed: int = None, fresh: bool = True) -> List[Dict[str, str]]:
-        """Generate simple arithmetic examples for ICL.
+        """Generate simple arithmetic example for ICL.
 
-        Note: `fresh` is ignored for synthetic/generated tasks (there's no stable dataset indices to track).
+        Note: `fresh` is ignored for synthetic/generated task (there's no stable dataset indices to track).
         """
         import random
         if seed is not None:
@@ -62,14 +62,14 @@ class MathTask(BaseTask):
         return examples[:num_examples]
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate math predictions."""
+        """Evaluatemath predictions."""
         correct = 0
         total = len(predictions)
         
         if total == 0:
             return {"accuracy": 0.0}
         
-        # Get the targets for this split
+        # Get targets for this split
         data_split = self.data if split == "test" else self.data  # For now, use same data
         targets = data_split[self.config.output_column].tolist()
         
@@ -92,11 +92,11 @@ class MathTask(BaseTask):
         }
     
     def evaluate_response(self, response: str, target: str) -> dict:
-        """Evaluate a math response with number extraction."""
+        """Evaluate a math response with number Extract."""
         
         def extract_number(text: str) -> float:
             """Extract the first number from text."""
-            # Look for numbers (including decimals)
+            # Look for number (including decimals)
             match = re.search(r'-?\d+\.?\d*', text.strip())
             if match:
                 return float(match.group())

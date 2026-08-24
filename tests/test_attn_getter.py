@@ -135,7 +135,7 @@ def test_olmo2_residual_capture():
     if tok.pad_token_id is None:
         tok.pad_token = tok.eos_token
 
-    # Simple test prompts
+    # simple test prompt
     prompts = [
         "The quick brown fox",
         "Hello, world!",
@@ -243,7 +243,7 @@ def test_crystal_residual_capture():
     if tok.pad_token_id is None:
         tok.pad_token = tok.eos_token
 
-    # Simple test prompts
+    # simple test prompt
     prompts = [
         "The quick brown fox",
         "Hello, world!",

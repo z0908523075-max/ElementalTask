@@ -1,29 +1,29 @@
-"""Copying task for testing induction heads.
+"""Copying for testing induction heads.
 
 This task presents examples where input equals output, testing the model's
 ability to perform exact copying - a key capability of induction heads.
 
 Two modes of operation:
 
-1. **Static mode** (use_generator=False):
-   - Uses a fixed set of examples (default: 10 simple words/strings)
+1. **static mode** (use_generator=False):
+   - Uses a fixed set of examples (default: 10 simple word/string)
    - ICL examples are sampled from this static set
    - Good for reproducibility and consistency
    
 2. **Generator mode** (use_generator=True):
-   - Generates unlimited random character sequences on-the-fly
-   - Each call to get_icl_examples() produces fresh random strings
+   - Generate unlimited random character sequences on the fly
+   - Each call to get_icl_examples() produces a new random string
    - Configurable length range and character set
    - Perfect for testing with diverse inputs without data limitations
 
 Example usage:
-    # Static mode
+    # static mode
     task = make_copying_task(use_generator=False)
-    examples = task.get_icl_examples(num_examples=5)
+    example = task.get_icl_examples(num_examples=5)
     
     # Generator mode with custom parameters
     task = make_copying_task(use_generator=True, min_length=3, max_length=8)
-    examples = task.get_icl_examples(num_examples=10, charset="abc123", seed=42)
+    example = task.get_icl_examples(num_examples=10, charset="abc123", seed=42)
 """
 
 import random
@@ -35,7 +35,7 @@ from typing import Dict, List, Iterator
 class CopyingTask(BaseTask):
     """
     A task where the output is an exact copy of the input.
-    This tests induction head capabilities in language models.
+    This tests induction head capabilities in language model.
     """
     TASK_NAME = "copying"
     
@@ -44,11 +44,11 @@ class CopyingTask(BaseTask):
         """
         Initialize the CopyingTask.
         
-        Args:
-            config: TaskConfig with task settings
-            use_generator: If True, generate random examples on-the-fly instead of using static data
-            min_length: Minimum length of generated random strings (default: 3)
-            max_length: Maximum length of generated random strings (default: 8)
+        Args: 
+            configuration: a TaskConfig with task settings
+            use_generator: If True, Generate random example on the fly instead of using static data
+            min_length: Minimum length of generated random string (default: 3)
+            max_length: Maximum length of generated random string (default: 8)
         """
         self.use_generator = use_generator
         self.min_length = min_length
@@ -61,13 +61,13 @@ class CopyingTask(BaseTask):
         """
         Generate a random copying example.
         
-        Args:
+        Args: 
             length: Length of the random string. If None, randomly chosen between min_length and max_length
-            charset: Character set to use. If None, uses letters and digits
-            seed: Random seed for reproducibility
+            charset: character set to use. If None, uses letters and digits
+            seed: random seed for reproducibility
             
-        Returns:
-            Dict with 'input' and 'output' keys (both identical)
+        Returns: 
+            dictionary with 'input' and 'output' keys (both identical)
         """
         if seed is not None:
             random.seed(seed)
@@ -85,15 +85,15 @@ class CopyingTask(BaseTask):
                          charset: str = None,
                          seed: int = None) -> List[Dict[str, str]]:
         """
-        Generate multiple random copying examples.
+        Generate multiple random copying example.
         
-        Args:
-            num_examples: Number of examples to generate
-            charset: Character set to use for generation
-            seed: Random seed for reproducibility
+        Args: 
+            num_examples: number of examples to Generate
+            charset: character set to use for Generate
+            seed: random seed for reproducibility
             
-        Returns:
-            List of example dictionaries
+        Returns: 
+            list of example dictionaries
         """
         if seed is not None:
             random.seed(seed)
@@ -112,23 +112,23 @@ class CopyingTask(BaseTask):
         charset: str = None,
     ) -> List[Dict[str, str]]:
         """
-        Return ICL-formatted examples.
+        Return examples in ICL format.
         
-        If use_generator=True, generates fresh random examples each time.
+        If use_generator=True, Generate new random example each time.
         Otherwise, uses the standard BaseTask logic with stored data.
         
-        Args:
-            num_examples: Number of examples to return
+        Args: 
+            num_examples: number of examples to return
             shuffle: Whether to shuffle (ignored if use_generator=True)
-            seed: Random seed for reproducibility
-            fresh: Whether to prefer unused examples (ignored if use_generator=True)
-            charset: Character set for random generation (only used if use_generator=True)
+            seed: random seed for reproducibility
+            fresh: Whether to prefer unused example (ignored if use_generator=True)
+            charset: character set for random Generate (only used if use_generator=True)
             
-        Returns:
-            List of example dictionaries with 'input' and 'output' keys
+        Returns: 
+            list of example dictionaries with 'input' and 'output' keys
         """
         if self.use_generator:
-            # Generate fresh random examples on-the-fly
+            # Generate fresh random example on the fly
             return self.generate_examples(num_examples, charset=charset, seed=seed)
         else:
             # Use the standard BaseTask logic with stored data
@@ -140,7 +140,7 @@ class CopyingTask(BaseTask):
             )
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy."""
+        """Evaluate predictions using exact-match accuracy."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
@@ -152,7 +152,7 @@ class CopyingTask(BaseTask):
         # Preprocess predictions
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate exact match accuracy
+        # Calculate exact-match accuracy
         correct = sum(
             1 for pred, gt in zip(processed_predictions, ground_truth)
             if pred.strip() == gt.strip()
@@ -171,28 +171,28 @@ def make_copying_task(config: TaskConfig = None,
                       min_length: int = 3,
                       max_length: int = 8,
                       test_size: int = 20) -> CopyingTask:
-    """Factory function to create a CopyingTask with default examples.
+    """factory function to Create a CopyingTask with default examples.
     
-    Args:
-        config: Optional TaskConfig. If None, creates a default config with
+    Args: 
+        configuration: optional TaskConfig. If None, creates a default configuration with
                 example data where input == output.
-        use_generator: If True, generate random examples on-the-fly instead of using static data.
-                      This allows for limitless unique examples.
-        min_length: Minimum length of generated random strings (only used if use_generator=True)
-        max_length: Maximum length of generated random strings (only used if use_generator=True)
-        test_size: Number of test examples to generate (default: 20)
+        use_generator: If True, Generate random example on the fly instead of using static data.
+                      This allows for limitless unique example.
+        min_length: Minimum length of generated random string (only used if use_generator=True)
+        max_length: Maximum length of generated random string (only used if use_generator=True)
+        test_size: number of test examples to Generate(default: 20)
     
-    Returns:
+    Returns: 
         CopyingTask instance
     """
     if config is None:
         if use_generator:
-            # Generate test examples once at task creation for deterministic evaluation
-            # We create a temporary instance just to use the generate_examples method
+            # Generate test example once at task creation for deterministic Evaluate
+            # We Create a temporary instance just to use the generate_examples method
             import random
             import string
             
-            # Generate deterministic test set
+            # Generate a deterministic test set
             random.seed(42)
             test_examples = []
             for _ in range(test_size):
@@ -201,7 +201,7 @@ def make_copying_task(config: TaskConfig = None,
                 random_str = ''.join(random.choices(charset, k=length))
                 test_examples.append({"input": random_str, "output": random_str})
         else:
-            # Default examples - simple strings that should be copied exactly
+            # default example - simple string that should be copied exactly
             test_examples = [
                 {"input": "cat", "output": "cat"},
                 {"input": "dog", "output": "dog"},

@@ -12,11 +12,11 @@ from tasks.registry import get_task
 
 
 def load_model_revision(model_id, revision):
-    """Load a HuggingFace model and tokenizer at a specific revision."""
+    """Loada HuggingFace model and tokenizer at a specific revision."""
     tokenizer = AutoTokenizer.from_pretrained(
         model_id, revision=revision, trust_remote_code=True
     )
-    # Decoder-only models often lack a pad token; use eos_token as fallback
+    # Decoder-only model often lack a pad token; use eos_token as fallback
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
@@ -26,7 +26,7 @@ def load_model_revision(model_id, revision):
     return model, tokenizer
 
 def preprocess_5shot(dataset):
-    # Sample 5 instances from the dataset
+    # Sample 5 instance from the dataset
     sampled_instances = dataset.shuffle(seed=42).select(range(5))
 
     # Remove the sampled instance from the dataset
@@ -36,7 +36,7 @@ def preprocess_5shot(dataset):
         prompt += f"Input: {instance['input']}\n{instance['output']}\n"
 
     def prompt_formatting(instance):
-        # Format the prompt
+        # Formatthe prompt
         instance["prompt"] = prompt + f"Input: {instance['input']}\n"
         return instance
     dataset = dataset.map(prompt_formatting)
@@ -56,12 +56,12 @@ def evaluate_model(
     model=None,
     tokenizer=None,
 ):
-    # Load the dataset with optional spaced mode
+    # Loaddataset with optionalspaced mode
     task = get_task(task_name, spaced=spaced)
     # pdb.set_trace()
     test_data = list(task.get_split("test"))
     
-    # Build prompts using task's build_prompt method
+    # Build a prompts using task's build_prompt method
     prompts = []
 
     for instance in test_data:
@@ -80,11 +80,11 @@ def evaluate_model(
             else:
                 raise ValueError(f"Cannot determine prompt for instance: {instance.keys()}")
     
-    # Create dataset with prompts
+    # Builddataset with prompt
     dataset = Dataset.from_list([{**item, "prompt": prompt} for item, prompt in zip(test_data, prompts)])
 
     # Don't apply preprocess_fn if we're already using task.build_prompt with num_shots
-    # (to avoid adding ICL examples twice)
+    # (to avoid adding ICL example twice)
     if preprocess_fn and (not hasattr(task, 'build_prompt') or num_shots == 0):
         dataset = preprocess_fn(dataset)
 
@@ -121,7 +121,7 @@ def evaluate_model(
             # del inputs["token_type_ids"]
             inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
-            # Generate output
+            # Generateoutput
             with torch.no_grad():
                 outputs = model.generate(**inputs, max_new_tokens=max_new_tokens)
             
@@ -148,7 +148,7 @@ def evaluate_model(
         )
 
     dataset = dataset.add_column("predictions", generated_texts)
-    # Save the predictions if output_path is provided
+    # Storethe predictions if output_path is provided
     if output_path:
         # Sanitize task name for file path
         task_name_safe = task_name.replace(':', '_').replace(',', '_')
@@ -160,8 +160,8 @@ def evaluate_model(
         # Get ground truth for computing correctness
         ground_truth = task.get_ground_truth("test")
         
-        # Group by category if present, and add correct field
-        category_items = {}  # category -> list of items
+        # group by category if present, and add correct field
+        category_items = {}  # class -> list of items
         
         for i, item in enumerate(dataset):
             pred = item.get('predictions', '')
@@ -172,7 +172,7 @@ def evaluate_model(
             gt_clean = gt.strip().lower() if gt else ""
             is_correct = (pred_clean == gt_clean)
             
-            # Create detailed item
+            # Builddetailed item
             detailed_item = {
                 "index": i,
                 "input": item.get('input', item.get('question', '')),
@@ -187,7 +187,7 @@ def evaluate_model(
                 }
             }
             
-            # Group by category
+            # group by category
             category = item.get('category_name', '')
             if category:
                 if category not in category_items:
@@ -198,18 +198,18 @@ def evaluate_model(
                     category_items['_default'] = []
                 category_items['_default'].append(detailed_item)
         
-        # Save files - one per category or single file if no categories
+        # Save files — one per category, or a single file if no categories
         import json
         
         if len(category_items) == 1 and '_default' in category_items:
-            # No categories - save single file
+            # No class - Storesingle file
             file_name = os.path.join(output_path, f"{model_id.replace('/', '_')}_{chkpt}_{task_name_safe}_detailed.jsonl")
             with open(file_name, 'w', encoding='utf-8') as f:
                 for item in category_items['_default']:
                     f.write(json.dumps(item, default=str) + '\n')
             print(f"Saved {len(category_items['_default'])} predictions to {file_name}")
         else:
-            # Multiple categories - save separate files
+            # Multiple categories — save separate file per category
             for category, items in category_items.items():
                 if category == '_default':
                     continue
@@ -224,7 +224,7 @@ def evaluate_model(
                 print(f"  Saved {category}: {num_correct}/{len(items)} correct -> {os.path.basename(file_name)}")
         
         print(f"Predictions saved to {output_path}")
-    # Evaluate the model
+    # Evaluatethe model
     metrics = task.evaluate(dataset["predictions"], split="test", updated_dataset=dataset.to_list())
     print(f"Metrics for {model_id} at {chkpt}: {metrics}")
     
@@ -253,7 +253,7 @@ def main():
         quantization=args.quantization,
     )
     
-    # print(f"Results saved to {args.output_path}")
+    # print(f"results saved to {args.output_path}")
 
 if __name__ == "__main__":
     main()

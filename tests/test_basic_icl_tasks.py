@@ -22,7 +22,7 @@ from function_vecs.extract_function_vecs import (
 
 
 class SimpleArithmeticTask(BaseTask):
-    """Basic addition task: a + b = c"""
+    """Basic addition Task: a + b = c"""
     
     def __init__(self):
         config = TaskConfig(
@@ -46,13 +46,13 @@ class SimpleArithmeticTask(BaseTask):
         return data[:20]  # Keep it small
     
     def build_prompt(self, row):
-        # ICL format with 2 demonstrations
+        # ICL Formatwith 2 demonstration
         prompt = "3 + 2 -> 5\n4 + 1 -> 5\n"
         prompt += f"{row['input']} ->"
         return prompt
     
     def evaluate(self, predictions, split="test", **kwargs):
-        """Simple exact match evaluation."""
+        """simple exact-match Evaluate."""
         ground_truth = self.get_ground_truth(split)
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
@@ -61,7 +61,7 @@ class SimpleArithmeticTask(BaseTask):
 
 
 class SimpleNegationTask(BaseTask):
-    """Basic negation task: not X = Y"""
+    """Basic negation Task: not X = Y"""
     
     def __init__(self):
         config = TaskConfig(
@@ -73,7 +73,7 @@ class SimpleNegationTask(BaseTask):
         super().__init__(config)
         
     def get_split(self, split_name: str):
-        # Simple yes/no negation
+        # simple yes/no negation
         data = [
             {"input": "yes", "output": "no"},
             {"input": "no", "output": "yes"},
@@ -95,7 +95,7 @@ class SimpleNegationTask(BaseTask):
         return prompt
     
     def evaluate(self, predictions, split="test", **kwargs):
-        """Simple exact match evaluation."""
+        """simple exact-match Evaluate."""
         ground_truth = self.get_ground_truth(split)
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
@@ -104,7 +104,7 @@ class SimpleNegationTask(BaseTask):
 
 
 class SimpleCapitalizationTask(BaseTask):
-    """Basic capitalization task: lowercase -> UPPERCASE"""
+    """Basic capitalization Task: lowercase -> UPPERCASE"""
     
     def __init__(self):
         config = TaskConfig(
@@ -131,7 +131,7 @@ class SimpleCapitalizationTask(BaseTask):
         return prompt
     
     def evaluate(self, predictions, split="test", **kwargs):
-        """Simple exact match evaluation."""
+        """simple exact-match Evaluate."""
         ground_truth = self.get_ground_truth(split)
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
@@ -140,7 +140,7 @@ class SimpleCapitalizationTask(BaseTask):
 
 
 class SimpleRhymingTask(BaseTask):
-    """Basic rhyming task: cat -> bat, dog -> log"""
+    """Basic rhyming Task: cat -> bat, dog -> log"""
     
     def __init__(self):
         config = TaskConfig(
@@ -178,7 +178,7 @@ class SimpleRhymingTask(BaseTask):
         return prompt
     
     def evaluate(self, predictions, split="test", **kwargs):
-        """Simple exact match evaluation."""
+        """simple exact-match Evaluate."""
         ground_truth = self.get_ground_truth(split)
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
@@ -328,7 +328,7 @@ class VowelCountTask(BaseTask):
 
 
 class StringLengthTask(BaseTask):
-    """String length: cat -> 3"""
+    """string length: cat -> 3"""
     
     def __init__(self):
         config = TaskConfig(
@@ -411,16 +411,16 @@ def test_basic_function_vector_extraction():
         topk_heads=4
     )
     
-    # Load model once
+    # Loadmodel once
     tokenizer = AutoTokenizer.from_pretrained(config.model_name)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(config.model_name).eval()
     
-    # Create simple headset (just pick a few heads)
+    # Buildsimple headset (just pick a few heads)
     headset = Headset(mode="topk", heads=[(5, 0), (5, 1), (5, 2), (5, 3)])
     
-    # Test tasks
+    # Test task
     tasks = [
         SimpleArithmeticTask(),
         SimpleNegationTask(), 
@@ -445,13 +445,13 @@ def test_basic_function_vector_extraction():
         for i, p in enumerate(prompts[:2]):
             print(f"  {i+1}: {repr(p)}")
             
-        # Test control generation
+        # Test control Generate
         controls = get_shuffled_prompts(task, 3)
         print(f"Control prompts ({len(controls)}):")
         for i, c in enumerate(controls[:2]):
             print(f"  {i+1}: {repr(c)}")
         
-        # Test contribution extraction
+        # Test contribution Extract
         contribs = _batch_per_head_contribs(
             model, tokenizer, prompts[:2], layer_idx=5, device="cpu"
         )
@@ -487,16 +487,16 @@ def test_basis_formation_and_pca():
         topk_heads=4
     )
     
-    # Load model
+    # Loadmodel
     tokenizer = AutoTokenizer.from_pretrained(config.model_name)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(config.model_name).eval()
     
-    # Simple headset
+    # simple headset
     headset = Headset(mode="topk", heads=[(5, 0), (5, 1), (5, 2), (5, 3)])
     
-    # Create tasks
+    # Buildtasks
     tasks = [
         SimpleArithmeticTask(),
         SimpleNegationTask(),
@@ -524,7 +524,7 @@ def test_basis_formation_and_pca():
     print(f"Task matrix shape: {task_matrix.V.shape}")
     print(f"Task names: {task_matrix.task_names}")
     
-    # Build skill basis with SVD
+    # Buildskill basis with SVD
     print("\n=== Building Skill Basis (SVD) ===")
     skill_basis = build_skill_basis(task_matrix, method="svd", k=6)  # More components for richer analysis
     print(f"U shape: {skill_basis.U.shape}")
@@ -532,13 +532,13 @@ def test_basis_formation_and_pca():
     print(f"Vt shape: {skill_basis.Vt.shape}")
     print(f"Singular values: {skill_basis.S}")
     
-    # Check SVD properties
+    # CheckSVD properties
     assert skill_basis.U.shape[1] == 6  # k=6 components
     assert skill_basis.S.shape[0] == 6
     assert skill_basis.Vt.shape[0] == 6
     assert skill_basis.Vt.shape[1] == len(tasks)
     
-    # Singular values should be sorted in descending order
+    # Singular value should be sorted in descending order
     assert np.all(skill_basis.S[:-1] >= skill_basis.S[1:])
     
     print("\n=== PCA Analysis ===")
@@ -548,7 +548,7 @@ def test_basis_formation_and_pca():
     print(f"Explained variance ratios: {explained_var_ratio}")
     print(f"Cumulative explained variance: {np.cumsum(explained_var_ratio)}")
     
-    # Project tasks onto principal components  
+    # Project task onto principal components 
     print(f"\nTask projections onto first 6 components:")
     projections = skill_basis.Vt.T  # (n_tasks, n_components)
     for i, task_name in enumerate(task_matrix.task_names):
@@ -556,7 +556,7 @@ def test_basis_formation_and_pca():
         print(f"  {task_name:20s}: [{proj[0]:6.3f}, {proj[1]:6.3f}, {proj[2]:6.3f}, {proj[3]:6.3f}, {proj[4]:6.3f}, {proj[5]:6.3f}]")
     
     # Basic sanity checks
-    assert explained_var_ratio[0] > 0.1  # First component should explain some variance
+    assert explained_var_ratio[0] > 0.1  # first component should explain some variance
     assert np.sum(explained_var_ratio) <= 1.0  # Can't explain more than 100%
     
     print("\n=== Function Vector Similarities ===")
@@ -575,7 +575,7 @@ def test_basis_formation_and_pca():
     try:
         import matplotlib.pyplot as plt
         
-        # Create 2D and 3D plots of task projections
+        # Build2D and 3D plots of task projections
         projections = skill_basis.Vt.T  # (n_tasks, n_components)
         
         # 2D plot: PC1 vs PC2
@@ -591,7 +591,7 @@ def test_basis_formation_and_pca():
         plt.title('Task Projections: PC1 vs PC2')
         plt.grid(True, alpha=0.3)
         
-        # 2D plot: PC1 vs PC3  
+        # 2D plot: PC1 vs PC3 
         plt.subplot(1, 2, 2)
         plt.scatter(projections[:, 0], projections[:, 2], s=100, alpha=0.7, color='orange')
         for i, name in enumerate(task_matrix.task_names):
@@ -611,7 +611,7 @@ def test_basis_formation_and_pca():
         fig = plt.figure(figsize=(10, 8))
         ax = fig.add_subplot(111, projection='3d')
         
-        # Color tasks by type for better visualization
+        # Color task by type for better visualization
         task_colors = {
             'simple_arithmetic': 'red',
             'add_one': 'red', 
@@ -642,7 +642,7 @@ def test_basis_formation_and_pca():
         plt.savefig('/projects/bfcu/ElementalTask/task_pca_3d.png', dpi=150, bbox_inches='tight')
         print("📈 Saved 3D PCA plot to: task_pca_3d.png")
         
-        # Task type clustering analysis
+        # task type clustering analysis
         print("\n=== Task Type Analysis ===")
         numerical_tasks = ['simple_arithmetic', 'add_one', 'string_length', 'vowel_count']
         character_tasks = ['first_character', 'last_character']
@@ -681,13 +681,13 @@ def test_basis_formation_and_pca():
 
 
 class CompositeReverseCapitalizeTask(BaseTask):
-    """Composite task: Reverse a string then capitalize it.
+    """Composite Task: Reverse a string then capitalize it.
     
-    This combines two operations:
+    This combines two operation:
     1. Reverse the string (like ReverseStringTask)
-    2. Capitalize the result (like SimpleCapitalizationTask)
+    2. Capitalize the results (like SimpleCapitalizationTask)
     
-    Example: "hello" -> "olleh" -> "Olleh"
+    example: "hello" -> "olleh" -> "Olleh"
     """
     
     def __init__(self):
@@ -714,7 +714,7 @@ class CompositeReverseCapitalizeTask(BaseTask):
         return data
     
     def build_prompt(self, row):
-        # Show the composite operation in examples
+        # Show the composite operation in example
         prompt = "cat -> taC\ndog -> goD\n"
         prompt += f"{row['input']} ->"
         return prompt

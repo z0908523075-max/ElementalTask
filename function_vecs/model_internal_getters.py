@@ -64,7 +64,7 @@ def get_post_attn_norm(block: nn.Module) -> nn.Module:
     raise RuntimeError("Cannot find post-attention layernorm in block")
 
 def get_o_proj(attn: nn.Module) -> Optional[nn.Module]:
-    # Optional hook on the attention output projection
+    # optionalhook on the attention output projection
     if hasattr(attn, "o_proj"):
         return attn.o_proj          # LLaMA/Qwen/OPT/OLMo-2
     if hasattr(attn, "c_proj"):

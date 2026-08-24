@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Command-line interface for the unified task evaluation system."""
+"""Command-line interface for the unified task Evaluate system."""
 
 import argparse
 import json
@@ -16,7 +16,7 @@ from tasks.registry import TaskRegistry
 
 
 def create_model_config_from_args(args) -> ModelConfig:
-    """Create ModelConfig from command line arguments."""
+    """BuildModelConfig from command line arguments."""
     return ModelConfig(
         model_id=args.model_id,
         backend=args.backend,
@@ -32,7 +32,7 @@ def create_model_config_from_args(args) -> ModelConfig:
 
 
 def create_eval_config_from_args(args) -> EvaluationConfig:
-    """Create EvaluationConfig from command line arguments."""
+    """BuildEvaluationConfig from command line arguments."""
     return EvaluationConfig(
         output_dir=args.output_dir,
         save_predictions=args.save_predictions,
@@ -44,17 +44,17 @@ def create_eval_config_from_args(args) -> EvaluationConfig:
 
 
 def main():
-    # Check for list categories flag first (before full argument parsing)
+    # Check for list class flag first (before full argument parsing)
     if "--list_textfrct_categories" in sys.argv:
         print_textfrct_categories()
         return 0
     
     parser = argparse.ArgumentParser(description="Unified Task Evaluation System")
     
-    # Task arguments
+    # taskparameters
     task_group = parser.add_argument_group("Task Configuration")
     
-    # Discover available tasks dynamically
+    # Discover available task dynamically
     registry = TaskRegistry()
     available_tasks = list(registry.discover_tasks().keys())
     
@@ -77,7 +77,7 @@ def main():
         textfrct_group.add_argument("--list_textfrct_categories", action="store_true",
                                    help="List all available TextFRCT categories and exit")
     
-    # Model arguments
+    # modelparameters
     model_group = parser.add_argument_group("Model Configuration")
     model_group.add_argument("--model_id", type=str, required=True,
                             help="Model identifier")
@@ -91,7 +91,7 @@ def main():
     model_group.add_argument("--api_key", type=str,
                             help="API key for OpenAI/Together")
     
-    # Generation arguments
+    # Generateparameters
     gen_group = parser.add_argument_group("Generation Configuration")
     gen_group.add_argument("--temperature", type=float, default=0.0,
                           help="Generation temperature")
@@ -104,7 +104,7 @@ def main():
     gen_group.add_argument("--trust_remote_code", action="store_true", default=True,
                           help="Trust remote code for model loading")
     
-    # Evaluation arguments
+    # Evaluateparameters
     eval_group = parser.add_argument_group("Evaluation Configuration")
     eval_group.add_argument("--output_dir", type=str, default="results",
                            help="Output directory for results")
@@ -121,20 +121,20 @@ def main():
     
     args = parser.parse_args()
     
-    # Create configurations
+    # Buildconfiguration
     model_config = create_model_config_from_args(args)
     eval_config = create_eval_config_from_args(args)
     
-    # Create task dynamically using registry - NO HARDCODED CONDITIONALS!
+    # Buildtask dynamically using registry - NO HARDCODED CONDITIONALS!
     print(f"Creating {args.task_type} task...")
     
-    # Get the task class from registry
+    # Get task class from registry
     task_class = registry.get_task_class(args.task_type)
     if not task_class:
         print(f"Error: Task '{args.task_type}' not found in registry")
         return 1
     
-    # Create task-specific configuration
+    # Buildtask-specific configuration
     if args.task_type == "textfrct":
         # TextFRCT needs special configuration and constructor arguments
         config = TaskConfig(
@@ -165,7 +165,7 @@ def main():
             description="Basic arithmetic evaluation from CLI",
             data_format="memory",
             data_path=None,
-            in_memory_data=None,  # Signal to use task's default data
+            in_memory_data=None,  # Signal to use task's defaultdata
             input_column="question",
             output_column="answer",
             evaluation_metrics=["accuracy"]
@@ -179,16 +179,16 @@ def main():
             data_format="huggingface",
             data_path="mib-bench/ioi",
             input_column="prompt",  # The incomplete sentence
-            output_column="choices",  # List of choices, use with answer_index
+            output_column="choices",  # list of choices, use with answer_index
             evaluation_metrics=["accuracy"]
         )
         task = task_class(config)
     else:
-        # Generic task creation for other tasks
+        # Generic task creation for other task
         config = TaskConfig(
             name=f"{args.task_type}_cli",
             description=f"{args.task_type} evaluation from CLI",
-            data_path=f"dataset/{args.task_type}.csv",  # Default data path
+            data_path=f"dataset/{args.task_type}.csv",  # default data path
             data_format="csv",
             input_column="question",
             output_column="answer",
@@ -198,13 +198,13 @@ def main():
     
     print(f"✅ Successfully created {args.task_type} task")
     
-    # Create evaluator and run evaluation
+    # Buildevaluator and run Evaluate
     print("Creating evaluator...")
     evaluator = TaskEvaluator(model_config, eval_config)
     print("Running evaluation...")
     results = evaluator.evaluate_task(task)
     
-    # Print summary results
+    # Printsummaryresults
     print("\n" + "="*50)
     print("EVALUATION RESULTS")
     print("="*50)
@@ -225,7 +225,7 @@ def main():
 
 
 def print_textfrct_categories():
-    """Print all available TextFRCT categories with descriptions."""
+    """Print all available TextFRCT class with descriptions."""
     print("Available TextFRCT Categories:")
     print("=" * 50)
     
@@ -266,7 +266,7 @@ def print_textfrct_categories():
         "XU4": "Different Uses - Creative uses for objects"
     }
     
-    # Group by main category
+    # group by Main class
     groups = {
         "CV (Convergent Visual)": ["CV1", "CV2", "CV3"],
         "FA (Fluent Associational)": ["FA1", "FA2", "FA3"],

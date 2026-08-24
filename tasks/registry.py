@@ -10,18 +10,26 @@ from .base_task import BaseTask, TaskConfig
 
 class TaskRegistry:
     """Automatic task discovery and registration system."""
+
+    # Legacy compositional task name now backed by blended composition data.
+    _COMPOSITIONAL_TO_BLENDED_ALIASES = {
+        "coref_tracking_query",
+        "decipher_apply_reason",
+        "extract_verify",
+        "opplan_solve",
+    }
     
     def __init__(self):
         self._tasks: Dict[str, Type[BaseTask]] = {}
         self._discovered = False
     
     def discover_tasks(self, implementations_path: str = None) -> Dict[str, Type[BaseTask]]:
-        """Automatically discover and register tasks from the implementations directory."""
+        """automatically discover and register task from the implementation directory."""
         if self._discovered:
             return self._tasks
         
         if implementations_path is None:
-            # Default to tasks/implementations directory
+            # default to tasks/implementations directory
             current_dir = Path(__file__).parent
             implementations_path = current_dir / "implementations"
         else:
@@ -32,7 +40,7 @@ class TaskRegistry:
             self._discovered = True
             return self._tasks
         
-        # Get all Python files in the implementations directory
+        # Get all Python file in the implementation directory
         python_files = list(implementations_path.glob("*.py"))
         python_files = [f for f in python_files if f.name != "__init__.py"]
         
@@ -41,7 +49,7 @@ class TaskRegistry:
         
         for py_file in python_files:
             try:
-                # Convert file path to module name
+                # convert the file path to module name
                 module_name = f"tasks.implementations.{py_file.stem}"
                 
                 # Import the module
@@ -101,17 +109,17 @@ class TaskRegistry:
     def create_task(self, name: str, spaced: bool = False, *args, **kwargs) -> BaseTask:
         """Create a task instance by name.
         
-        If no config/args are provided, tries to use factory functions for proper defaults.
-        Falls back to creating a basic TaskConfig if no factory is available.
+        If no configuration/args are provided, tries to use factory functions for proper default.
+        Falls back to building a basic TaskConfig if no factory is available.
         
-        Args:
-            name: Task name, optionally with subtask filter (e.g., 'compositional:upper_reverse')
-            spaced: If True, use spaced version of task (adds spaces between characters)
+        Args: 
+            name: task name, optionally with subtask filter (e.g., 'compositional:upper_reverse')
+            spaced: If True, use spaced version of task (adds spaces between character)
             *args, **kwargs: Additional arguments passed to task constructor
         """
         from .base_task import TaskConfig
         
-        # Allow a simple subtask syntax: 'task:sub1,sub2' -> base task with category filters
+        # Allow a simple subtask syntax: 'Task:sub1,sub2' -> Base task with class filters
         base_name = name
         subtask_specs = None
         if isinstance(name, str) and ':' in name:
@@ -127,7 +135,7 @@ class TaskRegistry:
             # If subtasks were requested, try to apply a simple post-filter
             if subtask_specs:
                 try:
-                    # Convert string to list for filtering
+                    # convert the string to list for filtering
                     filter_list = [s.strip() for s in subtask_specs.split(',') if s.strip()]
                     import pandas as pd
                     if hasattr(task_instance, 'data') and isinstance(task_instance.data, pd.DataFrame):
@@ -141,7 +149,7 @@ class TaskRegistry:
                     pass
             return task_instance
         
-        # Try to use factory functions for tasks that need special initialization
+        # Try to use factory functions for task that need special initialization
         factory_map = {
             'copying': lambda: self._import_and_call('tasks.implementations.copying_task', 'make_copying_task', use_generator=True),
             'ignoring_context': lambda: self._import_and_call('tasks.implementations.ignoring_context_task', 'make_ignoring_context_task', use_generator=True),
@@ -159,13 +167,18 @@ class TaskRegistry:
             'logical_ops': lambda: self._import_and_call('tasks.implementations.logical_ops_task', 'create_logical_ops_task', category=subtask_specs),
             'fact_extraction': lambda: self._import_and_call('tasks.implementations.fact_extraction_task', 'create_fact_extraction_task', category=subtask_specs),
             'coreference': lambda: self._import_and_call('tasks.implementations.coreference_task', 'create_coreference_task', category=subtask_specs),
+            'word_problem_single_step': lambda: self._import_and_call('tasks.implementations.math_word_problem_tasks', 'create_word_problem_single_step_task', category=subtask_specs),
+            'quantity_comparison': lambda: self._import_and_call('tasks.implementations.math_word_problem_tasks', 'create_quantity_comparison_task', category=subtask_specs),
+            'rate_unit': lambda: self._import_and_call('tasks.implementations.math_word_problem_tasks', 'create_rate_unit_task', category=subtask_specs),
+            'multi_entity_tracking': lambda: self._import_and_call('tasks.implementations.math_word_problem_tasks', 'create_multi_entity_tracking_task', category=subtask_specs),
+            'benchmark': lambda: self._create_benchmark_task(subtask_specs),
         }
         
         if base_name in factory_map:
             try:
                 task_instance = factory_map[base_name]()
                 # Note: compositional and textfrct handle their own filtering via factory args
-                # For other tasks, apply post-filtering if subtasks were requested
+                # For other task, apply post-filtering if subtasks were requested
                 if subtask_specs and base_name not in ('compositional', 'textfrct'):
                     try:
                         filter_list = [s.strip() for s in subtask_specs.split(',') if s.strip()]
@@ -184,7 +197,7 @@ class TaskRegistry:
                 print(f"Warning: Factory function failed for '{name}': {e}")
                 print(f"Falling back to default config...")
         
-        # Fallback: create with minimal config
+        # Fallback: Buildwith minimal configuration
         task_class = self.get_task_class(base_name)
         return task_class(config=TaskConfig(name=name))
     
@@ -224,7 +237,7 @@ class TaskRegistry:
         return task_class(config)
     
     def _create_math_task(self):
-        """Create a MathTask (generates synthetic data)."""
+        """Create a MathTask (Generate synthetic data)."""
         config = TaskConfig(
             name="math",
             description="Math task with synthetic arithmetic problems",
@@ -237,14 +250,23 @@ class TaskRegistry:
         return task_class(config)
     
     def _create_compositional_task(self, category_filter=None, spaced=False):
-        """Create a CompositionalTask with optional category filtering and spacing.
+        """Create a CompositionalTask with optionalcategory filtering and spacing.
         
-        Supports:
+        supports:
             - compositional (all categories)
             - compositional:upper_reverse (single category)
             - compositional:upper_reverse,lower_first (multiple categories)
             - spaced=True for character-spaced input/output
         """
+        if category_filter:
+            categories = [c.strip() for c in category_filter.split(",") if c.strip()]
+            if categories and all(c in self._COMPOSITIONAL_TO_BLENDED_ALIASES for c in categories):
+                from tasks.implementations.blended_compositions_task import create_blended_compositions_task
+
+                # Keep incoming namespace stable while routing to blended data.
+                blended_name = f"blended_compositions:{','.join(categories)}"
+                return create_blended_compositions_task(name=blended_name)
+
         task_name = "compositional"
         if category_filter:
             task_name = f"compositional:{category_filter}"
@@ -263,19 +285,33 @@ class TaskRegistry:
         task_class = self.get_task_class("compositional")
         task = task_class(config, spaced=spaced)
         
-        # Filter by category if specified
+        # filter by category if specified
         if category_filter:
             categories = [c.strip() for c in category_filter.split(",")]
             if hasattr(task, 'data') and task.data:
                 if isinstance(task.data, list):
                     task.data = [d for d in task.data if d.get('category_name') in categories]
+
+            # Fallback: supports blended composition via compositional:<class>
+            # so they remain discoverable under the compositional namespace.
+            if (not getattr(task, 'data', None)) and len(categories) == 1:
+                blended_category = categories[0]
+                try:
+                    return self._import_and_call(
+                        'tasks.implementations.blended_compositions_task',
+                        'create_blended_compositions_task',
+                        category=blended_category,
+                        name=f"compositional:{blended_category}",
+                    )
+                except Exception:
+                    pass
         
         return task
     
     def _create_textfrct_task(self, category_filter=None):
-        """Create a TextFRCT task with optional category filtering.
+        """Create a TextFRCT task with optionalcategory filtering.
         
-        Supports:
+        supports:
             - textfrct (all categories)
             - textfrct:CV1 (single category)
             - textfrct:CV1,CV2,FA1 (multiple categories)
@@ -304,26 +340,38 @@ class TaskRegistry:
         
         task = TextFRCTTask(config, skip_subjective=True, categories=categories)
         
-        # Filter data by category_id if categories specified
+        # filter data by category_id if class specified
         if categories and hasattr(task, 'data') and task.data:
             if isinstance(task.data, list):
                 task.data = [d for d in task.data if d.get('category_id') in categories]
             
         return task
     
+    def _create_benchmark_task(self, task_name: str):
+        """Create a benchmark task (ARC-Challenge, BoolQ, WinoGrande, GSM8K) by name.
+
+        supports:
+            benchmark:arc_challenge
+            benchmark:boolq
+            benchmark:winogrande
+            benchmark:gsm8k
+        """
+        from tasks.benchmarks.lmeval_tasks import make_benchmark_task
+        return make_benchmark_task(task_name)
+
     def list_tasks(self) -> List[str]:
-        """List all available task names."""
+        """list all available task name."""
         if not self._discovered:
             self.discover_tasks()
         return list(self._tasks.keys())
     
     def get_task_info(self, name: str = None) -> Dict:
-        """Get information about tasks."""
+        """Get information about task."""
         if not self._discovered:
             self.discover_tasks()
         
         if name is None:
-            # Return info for all tasks
+            # Returnsinfo for all task
             return {
                 task_name: {
                     "class": task_class.__name__,
@@ -333,7 +381,7 @@ class TaskRegistry:
                 for task_name, task_class in self._tasks.items()
             }
         else:
-            # Return info for specific task
+            # Returnsinfo for specific task
             if name not in self._tasks:
                 raise ValueError(f"Task '{name}' not found")
             
@@ -352,7 +400,7 @@ _task_registry = TaskRegistry()
 
 # Public API functions
 def discover_tasks(implementations_path: str = None) -> Dict[str, Type[BaseTask]]:
-    """Discover and register all tasks from the implementations directory."""
+    """Discover and register all task from the implementation directory."""
     return _task_registry.discover_tasks(implementations_path)
 
 def register_task(name: str, task_class: Type[BaseTask]) -> None:
@@ -366,15 +414,15 @@ def get_task_class(name: str) -> Type[BaseTask]:
 def get_task(name: str, spaced: bool = False, *args, **kwargs) -> BaseTask:
     """Create a task instance by name.
     
-    Args:
-        name: Task name, optionally with subtask filter (e.g., 'compositional:upper_reverse')
-        spaced: If True, use spaced version (spaces between characters in input/output)
+    Args: 
+        name: task name, optionally with subtask filter (e.g., 'compositional:upper_reverse')
+        spaced: If True, use spaced version (spaces between character in input/output)
         *args, **kwargs: Additional arguments passed to task constructor
     
-    Returns:
-        Task instance
+    Returns: 
+        task instance
     
-    Examples:
+    Example: 
         >>> task = get_task("compositional:upper_reverse")
         >>> task = get_task("compositional:upper_reverse", spaced=True)
         >>> task = get_task("textfrct:CV1")
@@ -382,23 +430,23 @@ def get_task(name: str, spaced: bool = False, *args, **kwargs) -> BaseTask:
     return _task_registry.create_task(name, spaced=spaced, *args, **kwargs)
 
 def list_tasks() -> List[str]:
-    """List all available task names."""
+    """list all available task name."""
     return _task_registry.list_tasks()
 
 def get_task_info(name: str = None) -> Dict:
-    """Get information about tasks."""
+    """Get information about task."""
     return _task_registry.get_task_info(name)
 
 def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = True, include_simple_icl: bool = True) -> Dict[str, List[str]]:
-    """List all available tasks including subtasks.
+    """list all available task including subtasks.
     
-    Args:
+    Args: 
         include_compositional: If True, enumerate all compositional subtasks
         include_textfrct: If True, enumerate all TextFRCT subtasks
         include_simple_icl: If True, enumerate all simple_icl categories
     
-    Returns:
-        Dictionary mapping task categories to lists of task names
+    Returns: 
+        dictionary mapping task class to list of task name
     """
     if not _task_registry._discovered:
         _task_registry.discover_tasks()
@@ -412,31 +460,39 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
     
     for task_name in sorted(_task_registry._tasks.keys()):
         if task_name == "compositional" and include_compositional:
-            # Add base compositional task
+            # Add Base compositional task
             result["base_tasks"].append("compositional")
             
             # Enumerate all compositional subtasks
             try:
                 from tasks.implementations.compositional_task import STRING_COMPOSITIONS, LOOKUP_COMPOSITIONS
                 
-                # Add all string compositions
+                # Add all stringcomposition
                 for comp_name in sorted(STRING_COMPOSITIONS.keys()):
                     result["compositional_tasks"].append(f"compositional:{comp_name}")
                     result["compositional_tasks"].append(f"compositional:{comp_name} (spaced)")
                 
-                # Add all lookup-based compositions
+                # Add all lookup-based composition
                 for comp_name in sorted(LOOKUP_COMPOSITIONS.keys()):
                     result["compositional_tasks"].append(f"compositional:{comp_name}")
                     result["compositional_tasks"].append(f"compositional:{comp_name} (spaced)")
+
+                # Add blended composition class under compositional namespace
+                try:
+                    from tasks.implementations.blended_compositions_task import BlendedCompositionsTask
+                    for comp_name in sorted(BlendedCompositionsTask.CATEGORY_DATA.keys()):
+                        result["compositional_tasks"].append(f"compositional:{comp_name}")
+                except Exception:
+                    pass
                     
             except Exception as e:
                 print(f"Warning: Could not enumerate compositional tasks: {e}")
         
         elif task_name == "textfrct" and include_textfrct:
-            # Add base textfrct task
+            # Add Base textfrct task
             result["base_tasks"].append("textfrct")
             
-            # Enumerate all TextFRCT categories
+            # Enumerate all TextFRCT class
             try:
                 import pandas as pd
                 from pathlib import Path
@@ -450,7 +506,7 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
                 print(f"Warning: Could not enumerate TextFRCT tasks: {e}")
         
         elif task_name == "simple_icl" and include_simple_icl:
-            # Add base simple_icl task
+            # Add Base simple_icl task
             result["base_tasks"].append("simple_icl")
             
             # Enumerate all simple_icl categories
@@ -473,7 +529,7 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
     return result
 
 def print_all_tasks():
-    """Print a formatted list of all available tasks."""
+    """Print a Format list of all available task."""
     tasks = list_all_tasks()
     
     print("\n" + "="*70)

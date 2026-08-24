@@ -1,28 +1,28 @@
-# Function Vectors Extraction
+# Function Vectors 擷取
 
-This directory contains tools for extracting **function vectors** from language models. Function vectors are L2-normalized vectors that capture how attention heads contribute to the residual stream differently for in-context learning (ICL) examples vs. control examples (where input→output mappings are shuffled). They represent task-specific information learned by the model.
+此目錄包含用於從 language models 擷取 **function vectors** 的工具。Function vectors 是經過 L2-normalized 的向量，可捕捉 attention heads 對 residual stream 的貢獻在 in-context learning (ICL) 範例與 control 範例（input→output 對應被打亂）之間的差異。它們代表模型學到的任務特定資訊。
 
-## Table of Contents
+## 目錄
 
-- [Quick Start](#quick-start)
-- [Two Extraction Interfaces](#two-extraction-interfaces)
-  - [Simple Interface (Recommended)](#1-simple-interface-recommended)
-  - [Advanced Interface](#2-advanced-interface-full-control)
-- [Loading Model Checkpoints](#loading-model-checkpoints)
-- [Building a Skill Basis](#building-a-skill-basis-from-multiple-tasks)
-- [Discovering Available Tasks](#discovering-available-tasks)
-- [Configuration Parameters](#key-configuration-parameters)
-- [How It Works](#how-it-works)
-- [Running Tests](#running-tests)
+- [快速開始](#快速開始)
+- [兩種擷取介面](#兩種擷取介面)
+  - [簡易介面（建議）](#1-簡易介面建議)
+  - [進階介面](#2-進階介面完整控制)
+- [載入模型 Checkpoints](#載入模型-checkpoints)
+- [從多個任務建立 Skill Basis](#從多個任務建立-skill-basis)
+- [探索可用任務](#探索可用任務)
+- [關鍵設定參數](#關鍵設定參數)
+- [運作方式](#運作方式)
+- [執行測試](#執行測試)
 
 ---
 
-## Quick Start
+## 快速開始
 
 ```python
 from function_vecs.extract_function_vecs import extract_function_vector_simple
 
-# Extract function vector with one line
+# 用一行擷取 function vector
 function_vec = extract_function_vector_simple("basic_arithmetic", num_samples=10)
 
 print(f"Function vector shape: {function_vec.function_vec.shape}")
@@ -32,27 +32,27 @@ print(f"L2 norm: {function_vec.function_vec.dot(function_vec.function_vec):.6f}"
 
 ---
 
-## Two Extraction Interfaces
+## 兩種擷取介面
 
-### 1. Simple Interface (Recommended)
+### 1. 簡易介面（建議）
 
-The simple interface provides one-stop function extraction with automatic configuration. Best for rapid prototyping, standard use cases, and getting started.
+簡易介面提供自動設定的一站式函式擷取。最適合快速原型、標準使用情境與入門使用。
 
-#### Basic Usage
+#### 基本用法
 
 ```python
 from function_vecs.extract_function_vecs import extract_function_vector_simple
 
-# Minimal usage - uses all defaults
+# 最精簡用法 - 使用所有預設值
 function_vec = extract_function_vector_simple("basic_arithmetic")
 
-# With custom parameters
+# 使用自訂參數
 function_vec = extract_function_vector_simple(
     task_name="simple_icl",
-    model_name="gpt2",          # or "distilgpt2", "EleutherAI/gpt-j-6B", etc.
-    num_samples=20,              # Number of examples to use
-    device="cuda",               # "auto", "cuda", or "cpu"
-    layer_idx=11                 # Specific layer (None = use last layer)
+    model_name="gpt2",          # 或 "distilgpt2", "EleutherAI/gpt-j-6B" 等
+    num_samples=20,              # 使用的範例數量
+    device="cuda",               # "auto", "cuda", 或 "cpu"
+    layer_idx=11                 # 特定層（None = 使用最後一層）
 )
 
 print(f"Task: {function_vec.task_name}")
@@ -60,46 +60,46 @@ print(f"Shape: {function_vec.function_vec.shape}")
 print(f"Normalization: {function_vec.normalization}")  # "l2"
 ```
 
-#### Available Tasks
+#### 可用任務
 
-Tasks are auto-discovered from the task registry. Available tasks include:
-- `basic_arithmetic` - Basic arithmetic operations
-- `simple_icl` - Simple in-context learning tasks
-- `simple` - Simple task examples
-- `textfrct` - TextFRCT dataset tasks
-- `part_of_speech` - Part of speech identification
-- `token_reversal` - Token reversal operations
-- `math` - Mathematical reasoning tasks
-- `ioi_task` - Indirect object identification
+任務會自動從 task registry 探索。可用任務包括：
+- `basic_arithmetic` - 基本算術運算
+- `simple_icl` - 簡單的 in-context learning 任務
+- `simple` - 簡單任務範例
+- `textfrct` - TextFRCT 資料集任務
+- `part_of_speech` - 詞性識別
+- `token_reversal` - token 反轉操作
+- `math` - 數學推理任務
+- `ioi_task` - 間接受詞識別
 
-See [Discovering Available Tasks](#discovering-available-tasks) to list all tasks dynamically.
+請參閱[探索可用任務](#探索可用任務)以動態列出所有任務。
 
-#### Parameters
+#### 參數
 
-| Parameter | Type | Default | Description |
+| 參數 | 類型 | 預設值 | 說明 |
 |-----------|------|---------|-------------|
-| `task_name` | str | Required | Name of task from registry |
-| `task_config` | TaskConfig | None | Optional custom config |
+| `task_name` | str | 必填 | 來自 registry 的任務名稱 |
+| `task_config` | TaskConfig | None | 可選的自訂設定 |
 | `model_name` | str | `"gpt2"` | HuggingFace model identifier |
-| `checkpoint` | str | None | Model checkpoint/revision (e.g., "stage1-step1000-tokens5B") |
-| `num_samples` | int | `10` | Number of examples to use |
-| `device` | str | `"auto"` | Device: "auto", "cuda", or "cpu" |
-| `layer_idx` | int | None | Layer to extract from (None = last) |
+| `checkpoint` | str | None | 模型 checkpoint/revision（例如："stage1-step1000-tokens5B"） |
+| `num_samples` | int | `10` | 使用的範例數量 |
+| `device` | str | `"auto"` | 裝置：「auto」、「cuda」或「cpu」 |
+| `layer_idx` | int | None | 要擷取的層（None = 最後一層） |
 
-#### Returns
+#### 回傳內容
 
-A `TaskFunctionVec` object with:
-- `task_name`: Name of the task
-- `function_vec`: The extracted function vector (numpy array)
-- `normalization`: Normalization method used (default: "l2")
+一個 `TaskFunctionVec` 物件，包含：
+- `task_name`：任務名稱
+- `function_vec`：擷取出的 function vector（numpy array）
+- `normalization`：使用的 normalization 方法（預設："l2"）
 
 ---
 
-### 2. Advanced Interface (Full Control)
+### 2. 進階介面（完整控制）
 
-The advanced interface provides manual configuration of models, heads, sampling, and extraction parameters. Best for research experiments, custom tasks, and fine-tuned control.
+進階介面提供模型、heads、取樣與擷取參數的手動設定。最適合研究實驗、自訂任務與精細化控制。
 
-#### Complete Example
+#### 完整範例
 
 ```python
 from function_vecs.extract_function_vecs import (
@@ -112,46 +112,46 @@ from tasks.registry import get_task
 from tasks.base_task import TaskConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Step 1: Load model and tokenizer
+# 步驟 1：載入模型與 tokenizer
 model_name = "gpt2"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 if tokenizer.pad_token_id is None:
     tokenizer.pad_token = tokenizer.eos_token
 model = AutoModelForCausalLM.from_pretrained(model_name).to("cuda").eval()
 
-# Step 2: Get task from registry
+# 步驟 2：從 registry 取得任務
 task_config = TaskConfig(
     name="basic_arithmetic",
-    data_path="dataset/simple.csv",  # Optional: custom data path
+    data_path="dataset/simple.csv",  # 可選：自訂資料路徑
     input_column="question",
     output_column="answer"
 )
 task = get_task("simple_arithmetic", task_config)
 
-# Step 3: Configure extraction parameters
+# 步驟 3：設定擷取參數
 config = ExtractConfig(
     model_name=model_name,
     device="cuda",
     num_samples_per_task=20,
     batch_size=8,
-    layers=[11],                      # Which layers to analyze
-    topk_heads=10,                    # Number of heads to select
-    head_selection="topk",            # "topk" or "soft"
+    layers=[11],                      # 要分析哪些層
+    topk_heads=10,                    # 要選取的 heads 數量
+    head_selection="topk",            # "topk" 或 "soft"
     seed=42
 )
 
-# Step 4: Select informative heads
-# Option A: Automatic selection using AIE (Attention Importance Estimation)
+# 步驟 4：選取具資訊量的 heads
+# 選項 A：使用 AIE（Attention Importance Estimation）自動選取
 headset = extract_informative_heads(config, [task])
 print(f"Selected heads: {headset.heads}")
 
-# Option B: Manual specification
+# 選項 B：手動指定
 headset = Headset(
     mode="topk",
-    heads=[(11, 0), (11, 1), (11, 2), (11, 5)]  # (layer, head) tuples
+    heads=[(11, 0), (11, 1), (11, 2), (11, 5)]  # (layer, head) tuple
 )
 
-# Step 5: Extract function vector
+# 步驟 5：擷取 function vector
 function_vec = extract_task_function_vec(
     task=task,
     config=config,
@@ -164,15 +164,15 @@ print(f"Task: {function_vec.task_name}")
 print(f"Function vector shape: {function_vec.function_vec.shape}")
 ```
 
-#### Creating Custom Tasks
+#### 建立自訂任務
 
-You can create tasks with in-memory data:
+你可以使用記憶體內資料建立任務：
 
 ```python
 from tasks.base_task import TaskConfig
 from tasks.registry import get_task
 
-# Create task with custom in-memory data
+# 使用自訂記憶體內資料建立任務
 task_config = TaskConfig(
     name="uppercase_conversion",
     data_format="memory",
@@ -185,57 +185,57 @@ task_config = TaskConfig(
     input_column="input",
     output_column="output"
 )
-task = get_task("simple_icl", task_config)  # Use simple_icl as base class
+task = get_task("simple_icl", task_config)  # 使用 simple_icl 作為基底類別
 
-# Now extract function vector for this custom task
+# 現在為這個自訂任務擷取 function vector
 function_vec = extract_task_function_vec(task, config, headset)
 ```
 
 ---
 
-## Loading Model Checkpoints
+## 載入模型 Checkpoints
 
-Both **OLMo-2** and **Crystal/CrystalCoder** models provide intermediate pre-training checkpoints, allowing you to analyze model behavior at different stages of training.
+**OLMo-2** 與 **Crystal/CrystalCoder** 模型都提供中間 pre-training checkpoints，讓你可以分析模型在不同訓練階段的行為。
 
-### Supported Models with Checkpoints
+### 支援提供 Checkpoints 的模型
 
 #### OLMo-2-1124-7B
 
 **Model ID:** `allenai/OLMo-2-1124-7B`
 
-**Checkpoint Format:** `stage1-stepXXXX-tokensYYYB`
+**Checkpoint 格式：** `stage1-stepXXXX-tokensYYYB`
 
-**Examples:**
-- `stage1-step1000-tokens5B` - Early checkpoint after ~5B tokens
-- `stage1-step10000-tokens42B` - Early training checkpoint
-- `stage1-step100000-tokens420B` - Mid-training checkpoint
-- `main` (default) - Final trained model
+**範例：**
+- `stage1-step1000-tokens5B` - 約 5B tokens 後的早期 checkpoint
+- `stage1-step10000-tokens42B` - 早期訓練 checkpoint
+- `stage1-step100000-tokens420B` - 訓練中期 checkpoint
+- `main`（預設）- 最終訓練完成模型
 
 #### LLM360/Crystal
 
 **Model ID:** `LLM360/Crystal`
 
-**Checkpoint Format:** `CrystalCoder_phaseN_checkpoint_XXXXXX`
+**Checkpoint 格式：** `CrystalCoder_phaseN_checkpoint_XXXXXX`
 
-**Examples:**
+**範例：**
 - `CrystalCoder_phase1_checkpoint_055500` - Phase 1 checkpoint
-- `CrystalCoder_phase3_checkpoint_027728` - Default/final checkpoint
+- `CrystalCoder_phase3_checkpoint_027728` - 預設／最終 checkpoint
 
-### Usage with Simple Interface
+### 搭配簡易介面的用法
 
 ```python
 from function_vecs.extract_function_vecs import extract_function_vector_simple
 
-# Extract from OLMo-2 early checkpoint
+# 從 OLMo-2 早期 checkpoint 擷取
 function_vec = extract_function_vector_simple(
     task_name="basic_arithmetic",
     model_name="allenai/OLMo-2-1124-7B",
-    checkpoint="stage1-step1000-tokens5B",  # Specify checkpoint
+    checkpoint="stage1-step1000-tokens5B",  # 指定 checkpoint
     num_samples=20,
     device="cuda"
 )
 
-# Extract from Crystal Phase 1 checkpoint
+# 從 Crystal Phase 1 checkpoint 擷取
 function_vec = extract_function_vector_simple(
     task_name="simple_icl",
     model_name="LLM360/Crystal",
@@ -245,34 +245,34 @@ function_vec = extract_function_vector_simple(
 )
 ```
 
-### Usage with Advanced Interface
+### 搭配進階介面的用法
 
 ```python
 from function_vecs.extract_function_vecs import ExtractConfig, extract_task_function_vec
 from tasks.registry import get_task
 from tasks.base_task import TaskConfig
 
-# Configure extraction with checkpoint
+# 設定包含 checkpoint 的擷取參數
 config = ExtractConfig(
     model_name="allenai/OLMo-2-1124-7B",
-    checkpoint="stage1-step1000-tokens5B",  # Specify checkpoint
+    checkpoint="stage1-step1000-tokens5B",  # 指定 checkpoint
     device="cuda",
     num_samples_per_task=20,
-    layers=[31]  # Last layer
+    layers=[31]  # 最後一層
 )
 
-# Load task and extract
+# 載入任務並擷取
 task_config = TaskConfig(name="basic_arithmetic")
 task = get_task("basic_arithmetic", task_config)
 function_vec = extract_task_function_vec(config, task)
 ```
 
-### Analyzing Training Dynamics
+### 分析訓練動態
 
-Compare function vectors across training checkpoints:
+比較不同訓練 checkpoints 的 function vectors：
 
 ```python
-# OLMo-2 training progression
+# OLMo-2 訓練進程
 checkpoints = [
     "stage1-step1000-tokens5B",
     "stage1-step5000-tokens21B",
@@ -290,36 +290,36 @@ for checkpoint in checkpoints:
     function_vecs.append(vec)
     print(f"{checkpoint}: norm={vec.function_vec.dot(vec.function_vec):.6f}")
 
-# Analyze how function vectors evolve during training
-# (e.g., cosine similarity between checkpoints)
+# 分析 function vectors 如何隨訓練演變
+# （例如 checkpoints 之間的 cosine similarity）
 ```
 
-### Finding Available Checkpoints
+### 尋找可用的 Checkpoints
 
 ```python
 from huggingface_hub import list_repo_refs
 
-# List all OLMo-2 checkpoints
+# 列出所有 OLMo-2 checkpoints
 out = list_repo_refs("allenai/OLMo-2-1124-7B")
 checkpoints = [b.name for b in out.branches]
 print(f"OLMo-2 checkpoints: {checkpoints}")
 
-# Visit HuggingFace "Files and versions" tab for Crystal:
+# 造訪 HuggingFace 上 Crystal 的 "Files and versions" 分頁：
 # https://huggingface.co/LLM360/Crystal/tree/main
 ```
 
-### Notes
+### 注意事項
 
-- All checkpoint loading requires `trust_remote_code=True`
-- Checkpoints are cached locally by HuggingFace Hub
-- If no checkpoint is specified, the main/default branch is loaded
-- Both models are fully supported by the function_vecs framework
+- 所有 checkpoint 載入都需要 `trust_remote_code=True`
+- Checkpoints 會由 HuggingFace Hub 緩存在本機
+- 如果未指定 checkpoint，則會載入 main／預設 branch
+- 這兩個模型都受到 function_vecs 框架完整支援
 
 ---
 
-## Building a Skill Basis from Multiple Tasks
+## 從多個任務建立 Skill Basis
 
-Extract function vectors from multiple tasks and create a shared skill basis using SVD. This reveals the underlying "skill dimensions" shared across tasks.
+從多個任務擷取 function vectors，並使用 SVD 建立共享的 skill basis。這會揭示各任務共享的底層「skill dimensions」。
 
 ```python
 from function_vecs.extract_function_vecs import (
@@ -328,7 +328,7 @@ from function_vecs.extract_function_vecs import (
     build_skill_basis
 )
 
-# Step 1: Extract function vectors for multiple tasks
+# 步驟 1：為多個任務擷取 function vectors
 task_names = ["basic_arithmetic", "simple_icl", "token_reversal", "part_of_speech"]
 function_vecs = []
 
@@ -341,206 +341,206 @@ for task_name in task_names:
     )
     function_vecs.append(vec)
 
-# Step 2: Stack vectors into a matrix
+# 步驟 2：將向量堆疊成矩陣
 task_matrix = stack_function_vecs(function_vecs)
 print(f"Task matrix shape (d_model x num_tasks): {task_matrix.V.shape}")
 print(f"Tasks: {task_matrix.task_names}")
 
-# Step 3: Build skill basis using SVD
+# 步驟 3：使用 SVD 建立 skill basis
 skill_basis = build_skill_basis(
     task_matrix,
     method="svd",
-    k=6  # Number of skill dimensions (-1 for auto-selection based on 95% energy)
+    k=6  # skill 維度數量（-1 表示根據 95% energy 自動選取）
 )
 
 print(f"Skill basis U shape: {skill_basis.U.shape}")  # (d_model, k)
 print(f"Singular values: {skill_basis.S}")
 print(f"Explained variance ratios: {skill_basis.S / skill_basis.S.sum()}")
 
-# Step 4: Analyze task relationships in skill space
+# 步驟 4：在 skill 空間中分析任務關係
 task_projections = skill_basis.Vt  # (k, num_tasks)
 print(f"Task projections shape: {task_projections.shape}")
 
-# Each column of Vt represents how much each task loads on each skill dimension
+# Vt 的每一欄表示各任務在每個 skill 維度上的載荷程度
 for i, task_name in enumerate(skill_basis.task_names):
     print(f"{task_name}: {skill_basis.Vt[:, i]}")
 ```
 
-### Interpreting the Skill Basis
+### 解讀 Skill Basis
 
-- **U**: Skill basis vectors in model space (d_model x k)
-- **S**: Singular values indicating importance of each skill dimension
-- **Vt**: Task loadings on skill dimensions (k x num_tasks)
+- **U**：模型空間中的 skill basis 向量（d_model x k）
+- **S**：表示各 skill 維度重要性的 singular values
+- **Vt**：任務在 skill 維度上的載荷（k x num_tasks）
 
-The skill basis reveals:
-1. Which underlying capabilities are shared across tasks
-2. How tasks relate to each other in the skill space
-3. The dimensionality of the "skill manifold"
+Skill basis 揭示了：
+1. 哪些底層能力會在任務間共享
+2. 任務在 skill 空間中彼此如何關聯
+3. 「skill manifold」的維度
 
 ---
 
-## Discovering Available Tasks
+## 探索可用任務
 
-### From Python
+### 從 Python
 
 ```python
 from function_vecs.extract_function_vecs import discover_all_tasks
 
-# List all available tasks with descriptions
+# 列出所有可用任務及其描述
 task_names = discover_all_tasks()
 ```
 
-### From Command Line
+### 從命令列
 
 ```bash
 python function_vecs/extract_function_vecs.py
 ```
 
-### Using Task Registry
+### 使用 Task Registry
 
 ```python
 from tasks.registry import list_tasks, get_task_info
 
-# List all task names
+# 列出所有任務名稱
 tasks = list_tasks()
 print(f"Available tasks: {tasks}")
 
-# Get detailed info about all tasks
+# 取得所有任務的詳細資訊
 task_info = get_task_info()
 for task_name, info in task_info.items():
     print(f"{task_name}: {info['class']} - {info['docstring'][:100]}")
 
-# Get info about a specific task
+# 取得特定任務的資訊
 info = get_task_info("simple_arithmetic")
 print(info)
 ```
 
 ---
 
-## Key Configuration Parameters
+## 關鍵設定參數
 
 ### ExtractConfig
 
-Complete configuration for the extraction process:
+擷取流程的完整設定：
 
 ```python
 @dataclass
 class ExtractConfig:
-    # Model configuration
+    # 模型設定
     model_name: str = "EleutherAI/gpt-j-6B"
-    checkpoint: Optional[str] = None  # Model checkpoint/revision
+    checkpoint: Optional[str] = None  # 模型 checkpoint/revision
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     batch_size: int = 8
     seed: int = 42
-    layers: Optional[List[int]] = None  # If None, use all layers
+    layers: Optional[List[int]] = None  # 若為 None，使用所有層
 
-    # Sampling configuration
+    # 取樣設定
     num_samples_per_task: int = 20
     num_shuffled_controls_per_task: int = 10
 
-    # Head selection configuration
+    # Head selection 設定
     head_selection: Literal["topk", "soft"] = "topk"
     topk_heads: int = 10
     cached_headset_path: Optional[str] = None
 
-    # Basis configuration
+    # Basis 設定
     basis_method: Literal["svd", "pca"] = "svd"
     basis_dim: int = 20
-    eps: float = 0.01  # for eps-rank
+    eps: float = 0.01  # 用於 eps-rank
 ```
 
 ### Headset
 
-Specifies which attention heads to analyze:
+指定要分析哪些 attention heads：
 
 ```python
 @dataclass
 class Headset:
-    mode: Literal["topk", "soft"]  # Selection mode
-    heads: List[Tuple[int, int]]    # List of (layer, head) tuples
-    weights: Optional[np.ndarray]   # Optional weights for "soft" mode
+    mode: Literal["topk", "soft"]  # 選取模式
+    heads: List[Tuple[int, int]]    # (layer, head) tuple 清單
+    weights: Optional[np.ndarray]   # "soft" 模式的可選權重
 ```
 
-**Two modes:**
-- `topk`: Sum contributions from top-k selected heads equally
-- `soft`: Weighted combination using provided weights
+**兩種模式：**
+- `topk`：對選出的 top-k heads 平等加總其貢獻
+- `soft`：使用提供的權重進行加權組合
 
 ---
 
-## How It Works
+## 運作方式
 
-The function vector extraction pipeline:
+function vector 擷取流程如下：
 
-1. **Sample ICL Prompts**: Get in-context learning examples from the task
-   - Uses task's test split
-   - Formats prompts using task-specific templates
+1. **取樣 ICL Prompts**：從任務取得 in-context learning 範例
+   - 使用任務的 test split
+   - 使用任務特定模板格式化 prompts
 
-2. **Generate Control Prompts**: Create shuffled control examples
-   - Breaks input→output mapping by shuffling
-   - Same format as ICL prompts but with incorrect mappings
+2. **產生 Control Prompts**：建立打亂的 control 範例
+   - 透過打亂來破壞 input→output 對應
+   - 格式與 ICL prompts 相同，但映射不正確
 
-3. **Compute Head Importance** (if using `extract_informative_heads`):
-   - Uses AIE (Attention Importance Estimation)
-   - Measures performance drop when each head is swapped with control
-   - Selects top-k most informative heads
+3. **計算 Head Importance**（若使用 `extract_informative_heads`）：
+   - 使用 AIE（Attention Importance Estimation）
+   - 衡量每個 head 被 control 替換後的效能下降
+   - 選出 top-k 最具資訊量的 heads
 
-4. **Extract Per-Head Contributions**:
-   - For each prompt, compute how each attention head contributes to residual stream
-   - Use hooks to capture pre/post projection tensors
-   - Decompose output projection into per-head contributions
+4. **擷取各 Head 的貢獻**：
+   - 對每個 prompt，計算各 attention head 如何對 residual stream 產生貢獻
+   - 使用 hooks 擷取投影前／後的 tensors
+   - 將 output projection 分解為各 head 的貢獻
 
-5. **Average Across Examples**:
-   - Mean contribution of each head across all ICL examples
-   - Results in (d_model, num_heads) matrix
+5. **跨範例取平均**：
+   - 對所有 ICL 範例取每個 head 的平均貢獻
+   - 得到 `(d_model, num_heads)` 矩陣
 
-6. **Collapse to Function Vector**:
-   - Sum (or weighted sum) across selected heads
-   - Results in single d_model-dimensional vector
+6. **壓縮為 Function Vector**：
+   - 對選定的 heads 加總（或加權加總）
+   - 得到單一 d_model 維度向量
 
-7. **Normalize**:
-   - Apply L2 normalization (default)
-   - Final function vector has unit norm
+7. **正規化**：
+   - 套用 L2 normalization（預設）
+   - 最終的 function vector 具有單位範數
 
-### Mathematical Details
+### 數學細節
 
-For a given attention head h in layer l:
-- Let O_h be the head's output before the output projection
-- Let W_o^h be the corresponding columns of the output projection
-- Head contribution: c_h = O_h @ W_o^h
+對於第 l 層中的某個 attention head h：
+- 令 O_h 為該 head 在 output projection 前的輸出
+- 令 W_o^h 為對應 output projection 的欄位
+- Head contribution：c_h = O_h @ W_o^h
 
 Function vector:
 ```
 v = normalize(Σ_h∈H c_h)
 ```
 
-where H is the set of selected heads.
+其中 H 為選定 heads 的集合。
 
 ---
 
-## Running Tests
+## 執行測試
 
-The test suite validates both interfaces:
+測試套件會驗證這兩種介面：
 
 ```bash
-# Run all tests
+# 執行所有測試
 pytest tests/test_simple_interface.py -v
 pytest tests/test_function_vecs_revised.py -v
 pytest tests/test_basic_icl_tasks.py -v
 
-# Run specific test
+# 執行特定測試
 pytest tests/test_simple_interface.py::test_simple_interface_existing_task -v
 
-# Run with output
+# 顯示輸出執行
 python tests/test_simple_interface.py
 ```
 
-### Test Examples
+### 測試範例
 
-The test files provide working examples:
+測試檔案提供可運作的範例：
 
 **Simple Interface** ([tests/test_simple_interface.py](../tests/test_simple_interface.py)):
 ```python
-# Basic usage
+# 基本用法
 function_vec = extract_function_vector_simple(
     task_name="simple_arithmetic",
     model_name="distilgpt2",
@@ -548,95 +548,95 @@ function_vec = extract_function_vector_simple(
     device="cpu"
 )
 
-# Verify it's L2 normalized
+# 驗證其為 L2 normalized
 assert abs(function_vec.function_vec.dot(function_vec.function_vec) - 1.0) < 1e-5
 ```
 
 **Advanced Interface** ([tests/test_function_vecs_revised.py](../tests/test_function_vecs_revised.py)):
-- Full extraction pipeline
-- Custom head selection
-- Multiple tasks and basis construction
+- 完整擷取流程
+- 自訂 head 選取
+- 多任務與 basis 建構
 
 ---
 
-## Architecture
+## 架構
 
-### Key Files
+### 關鍵檔案
 
-- [`extract_function_vecs.py`](extract_function_vecs.py) - Main extraction logic
-- [`model_internal_getters.py`](model_internal_getters.py) - Model architecture introspection
-- [`activation_patching.py`](activation_patching.py) - Activation intervention tools
+- [`extract_function_vecs.py`](extract_function_vecs.py) - 主要擷取邏輯
+- [`model_internal_getters.py`](model_internal_getters.py) - 模型架構內省
+- [`activation_patching.py`](activation_patching.py) - activation intervention 工具
 
-### Key Classes
+### 關鍵類別
 
-- `ExtractConfig` - Configuration for extraction
-- `Headset` - Specification of attention heads to analyze
-- `TaskFunctionVec` - Container for extracted function vector
-- `TaskMatrix` - Stack of multiple function vectors
-- `SkillBasis` - SVD-based skill space representation
+- `ExtractConfig` - 擷取設定
+- `Headset` - 要分析的 attention heads 規格
+- `TaskFunctionVec` - 擷取後 function vector 的容器
+- `TaskMatrix` - 多個 function vectors 的堆疊
+- `SkillBasis` - 基於 SVD 的 skill 空間表示
 
-### Key Functions
+### 關鍵函式
 
-- `extract_function_vector_simple()` - Simple one-stop interface
-- `extract_task_function_vec()` - Advanced extraction with full control
-- `extract_informative_heads()` - Automatic head selection using AIE
-- `stack_function_vecs()` - Combine vectors into matrix
-- `build_skill_basis()` - Construct skill basis via SVD
+- `extract_function_vector_simple()` - 簡易一站式介面
+- `extract_task_function_vec()` - 具完整控制能力的進階擷取
+- `extract_informative_heads()` - 使用 AIE 自動選取 heads
+- `stack_function_vecs()` - 將向量組合成矩陣
+- `build_skill_basis()` - 透過 SVD 建構 skill basis
 
 ---
 
-## Tips and Best Practices
+## 提示與最佳實踐
 
-### Model Selection
-- Start with smaller models for testing: `distilgpt2`, `gpt2`
-- Use larger models for production: `gpt2-medium`, `gpt2-large`, `EleutherAI/gpt-j-6B`
+### 模型選擇
+- 測試時先從較小模型開始：`distilgpt2`、`gpt2`
+- 正式使用時改用較大模型：`gpt2-medium`、`gpt2-large`、`EleutherAI/gpt-j-6B`
 
-### Number of Samples
-- More samples = more stable estimates
-- Recommended: 10-20 for quick experiments, 50+ for research
-- Trade-off: computation time vs. stability
+### 範例數量
+- 更多範例 = 更穩定的估計
+- 建議：快速實驗使用 10-20，研究用途使用 50+
+- 權衡：計算時間 vs. 穩定性
 
-### Layer Selection
-- Last layer typically has most semantic information
-- Middle layers may capture more syntactic patterns
-- Experiment with different layers for your task
+### 層選擇
+- 最後一層通常具有最多語意資訊
+- 中間層可能捕捉更多語法模式
+- 針對你的任務實驗不同層
 
-### Head Selection
-- `extract_informative_heads()` automatically finds important heads
-- Manual selection useful when you have domain knowledge
-- Start with 5-10 heads, adjust based on results
+### Head 選擇
+- `extract_informative_heads()` 會自動找出重要的 heads
+- 當你具有領域知識時，手動選取會很有幫助
+- 可先從 5-10 個 heads 開始，再依結果調整
 
-### Device Management
-- Use `device="auto"` to automatically select CUDA if available
-- For large models, ensure sufficient GPU memory
-- CPU works but is slower
+### 裝置管理
+- 使用 `device="auto"` 可在可用時自動選擇 CUDA
+- 對於大型模型，請確保 GPU 記憶體足夠
+- CPU 可用，但速度較慢
 
 ### Batch Size
-- Larger batches = faster but more memory
-- Adjust based on your GPU memory and model size
-- Default of 8 works well for most cases
+- 較大的 batch = 更快，但需要更多記憶體
+- 依你的 GPU 記憶體與模型大小調整
+- 大多數情況下預設值 8 表現良好
 
 ---
 
-## Troubleshooting
+## 疑難排解
 
-### Issue: CUDA out of memory
-**Solution**: Reduce `batch_size` or use smaller model
+### 問題：CUDA 記憶體不足
+**解法**：降低 `batch_size` 或改用較小模型
 
-### Issue: Task not found
-**Solution**: Run `discover_all_tasks()` to see available tasks, or check task name spelling
+### 問題：找不到任務
+**解法**：執行 `discover_all_tasks()` 查看可用任務，或檢查任務名稱拼字
 
-### Issue: Import errors
-**Solution**: Ensure all dependencies are installed and task implementations are valid
+### 問題：Import 錯誤
+**解法**：確認所有相依套件已安裝，且任務實作有效
 
-### Issue: Function vector has unexpected shape
-**Solution**: Check that model loaded correctly and layer_idx is valid
+### 問題：Function vector 的 shape 非預期
+**解法**：檢查模型是否正確載入，以及 layer_idx 是否有效
 
 ---
 
-## Examples Gallery
+## 範例集
 
-### Example 1: Quick Extraction
+### 範例 1：快速擷取
 ```python
 from function_vecs.extract_function_vecs import extract_function_vector_simple
 
@@ -644,7 +644,7 @@ vec = extract_function_vector_simple("basic_arithmetic")
 print(f"Extracted {vec.function_vec.shape[0]}-dimensional vector for {vec.task_name}")
 ```
 
-### Example 2: Compare Multiple Models
+### 範例 2：比較多個模型
 ```python
 models = ["distilgpt2", "gpt2", "gpt2-medium"]
 vectors = {}
@@ -657,17 +657,17 @@ for model_name in models:
     )
     vectors[model_name] = vec.function_vec
 
-# Compare vectors (cosine similarity, etc.)
+# 比較向量（cosine similarity 等）
 ```
 
-### Example 3: Multi-Task Analysis
+### 範例 3：多任務分析
 ```python
 tasks = ["basic_arithmetic", "simple_icl", "token_reversal"]
 vecs = [extract_function_vector_simple(t, num_samples=20) for t in tasks]
 
-# Build skill basis
+# 建立 skill basis
 task_matrix = stack_function_vecs(vecs)
-skill_basis = build_skill_basis(task_matrix, k=-1)  # Auto-select k
+skill_basis = build_skill_basis(task_matrix, k=-1)  # 自動選取 k
 
 print(f"Found {skill_basis.U.shape[1]} skill dimensions")
 print(f"Capturing {skill_basis.S.sum():.2%} of variance")
@@ -675,9 +675,9 @@ print(f"Capturing {skill_basis.S.sum():.2%} of variance")
 
 ---
 
-## Citation
+## 引用
 
-If you use this code in your research, please cite:
+如果你在研究中使用此程式碼，請引用：
 
 ```bibtex
 @software{elemental_tasks_function_vecs,
@@ -690,17 +690,10 @@ If you use this code in your research, please cite:
 
 ---
 
-## Related Documentation
+## 相關文件
 
-- [Main Project README](../README.md)
-- [Task System Documentation](../tasks/README.md)
-- [Model Evaluation Scripts](../scripts/)
+- [主專案 README](../README.md)
+- [任務系統文件](../tasks/README.md)
+- [模型評估腳本](../scripts/)
 
 ---
-
-## Questions?
-
-For issues or questions:
-1. Check the test files for working examples
-2. Review the function docstrings in `extract_function_vecs.py`
-3. Open an issue on the project repository

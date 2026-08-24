@@ -2,7 +2,7 @@
 """
 Plotting script for analyzing checkpoint performance curves from measure_ckpt_interp_perf.py results.
 
-This script creates performance curves showing how different interpretation tasks evolve
+This script creates performance curves showing how different interpretation task evolve
 across model checkpoints during training.
 """
 
@@ -22,10 +22,10 @@ def extract_checkpoint_info(checkpoint_name: str) -> Tuple[int, str, Optional[fl
     """
     Extract sorting key, display name, and FLOPs from checkpoint name.
     
-    Args:
-        checkpoint_name: Name of the checkpoint
+    Args: 
+        checkpoint_name: name of the checkpoint
         
-    Returns:
+    Returns: 
         Tuple of (sort_key, display_name, flops_in_billions)
     """
     # Handle OLMo-style: stage1-step140000-tokens294B
@@ -38,7 +38,7 @@ def extract_checkpoint_info(checkpoint_name: str) -> Tuple[int, str, Optional[fl
         display_name = f"S{stage}-{tokens}B"
         # Estimate FLOPs: 6 * num_params * num_tokens
         # Assuming OLMo-2 7B model: 7B params
-        flops = 6 * 7 * tokens  # Result in 10^21 FLOPs
+        flops = 6 * 7 * tokens  # results in 10^21 FLOPs
         return sort_key, display_name, flops
     
     # Handle Crystal-style: CrystalCoder_phase1_checkpoint_055500
@@ -55,7 +55,7 @@ def extract_checkpoint_info(checkpoint_name: str) -> Tuple[int, str, Optional[fl
     step_match = re.search(r'step(\d+)', checkpoint_name.lower())
     if step_match:
         step = int(step_match.group(1))
-        # Try to extract tokens if present
+        # Try to Extract tokens if present
         token_match = re.search(r'tokens(\d+)', checkpoint_name.lower())
         if token_match:
             tokens = int(token_match.group(1))
@@ -71,11 +71,11 @@ def extract_checkpoint_info(checkpoint_name: str) -> Tuple[int, str, Optional[fl
     return 0, checkpoint_name, None
 
 def load_and_prepare_data(csv_path: str, model_params_b: float = 7.0) -> pd.DataFrame:
-    """Load CSV data and prepare it for plotting.
+    """LoadCSV data and prepare it for plotting.
     
-    Args:
-        csv_path: Path to CSV file
-        model_params_b: Model parameters in billions (default: 7.0 for OLMo-2 7B)
+    Args: 
+        csv_path: path to CSV file
+        model_params_b: model parameters in billions (default: 7.0 for OLMo-2 7B)
     """
     df = pd.read_csv(csv_path)
     
@@ -95,13 +95,13 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
                           task_groups: Optional[List[List[str]]] = None,
                           x_axis: str = 'checkpoint'):
     """
-    Plot performance curves for all tasks.
+    Plot performance curves for all task.
     
-    Args:
+    Args: 
         df: DataFrame with checkpoint results
-        output_path: Path to save the plot
+        output_path: path to Storethe plot
         figsize: Figure size
-        task_groups: Optional grouping of tasks for separate subplots
+        task_groups: optionalgrouping of task for separate subplots
         x_axis: 'checkpoint' or 'flops' for x-axis type
     """
     # Get task columns (excluding metadata columns)
@@ -109,12 +109,12 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
                    if col not in ['checkpoint', 'sort_key', 'display_name', 'flops_1e21']]
     
     if task_groups is None:
-        # Single plot with all tasks
+        # Single plot with all task
         plt.figure(figsize=figsize)
         
-        # Determine x values based on axis type
+        # Determine x value based on axis type
         if x_axis == 'flops' and 'flops_1e21' in df.columns:
-            # Filter out rows without FLOP data and sort by FLOPs
+            # filter out rows without FLOP data and sort by FLOPs
             df_plot = df.dropna(subset=['flops_1e21']).sort_values('flops_1e21')
             if df_plot.empty:
                 print("Warning: No FLOP data available. Falling back to checkpoint axis.")
@@ -157,7 +157,7 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
             plt.show()
     
     else:
-        # Multiple subplots for different task groups
+        # Multiple subplots for different task group
         n_groups = len(task_groups)
         _, axes = plt.subplots(n_groups, 1, figsize=(figsize[0], figsize[1] * n_groups // 2))
         if n_groups == 1:
@@ -170,7 +170,7 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
             "Knowledge Tasks"
         ]
         
-        # Determine x values based on axis type
+        # Determine x value based on axis type
         if x_axis == 'flops' and 'flops_1e21' in df.columns:
             df_plot = df.dropna(subset=['flops_1e21']).sort_values('flops_1e21')
             if df_plot.empty:
@@ -216,9 +216,9 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
             plt.show()
 
 def plot_task_categories(df: pd.DataFrame, output_path: str = None, x_axis: str = 'checkpoint'):
-    """Plot performance curves grouped by task categories."""
+    """Plot performance curves grouped by task class."""
     
-    # Define task groups
+    # Define task group
     task_groups = [
         ['uppercase', 'lowercase', 'first_letter', 'last_letter'],
         ['translate_eng_fr', 'translate_fr_eng', 'translate_eng_sp', 'translate_sp_eng'],
@@ -240,7 +240,7 @@ def plot_summary_stats(df: pd.DataFrame, output_path: str = None, x_axis: str = 
     df['min_performance'] = df[task_columns].min(axis=1)
     df['max_performance'] = df[task_columns].max(axis=1)
     
-    # Determine x values based on axis type
+    # Determine x value based on axis type
     if x_axis == 'flops' and 'flops_1e21' in df.columns:
         df_plot = df.dropna(subset=['flops_1e21']).sort_values('flops_1e21')
         if df_plot.empty:
@@ -321,7 +321,7 @@ def main():
     
     args = parser.parse_args()
     
-    # Load and prepare data
+    # Loadand prepare data
     print(f"Loading data from {args.csv_path}")
     df = load_and_prepare_data(args.csv_path, model_params_b=args.model_params_b)
     print(f"Loaded {len(df)} checkpoints with {len([c for c in df.columns if c not in ['checkpoint', 'sort_key', 'display_name', 'flops_1e21']])} tasks")
@@ -330,10 +330,10 @@ def main():
         flop_count = df['flops_1e21'].notna().sum() if 'flops_1e21' in df.columns else 0
         print(f"Found FLOP data for {flop_count}/{len(df)} checkpoints")
     
-    # Create output directory
+    # Buildoutputdirectory
     os.makedirs(args.output_dir, exist_ok=True)
     
-    # Generate plots based on type
+    # Generateplots based on type
     base_name = os.path.splitext(os.path.basename(args.csv_path))[0]
     
     if args.plot_type in ['all', 'curves']:

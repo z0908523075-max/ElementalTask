@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Compare pairwise distances between tasks in basis-coordinate space across models.
+Compare pairwise distances between task in basis-coordinate space across model.
 
-For each model, every task FV is projected onto its SVD basis to get a k-dimensional
+For each model, every task FV is projected onto its SVD basis to Get a k-dimensional
 coordinate vector. Pairwise cosine distances are computed in this coordinate space.
-Then we correlate the two distance matrices over shared tasks to measure how
-consistent the basis geometry is between models (e.g., 1B vs 7B).
+Then we correlate the two distance matrices over shared task to measure how
+consistent the basis geometry is between model (e.g., 1B vs 7B).
 
-Usage:
+Usage: 
     python scripts/trajectory_analysis/compare_basis_across_models.py \
         --dir_a function_vecs/results/olmo2_1b_compositional_holdout \
         --dir_b function_vecs/results/olmo2_7b_compositional_holdout \
@@ -35,17 +35,17 @@ from matplotlib.colors import Normalize
 
 def load_basis_and_coords(result_dir: str) -> Tuple[Dict[str, np.ndarray], List[str], np.ndarray]:
     """
-    Load basis from an FV results directory and compute basis coordinates
-    for all tasks (train + test).
+    Loadbasis from an FV results directory and compute basis coordinates
+    for all task (train + test).
 
-    Returns:
-        coords: dict mapping task_name -> coordinate vector (k,)
-        task_names: ordered list of task names
+    Returns: 
+        coords: dictionary mapping task_name -> coordinate vector (k,)
+        task_names: ordered list of task name
         U: the basis matrix (d_model, k)
     """
     result_dir = Path(result_dir)
 
-    # Load basis
+    # Loadbasis
     basis = np.load(result_dir / "skill_basis.npz", allow_pickle=True)
     U = basis["U"]             # (d_model, k)
     S = basis["S"]             # (k,)
@@ -95,7 +95,7 @@ def load_basis_and_coords(result_dir: str) -> Tuple[Dict[str, np.ndarray], List[
 
 
 def compute_pairwise_cosine(coords: Dict[str, np.ndarray], task_order: List[str]) -> np.ndarray:
-    """Compute pairwise cosine distance matrix for tasks in the given order."""
+    """Compute pairwise cosine distance matrix for task in the given order."""
     k = next(iter(coords.values())).shape[0]
     n = len(task_order)
     mat = np.zeros((n, k))
@@ -122,7 +122,7 @@ def compute_pairwise_euclidean(coords: Dict[str, np.ndarray], task_order: List[s
 
 
 def shorten_name(name: str) -> str:
-    """Shorten task names for plot labels."""
+    """Shorten task name for plot labels."""
     # Remove common prefixes
     for prefix in ["compositional:", "simple_icl:", "textfrct:"]:
         if name.startswith(prefix):
@@ -159,7 +159,7 @@ def plot_correlation_scatter(dists_a: np.ndarray, dists_b: np.ndarray,
     x = dists_a[triu_idx]
     y = dists_b[triu_idx]
 
-    # Color by task category
+    # Color by task class
     pair_labels = []
     for i, j in zip(*triu_idx):
         ni, nj = task_names[i], task_names[j]
@@ -201,14 +201,14 @@ def plot_correlation_scatter(dists_a: np.ndarray, dists_b: np.ndarray,
 
 def plot_rank_comparison(dists_a: np.ndarray, dists_b: np.ndarray,
                           task_names: List[str], label_a: str, label_b: str, ax=None):
-    """For each task, compare its nearest-neighbor ranking across models."""
+    """For each task, compare its nearest-neighbor ranking across model."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
 
     n = len(task_names)
     short_names = [shorten_name(t) for t in task_names]
 
-    # For each task, get its nearest neighbor in each model
+    # For each task, Get its nearest neighbor in each model
     nn_agree = 0
     top3_overlap = []
     for i in range(n):
@@ -250,13 +250,13 @@ def orthogonal_procrustes(X: np.ndarray, Y: np.ndarray):
     Find the orthogonal matrix Q that minimizes ||XQ - Y||_F.
 
     Both X,Y are (n, k) after zero-padding to the same k.
-    Returns Q, disparity (sum-of-squares residual), and the
+    ReturnsQ, disparity (sum-of-squares residual), and the
     Procrustes distance (disparity normalized by ||Y||^2).
 
     The algorithm:
         1. Center both matrices (subtract row-means)
         2. Compute SVD of X^T Y = U S V^T
-        3. Q* = V U^T  (optimal orthogonal mapping)
+        3. Q* = V U^T (optimal orthogonal mapping)
         4. disparity = ||X Q* - Y||_F^2
     """
     # Center
@@ -396,7 +396,7 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Load coordinates
+    # Loadcoordinates
     print(f"Loading {args.label_a} from {args.dir_a}...")
     coords_a, U_a, S_a = load_basis_and_coords(args.dir_a)
     print(f"  {len(coords_a)} tasks, basis dim k={U_a.shape[1]}")
@@ -415,7 +415,7 @@ def main():
         coords_a = {t: c[:max_k] for t, c in coords_a.items()}
         coords_b = {t: c[:max_k] for t, c in coords_b.items()}
 
-    # Find shared tasks
+    # Find shared task
     shared = sorted(set(coords_a.keys()) & set(coords_b.keys()))
 
     if args.exclude_pattern:
@@ -511,7 +511,7 @@ def main():
     print(f"ORTHOGONAL PROCRUSTES ANALYSIS")
     print(f"{'='*60}")
 
-    # Build coordinate matrices (n_tasks × max_k) — already truncated to same dim above
+    # Buildcoordinate matrices (n_tasks × max_k) — already truncated to same dim above
     k_a = next(iter(coords_a.values())).shape[0]
     k_b = next(iter(coords_b.values())).shape[0]
     assert k_a == k_b, f"coords should be same dim after truncation: {k_a} vs {k_b}"

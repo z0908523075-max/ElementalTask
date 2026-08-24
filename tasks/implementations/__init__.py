@@ -1,5 +1,5 @@
 """
-This directory contains all task implementations for automatic discovery.
+This directory contains all task implementation for automatic discover.
 
 Each task implementation should:
 1. Inherit from BaseTask
@@ -7,7 +7,7 @@ Each task implementation should:
 3. Define TASK_NAME as a class attribute
 4. Be importable from its module
 
-Example:
+Example: 
 ```python
 from tasks.base_task import BaseTask, TaskConfig
 
@@ -19,9 +19,10 @@ class MyCustomTask(BaseTask):
         pass
 ```
 
-The task registry will automatically discover and register all tasks in this directory.
+The task registry will automatically discover and register all task in this directory.
 """
 
+from .antonym_task import AntonymTask
 from .copying_task import CopyingTask
 from .ignoring_context_task import IgnoringContextTask
 from .string_analogy_task import StringAnalogyTask

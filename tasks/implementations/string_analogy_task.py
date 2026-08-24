@@ -1,5 +1,5 @@
-"""String Analogy Task based on Melanie Mitchell's work.
-The default ICL examples are taken from: https://melaniemitchell.me/ExplorationsContent/analogy-problems.html
+"""string analogy task based on Melanie Mitchell's work.
+The defaultICL examples are taken from: https://melaniemitchell.me/ExplorationsContent/analogy-problems.html
 
 Format: source -> target, query -> ?
 Task: Identify the transformation from source to target, then apply it to query.
@@ -16,7 +16,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 class StringAnalogyTask(BaseTask):
     """
-    String analogy task for testing analogical reasoning.
+    string analogy for testing analogy reasoning.
     
     Format: source -> target, query -> ?
     The model must identify the transformation and apply it to the query.
@@ -27,9 +27,9 @@ class StringAnalogyTask(BaseTask):
         """
         Initialize StringAnalogyTask.
         
-        Args:
-            config: TaskConfig with task settings
-            use_generator: If True, generate synthetic examples for ICL
+        Args: 
+            configuration: a TaskConfig with task settings
+            use_generator: If True, Generate synthetic example for ICL
         """
         self.use_generator = use_generator
         super().__init__(config)
@@ -64,7 +64,7 @@ class StringAnalogyTask(BaseTask):
             return query[:-1] + self._successor(query[-1])
         
         elif transformation == "successor_all":
-            # Replace all characters with successors
+            # Replace all character with successors
             return ''.join(self._successor(c) for c in query)
         
         elif transformation == "predecessor_last":
@@ -130,7 +130,7 @@ class StringAnalogyTask(BaseTask):
             return ''.join(result)
         
         else:
-            # Unknown transformation, return query unchanged
+            # Unknown transformation, Return the query unchanged
             return query
     
     def generate_analogy_example(
@@ -141,31 +141,38 @@ class StringAnalogyTask(BaseTask):
     ) -> Dict[str, str]:
         """Generate a synthetic analogy example with a given transformation.
         
-        For ICL format, this generates just a single input->output pair showing
-        the transformation. Multiple examples of the same transformation type
+        For ICL format, this Generate just a single input->output pair showing
+        the transformation. Multiple example of the same transformation type
         should be used together for proper ICL demonstration.
         
-        Args:
+        Args: 
             transformation: Type of transformation to apply
             source_length: Length of the source string
-            seed: Random seed for reproducibility
+            seed: random seed for reproducibility
             
-        Returns:
-            Dict with input, output, and transformation fields
+        Returns: 
+            dictionary with input, output, and transformation fields
         """
         if seed is not None:
             random.seed(seed)
         
-        # Generate random input string
-        input_str = ''.join(random.choices(string.ascii_lowercase, k=source_length))
-        
-        # Apply transformation to get output
-        output_str = self._apply_transformation(transformation, input_str)
-        
+        # Generatesource/query string and apply the same transformation to both,
+        # so example match the task's analogy format.
+        source = ''.join(random.choices(string.ascii_lowercase, k=source_length))
+        query_length = random.randint(2, 5)
+        query = ''.join(random.choices(string.ascii_lowercase, k=query_length))
+
+        target = self._apply_transformation(transformation, source)
+        answer = self._apply_transformation(transformation, query)
+
         return {
-            "input": input_str,
-            "output": output_str,
-            "transformation": transformation
+            "input": f"{source} -> {target}, {query} -> ?",
+            "output": answer,
+            "source": source,
+            "target": target,
+            "query": query,
+            "answer": answer,
+            "transformation": transformation,
         }
     
     def generate_examples(
@@ -175,17 +182,17 @@ class StringAnalogyTask(BaseTask):
         seed: Optional[int] = None,
         same_transformation: bool = True
     ) -> List[Dict[str, str]]:
-        """Generate multiple analogy examples.
+        """Generate multiple analogy example.
         
-        Args:
-            num_examples: Number of examples to generate
-            transformations: List of transformation types to use (if None, use all)
-            seed: Random seed for reproducibility
-            same_transformation: If True, all examples use the same transformation type
+        Args: 
+            num_examples: number of examples to Generate
+            transformations: list of transformation types to use (if None, use all)
+            seed: random seed for reproducibility
+            same_transformation: If True, all example use the same transformation type
                                 (proper ICL format). If False, mix different transformations.
             
-        Returns:
-            List of example dictionaries
+        Returns: 
+            list of example dictionaries
         """
         if seed is not None:
             random.seed(seed)
@@ -201,7 +208,7 @@ class StringAnalogyTask(BaseTask):
         examples = []
         
         if same_transformation:
-            # Pick one transformation and generate all examples with it
+            # Pick one transformation and Generate all example with it
             trans = random.choice(transformations)
             for i in range(num_examples):
                 length = random.randint(2, 4)
@@ -227,25 +234,25 @@ class StringAnalogyTask(BaseTask):
         same_transformation: bool = True,
     ) -> List[Dict[str, str]]:
         """
-        Return ICL-formatted examples.
+        Return examples in ICL format.
         
-        If use_generator=True, generates synthetic examples with the same transformation.
+        If use_generator=True, Generate synthetic example with the same transformation.
         Otherwise, uses the standard BaseTask logic with stored data.
         
-        Args:
-            num_examples: Number of examples to return
+        Args: 
+            num_examples: number of examples to return
             shuffle: Whether to shuffle (ignored if use_generator=True)
-            seed: Random seed for reproducibility
-            fresh: Whether to prefer unused examples (ignored if use_generator=True)
-            transformations: List of transformation types for generator mode
-            same_transformation: If True, all generated examples use the same transformation
+            seed: random seed for reproducibility
+            fresh: Whether to prefer unused example (ignored if use_generator=True)
+            transformations: list of transformation types for generator mode
+            same_transformation: If True, all generated example use the same transformation
                                 (recommended for proper ICL format)
             
-        Returns:
-            List of example dictionaries with 'input' and 'output' keys
+        Returns: 
+            list of example dictionaries with 'input' and 'output' keys
         """
         if self.use_generator:
-            # Generate fresh examples on-the-fly
+            # Generate fresh example on the fly
             # Use same_transformation=True by default for proper ICL
             examples = self.generate_examples(
                 num_examples, 
@@ -262,9 +269,46 @@ class StringAnalogyTask(BaseTask):
                 seed=seed,
                 fresh=fresh
             )
+
+    def build_prompt(self, instance: Dict[str, str], num_shots: int = 5) -> str:
+        """Build a prompt with analogy-formatted demonstrations.
+
+        If transformation metadata is available, prefer demonstration that use the
+        same transformation to keep the few-shot context coherent.
+        """
+        prompt = ""
+
+        if num_shots > 0:
+            transformation = instance.get("transformation")
+
+            if self.use_generator and transformation:
+                icl_examples = self.get_icl_examples(
+                    num_examples=num_shots,
+                    seed=42,
+                    transformations=[transformation],
+                    same_transformation=True,
+                )
+            else:
+                rows = self.get_split("test")
+                if transformation:
+                    rows = [r for r in rows if r.get("transformation") == transformation]
+
+                # Avoid leaking the exact query row into demonstration.
+                rows = [r for r in rows if r.get("input") != instance.get("input")]
+
+                rng = random.Random(42)
+                rng.shuffle(rows)
+                icl_examples = rows[:num_shots]
+
+            if icl_examples:
+                prompt += self._format_icl_examples(icl_examples)
+                prompt += "\n\n"
+
+        prompt += f"Input: {instance.get(self.config.input_column, '')}\nOutput:"
+        return prompt
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy."""
+        """Evaluate predictions using exact-match accuracy."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
@@ -276,7 +320,7 @@ class StringAnalogyTask(BaseTask):
         # Preprocess predictions
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate exact match accuracy
+        # Calculate exact-match accuracy
         correct = sum(
             1 for pred, gt in zip(processed_predictions, ground_truth)
             if pred.strip().lower() == gt.strip().lower()
@@ -314,20 +358,20 @@ def make_string_analogy_task(
     use_generator: bool = False,
     use_fixed_examples: bool = True
 ) -> StringAnalogyTask:
-    """Factory function to create a StringAnalogyTask.
+    """factory function to Create a StringAnalogyTask.
     
-    Args:
-        config: Optional TaskConfig. If None, creates default config.
-        use_generator: If True, generate synthetic examples for ICL.
-        use_fixed_examples: If True and config is None, use Mitchell's curated examples.
+    Args: 
+        configuration: optional TaskConfig. If None, creates default configuration.
+        use_generator: If True, Generate synthetic example for ICL.
+        use_fixed_examples: If True and configuration is None, use Mitchell's curated example.
     
-    Returns:
+    Returns: 
         StringAnalogyTask instance
     """
     if config is None:
         if use_fixed_examples:
-            # Melanie Mitchell's curated string analogy examples
-            # Format: source -> target, query -> answer
+            # Melanie Mitchell's curated string analogy example
+            # Format: source -> target, query -> Answer
             mitchell_data = [
                 {"input": "abc -> abd, ijk -> ?", "output": "ijl", "source": "abc", "target": "abd", "query": "ijk", "answer": "ijl", "transformation": "successor_last"},
                 {"input": "abc -> abd, xyz -> ?", "output": "xya", "source": "abc", "target": "abd", "query": "xyz", "answer": "xya", "transformation": "successor_last"},

@@ -14,16 +14,16 @@ class TaskConfig:
     """Configuration for a task."""
     name: str # the task name 
     description: Optional[str] = None # optional description
-    data_path: Optional[str] = None # path to the main data file (CSV, JSON, etc.) for non-memory tasks
+    data_path: Optional[str] = None # path to the main data file (CSV, JSON, etc.) for non-in-memory task
     data_format: str = "csv"  # 'csv', 'json', 'jsonl', 'memory'
     input_column: str = "input" # name of the input column in the data
     output_column: str = "output" # name of the output column in the data
-    demonstrations_path: Optional[str] = None # path to demonstrations file (JSON, CSV, TXT)
+    demonstrations_path: Optional[str] = None # path to demonstration file (JSON, CSV, TXT)
     num_demonstrations: int = 5 # number of demonstrations to include in prompt. Will be max(num available, num_demonstrations)
     prompt_template: Optional[str] = None # optional prompt template with placeholders
     evaluation_metrics: List[str] = field(default_factory=lambda: ["accuracy"])
     metadata: Dict[str, Any] = field(default_factory=dict)
-    # For in-memory data (when migrating from hardcoded tasks)
+    # For in-memory data (when migrating from hardcoded task)
     in_memory_data: Optional[List[Dict[str, Any]]] = None # option to just pass in-memory data (e.g. just a list)
     in_memory_demonstrations: Optional[Dict[str, List[str]]] = None
 
@@ -41,19 +41,19 @@ class BaseTask(ABC):
         self._load_demonstrations()
     
     def _load_data(self):
-        """Load the main task data from the specified path and format or use in-memory data."""
+        """Load main task data from the specified path and format, or use in-memory data."""
         # Check if we have in-memory data first
         if self.config.in_memory_data is not None:
             self.data = pd.DataFrame(self.config.in_memory_data)
             return
             
-        # If no data_path provided, let subclass handle data loading
+        # If no data_path provided, let subclass handle data Load
         if not self.config.data_path:
             # Subclasses should override this method to provide their own data
             # If they don't override it properly, self.data will remain None
             return
             
-        # Otherwise load from file
+        # Otherwise Load from file
         data_path = Path(self.config.data_path)
         
         if not data_path.exists():
@@ -75,13 +75,13 @@ class BaseTask(ABC):
             raise ValueError(f"Unsupported data format: {self.config.data_format}")
     
     def _load_demonstrations(self):
-        """Load demonstration examples from file, in-memory data, or use defaults."""
-        # Check for in-memory demonstrations first
+        """Load demonstration examples from file, in-memory data, or use default."""
+        # Check for in-memory demonstration first
         if self.config.in_memory_demonstrations is not None:
             self.demonstrations = self.config.in_memory_demonstrations
             return
             
-        # Otherwise try to load from file
+        # Otherwise try to Load from file
         if self.config.demonstrations_path:
             demo_path = Path(self.config.demonstrations_path)
             if demo_path.exists():
@@ -91,7 +91,7 @@ class BaseTask(ABC):
                 elif demo_path.suffix == '.csv':
                     self.demonstrations = pd.read_csv(demo_path)
                 else:
-                    # Try to load as text file with examples
+                    # Try to Load as text file with example
                     with open(demo_path, 'r', encoding='utf-8') as f:
                         self.demonstrations = f.read().strip()
     @property
@@ -106,9 +106,9 @@ class BaseTask(ABC):
         seed: Optional[int] = None,
         fresh: bool = True,
     ) -> List[Dict[str, str]]:
-        """Return ICL-formatted examples (dicts with 'input' and 'output').
+        """Return examples in ICL format (dicts with 'input' and 'output').
 
-        Args:
+        Args: 
             num_examples: number of examples to return.
             shuffle: whether to shuffle available examples before selection.
             seed: optional random seed for reproducibility.
@@ -149,7 +149,7 @@ class BaseTask(ABC):
         return examples
 
     def reset_icl_tracking(self) -> None:
-        """Reset internal tracking of used ICL examples so sampling starts fresh."""
+        """Reset internal tracking of used ICL example so sampling starts new."""
         self._icl_used_indices.clear()
 
     def get_split(self, split: str = "test") -> List[Dict[str, Any]]:
@@ -157,7 +157,7 @@ class BaseTask(ABC):
         if split not in ["train", "val", "test", "all"]:
             raise ValueError(f"Invalid split: {split}. Must be one of ['train', 'val', 'test', 'all']")
         
-        # For now, return all data as test split
+        # For now, Return all data as test split
         # Subclasses can override this for proper train/val/test splits
         if split == "all" or split == "test":
             # Handle both DataFrame and list data
@@ -168,26 +168,26 @@ class BaseTask(ABC):
             else:
                 return list(self.data)
         else:
-            # Return empty for train/val if not implemented
+            # Return an empty list for train/val if not implemented
             return []
     
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
         """Build a prompt for a given instance.
         
-        Args:
-            instance: The instance to build a prompt for
-            num_shots: Number of in-context learning examples to include (default: 5)
+        Args: 
+            instance: The instance to Build a prompt for
+            num_shots: number of in-context learning example to include (default: 5)
         
-        Returns:
-            The formatted prompt string
+        Returns: 
+            The Format prompt string
         """
         prompt = ""
         
-        # Add demonstrations if available
+        # Add demonstration if available
         if self.demonstrations is not None:
             prompt += self._format_demonstrations()
             prompt += "\n\n"
-        # If task supports ICL generation, use that
+        # If task supports ICL Generate, use that
         elif hasattr(self, 'get_icl_examples') and num_shots > 0:
             try:
                 icl_examples = self.get_icl_examples(num_examples=num_shots)
@@ -195,7 +195,7 @@ class BaseTask(ABC):
                     prompt += self._format_icl_examples(icl_examples)
                     prompt += "\n\n"
             except Exception as e:
-                # If ICL generation fails, continue without examples
+                # If ICL Generate fails, continue without example
                 pass
         
         # Add the instance input
@@ -207,7 +207,7 @@ class BaseTask(ABC):
         return prompt
     
     def _format_demonstrations(self) -> str:
-        """Format demonstration examples into a string."""
+        """Formatdemonstration example into a string."""
         if isinstance(self.demonstrations, str):
             return self.demonstrations
         elif isinstance(self.demonstrations, pd.DataFrame):
@@ -221,26 +221,26 @@ class BaseTask(ABC):
                 demo_text += f"Input: {demo[self.config.input_column]}\nOutput: {demo[self.config.output_column]}\n\n"
             return demo_text.strip()
         elif isinstance(self.demonstrations, dict):
-            # Handle category-based demonstrations (like in the notebook)
+            # Handle category-based demonstration (like in the notebook)
             return ""  # Will be handled by subclasses that need category-specific demos
         else:
             return ""
     
     def _format_icl_examples(self, examples: List[Dict[str, Any]]) -> str:
-        """Format ICL examples into a string.
+        """FormatICL example into a string.
         
-        Args:
-            examples: List of example dictionaries with input/output keys
+        Args: 
+            Example: list of example dictionaries with input/output keys
             
-        Returns:
-            Formatted string of examples
+        Returns: 
+            Format string of example
         """
         if not examples:
             return ""
         
         demo_text = "\n"
         for ex in examples:
-            # Try different column names
+            # Try different column name
             input_val = ex.get(self.config.input_column) or ex.get('input') or ex.get('question')
             output_val = ex.get(self.config.output_column) or ex.get('output') or ex.get('answer')
             
@@ -256,20 +256,20 @@ class BaseTask(ABC):
     
     def preprocess_prediction(self, prediction: str) -> str:
         """Preprocess a model prediction before evaluation."""
-        # Default implementation: strip whitespace and take first line
+        # default implementation: strip whitespace and take first line
         return prediction.strip().split('\n')[0] if prediction else ""
     
     def get_ground_truth(self, split: str = "test") -> List[str]:
-        """Get ground truth answers for a split."""
+        """Get ground-truth answers for a split."""
         data = self.get_split(split)
         return [item[self.config.output_column] for item in data]
 
 
 class SimpleTask(BaseTask):
-    """A simple task implementation with basic exact match evaluation."""
+    """A simple task implementation with basic exact-match evaluation."""
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy."""
+        """Evaluate predictions using exact-match accuracy."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
@@ -278,7 +278,7 @@ class SimpleTask(BaseTask):
         # Preprocess predictions
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate exact match accuracy
+        # Calculate exact-match accuracy
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
                      if pred.lower().strip() == gt.lower().strip())
         accuracy = correct / len(ground_truth)
@@ -309,7 +309,7 @@ class SimpleTask(BaseTask):
         return results
 
 
-# Factory function for creating tasks from config files
+# factory function for building task from configuration file
 def create_task_from_config(config_path: str, task_class: type = SimpleTask) -> BaseTask:
     """Create a task instance from a configuration file."""
     config_path = Path(config_path)
@@ -324,7 +324,7 @@ def create_task_from_config(config_path: str, task_class: type = SimpleTask) -> 
     return task_class(config)
 
 
-# Factory function for creating tasks from hardcoded data (for migration)
+# factory function for building task from hardcoded data (for migration)
 def create_task_from_data(
     name: str,
     data: List[Dict[str, Any]],
@@ -345,7 +345,7 @@ def create_task_from_data(
     return task_class(config)
 
 
-# Utility function to convert notebook-style data to standardized format
+# utility function to Convert notebook-style data to standardized format
 def convert_notebook_data_to_standard(
     csv_path: str,
     category_demonstrations: Dict[str, List[str]],
@@ -353,15 +353,15 @@ def convert_notebook_data_to_standard(
     output_demo_json_path: Optional[str] = None
 ) -> tuple[str, str]:
     """
-    Convert notebook-style hardcoded data to standardized CSV and JSON files.
+    Convert notebook-style hardcoded data to standardized CSV and JSON file.
     
-    Args:
-        csv_path: Path to the existing CSV data file
-        category_demonstrations: Dictionary mapping categories to demonstration examples
-        output_csv_path: Path for output CSV (defaults to input path)
-        output_demo_json_path: Path for demonstration JSON file
+    Args: 
+        csv_path: path to the existing CSV data file
+        category_demonstrations: dictionary mapping class to demonstration examples
+        output_csv_path: path for output CSV (default to input path)
+        output_demo_json_path: path for demonstration JSON file
         
-    Returns:
+    Returns: 
         Tuple of (csv_path, demo_json_path)
     """
     import pandas as pd
@@ -371,18 +371,18 @@ def convert_notebook_data_to_standard(
     # Read the CSV data
     data = pd.read_csv(csv_path)
     
-    # Set default output paths
+    # Set default output path
     if output_csv_path is None:
         output_csv_path = csv_path
     if output_demo_json_path is None:
         base_path = Path(csv_path).parent
         output_demo_json_path = base_path / f"{Path(csv_path).stem}_demonstrations.json"
     
-    # Save demonstrations to JSON
+    # Storedemonstrations to JSON
     with open(output_demo_json_path, 'w', encoding='utf-8') as f:
         json.dump(category_demonstrations, f, indent=2, ensure_ascii=False)
     
-    # Ensure CSV has the right format (it likely already does)
+    # Ensure CSV has the right Format(it likely already does)
     if output_csv_path != csv_path:
         data.to_csv(output_csv_path, index=False)
     

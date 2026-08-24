@@ -27,7 +27,7 @@ class TextFRCT:
                 self.data.append(row)
         self.test_ids = sorted(set([i['category_id'] for i in self.data]))
         
-        # Define which categories are subjective vs objective
+        # Define which class are subjective vs objective
         self.subjective_categories = [
             'FA3', 'FE1', 'FE2', 'FE3', 'FI1', 'FI2', 'FI3', 
             'FW1', 'FW2', 'FW3', 'XU1', 'XU2', 'XU3', 'XU4'
@@ -111,7 +111,7 @@ class TextFRCT:
             demos = demonstrations[row['category_id']].replace('<br>', '\n')
             demos = demos.split(';;')
             for idx, d in enumerate(demos):
-                # demos[idx] = f'Example {idx + 1}:\n{demos[idx]}'
+                # demos[idx] = f'example {idx + 1}:\n{demos[idx]}'
                 demos[idx] = f'\n{demos[idx]}\n'
             demo = ''.join(demos)
             
@@ -128,7 +128,7 @@ class TextFRCT:
         for idx in tqdm(range(len(save_data))):
             category_id = save_data[idx]['category_id']
             
-            # Skip subjective categories if requested
+            # Skip subjective class if requested
             if self.skip_subjective and category_id in self.subjective_categories:
                 save_data[idx]['predictions'] = raw_predictions[idx]
                 save_data[idx]['processed_preds'] = ["SKIPPED_SUBJECTIVE"]
@@ -222,16 +222,16 @@ class TextFRCT:
         
         for row in save_data:
             cid = str(row['category_id'])
-            # Skip subjective categories if they were skipped
+            # Skip subjective class if they were skipped
             if self.skip_subjective and cid in self.subjective_categories:
                 continue
             acc = row['pred_correct'] / row['pred_num'] if row['pred_num'] != 0 else 0
             accuracy[cid].append(acc)
         
-        # Filter out empty categories (skipped subjective ones)
+        # filter out empty class (skipped subjective ones)
         filtered_accuracy = {}
         for subtest in accuracy:
-            if accuracy[subtest]:  # Only include categories that have data
+            if accuracy[subtest]:  # Only include class that have data
                 filtered_accuracy[subtest] = sum(accuracy[subtest]) / len(accuracy[subtest])
 
         if filtered_accuracy:

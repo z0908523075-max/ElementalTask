@@ -13,12 +13,12 @@ Metrics computed:
 A perfectly monotonic increasing curve has S=1, C_tv=0.
 A curve that oscillates wildly but ends up at the same place has S≈0, C_tv≈1.
 
-Usage:
+Usage: 
     python scripts/trajectory_analysis/get_trajectory_chaos.py \
         --results_dir results/olmo2_continuous_1b_early_revised \
         --output chaos_metrics.csv
     
-    # Compare multiple models
+    # Compare multiple model
     python scripts/trajectory_analysis/get_trajectory_chaos.py \
         --results_dirs results/olmo2_continuous_1b_early_revised results/olmo2_continuous_7b_early_revised \
         --model_names "1B" "7B" \
@@ -37,7 +37,7 @@ import pandas as pd
 def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
     """Extract token count (in billions) from checkpoint name.
 
-    Supports multiple formats:
+    supports multiple formats:
     - OLMo: 'stage1-step100000-tokens210B' -> 210
     - K2-V2: 'base_1245000' -> 12450B (12.45T) - checkpoint number in units of 10M tokens
     - Crystal: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}' -> cumulative tokens in B
@@ -51,7 +51,7 @@ def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
     if match:
         return int(match.group(1))
 
-    # Try K2-V2 format: 'base_XXXXXXX' (step number)
+    # Try K2-V2 Format: 'base_XXXXXXX' (step number)
     # K2-V2 tech report: batch_size B = 9.8×10^6 tokens/step, T = 1.25×10^6 steps, D = 12.25T
     # e.g., base_1245000 = 1,245,000 * 9.8M = 12.201T tokens = 12201B
     match = re.search(r'base_(\d+)', checkpoint)
@@ -61,9 +61,9 @@ def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
         tokens_b = checkpoint_num * 9.8e6 / 1e9
         return tokens_b
 
-    # Try Crystal format: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}'
+    # Try Crystal Format: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}'
     # 3-phase training: Phase 1 (345B), Phase 2 (927B), Phase 3 (110B)
-    # Tokens per step: ~4.33M (phase 1-2), ~3.97M (phase 3)
+    # tokens per step: ~4.33M (phase 1-2), ~3.97M (phase 3)
     match = re.search(r'CrystalCoder_phase(\d+)_checkpoint_(\d+)', checkpoint)
     if match:
         phase = int(match.group(1))
@@ -78,7 +78,7 @@ def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
             return None
         return tokens_b
 
-    # Try generic step format: 'step100000'
+    # Try generic step Format: 'step100000'
     match = re.search(r'step(\d+)', checkpoint)
     if match:
         return int(match.group(1))
@@ -87,19 +87,19 @@ def extract_tokens_from_checkpoint(checkpoint: str) -> Optional[float]:
 
 
 def load_accuracy_data(pivot_file: Path) -> Tuple[np.ndarray, np.ndarray, str]:
-    """Load and sort accuracy data from a pivot file.
+    """Loadand sort accuracy data from a pivot file.
     
-    Returns:
+    Returns: 
         tokens: Array of token counts (in billions)
-        accuracy: Array of accuracy values
-        task_name: Name of the task
+        accuracy: Array of accuracy value
+        task_name: name of the task
     """
     df = pd.read_csv(pivot_file)
     
     # Get task name from column (third column after model, checkpoint)
     task_name = [c for c in df.columns if c not in ['model', 'checkpoint']][0]
     
-    # Extract tokens and filter out None/main
+    # Extract tokens and filter out None/Main
     df['tokens'] = df['checkpoint'].apply(extract_tokens_from_checkpoint)
     df = df[df['tokens'].notna() & (df['tokens'] > 0)]
     df = df.sort_values('tokens')
@@ -113,18 +113,18 @@ def load_accuracy_data(pivot_file: Path) -> Tuple[np.ndarray, np.ndarray, str]:
 def compute_chaos_metrics(accuracy: np.ndarray) -> Dict[str, float]:
     """Compute chaoticness/smoothness metrics for a trajectory.
     
-    Args:
-        accuracy: Array of accuracy values (unsmoothed, sorted by tokens)
+    Args: 
+        accuracy: Array of accuracy value (unsmoothed, sorted by tokens)
     
-    Returns:
-        Dict with:
+    Returns: 
+        dictionary with:
         - total_variation: Sum of |Δ_i|
         - net_change: y_n - y_1
         - smoothness: |Δ_net| / TV (1 = monotonic, 0 = chaotic)
         - chaoticness: 1 - smoothness
-        - n_checkpoints: Number of checkpoints
-        - n_increases: Number of times accuracy increased
-        - n_decreases: Number of times accuracy decreased
+        - n_checkpoints: number of checkpoints
+        - n_increases: number of times accuracy increased
+        - n_decreases: number of times accuracy decreased
     """
     if len(accuracy) < 2:
         return {
@@ -137,7 +137,7 @@ def compute_chaos_metrics(accuracy: np.ndarray) -> Dict[str, float]:
             "n_decreases": 0,
         }
     
-    # First differences
+    # first differences
     deltas = np.diff(accuracy)
     
     # Total variation
@@ -174,16 +174,16 @@ def analyze_single_dir(
     results_dir: Path,
     min_max_accuracy: float = 0.0,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Analyze chaos metrics for all tasks in a results directory.
+    """Analyze chaos metrics for all task in a results directory.
     
-    Args:
-        results_dir: Directory containing accuracy_pivot_*.csv files
-        min_max_accuracy: Skip tasks with max accuracy below this threshold
+    Args: 
+        results_dir: directory containing accuracy_pivot_*.csv file
+        min_max_accuracy: Skip task with max accuracy below this threshold
     
-    Returns:
+    Returns: 
         Tuple of:
-        - DataFrame with chaos metrics for all tasks
-        - List of skipped task names
+        - DataFrame with chaos metrics for all task
+        - list of skipped task name
     """
     results = []
     skipped_tasks = []
@@ -197,7 +197,7 @@ def analyze_single_dir(
             
             max_acc = float(accuracy.max())
             
-            # Skip tasks with trivial performance
+            # Skip task with trivial performance
             if max_acc <= min_max_accuracy:
                 skipped_tasks.append(task_name)
                 continue
@@ -224,18 +224,18 @@ def analyze_multiple_dirs(
     min_max_accuracy: float = 0.0,
     tasks: Optional[List[str]] = None,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Analyze chaos metrics for all tasks across multiple models.
+    """Analyze chaos metrics for all task across multiple model.
     
-    Args:
-        results_dirs: List of results directories (one per model)
-        model_names: List of model names (same order as results_dirs)
-        min_max_accuracy: Skip tasks below this threshold
+    Args: 
+        results_dirs: list of results directory (one per model)
+        model_names: list of model name (same order as results_dirs)
+        min_max_accuracy: Skip task below this threshold
         tasks: Optional list of specific tasks to analyze
     
-    Returns:
-        Tuple of (results DataFrame, skipped tasks list)
+    Returns: 
+        Tuple of (results DataFrame, skipped task list)
     """
-    # Discover all tasks across all directories
+    # Discover all task across all directory
     all_task_files = {}  # sanitized_task -> {model_name -> pivot_file}
     
     for results_dir, model_name in zip(results_dirs, model_names):
@@ -252,7 +252,7 @@ def analyze_multiple_dirs(
                 all_task_files[sanitized_task] = {}
             all_task_files[sanitized_task][model_name] = pivot_file
     
-    # Filter to requested tasks if specified
+    # filter to requested task if specified
     if tasks:
         sanitized_requested = {t.replace(":", "_").replace("/", "_") for t in tasks}
         all_task_files = {k: v for k, v in all_task_files.items() if k in sanitized_requested}
@@ -264,7 +264,7 @@ def analyze_multiple_dirs(
         task_name = None
         max_acc_any = 0.0
         
-        # First pass: check max accuracy across all models
+        # first pass: Checkmax accuracy across all model
         for model_name, pivot_file in model_files.items():
             try:
                 _, accuracy, task_name = load_accuracy_data(pivot_file)
@@ -347,7 +347,7 @@ Examples:
     parser.add_argument("--tasks", nargs="+", default=None,
                         help="Specific tasks to analyze")
     
-    # Output
+    # output
     parser.add_argument("-o", "--output", type=str, default=None,
                         help="Output CSV file (default: print to stdout)")
     parser.add_argument("--sort-by", type=str, default="chaoticness",
@@ -399,7 +399,7 @@ Examples:
             min_max_accuracy=args.min_accuracy,
         )
     
-    # Report skipped tasks
+    # Report skipped task
     if skipped_tasks:
         print(f"⚠️  Skipped {len(skipped_tasks)} tasks with max accuracy <= {args.min_accuracy}:")
         for task in skipped_tasks[:10]:  # Show first 10
@@ -415,7 +415,7 @@ Examples:
     # Sort results
     ascending = args.ascending if args.sort_by == "task" else args.ascending
     if args.sort_by != "task" and not args.ascending:
-        ascending = False  # Default descending for metrics
+        ascending = False  # default descending for metrics
     df = df.sort_values(args.sort_by, ascending=ascending, na_position="last")
     
     # Select columns for display
@@ -434,7 +434,7 @@ Examples:
     
     print(df_display.to_string(index=False))
     
-    # Summary statistics
+    # summary statistics
     print(f"\n{'='*60}")
     print("SUMMARY STATISTICS")
     print(f"{'='*60}")

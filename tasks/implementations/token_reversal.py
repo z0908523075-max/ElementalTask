@@ -8,13 +8,13 @@ from tasks.base_task import BaseTask, TaskConfig
 
 class TokenReversalTask(BaseTask):
     """Task for reversing input words or strings."""
-    TASK_NAME = "token_reversal"  # Auto-discovery key
+    TASK_NAME = "token_reversal"  # automatic discovery key
 
     def __init__(self, config: TaskConfig):
         super().__init__(config)
 
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy (case-insensitive, trimmed)."""
+        """Evaluate predictions using exact-match accuracy (case-insensitive, trim leading and trailing whitespace)."""
         ground_truth = self.get_ground_truth(split)
 
         if len(predictions) != len(ground_truth):
@@ -44,7 +44,7 @@ def create_token_reversal_task(
     """
     Create a TokenReversalTask instance.
 
-    Since this is an ICL task, we pass examples directly as in-memory data and rely on BaseTask.
+    Since this is an ICL task, we pass example directly as in-memory data and rely on BaseTask.
     """
     default_examples: List[Dict[str, str]] = [
         {"input": "cat", "output": "tac"},
@@ -76,7 +76,7 @@ def create_token_reversal_task(
         in_memory_data=examples if examples is not None else default_examples,
         input_column="input",
         output_column="output",
-        prompt_template="Reverse the characters in the given word.\nInput: {input}\nOutput:",
+        prompt_template="Input: {input}\nOutput:",
         evaluation_metrics=["accuracy"],
         metadata={"task_type": "string_transformation"},
     )

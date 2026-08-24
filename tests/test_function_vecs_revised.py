@@ -24,7 +24,7 @@ MODEL_NAME = "gpt2"  # Standard GPT-2 (117M params) - small but capable of ICL
 )
 @torch.no_grad()
 def test_compute_aie_with_varied_prompts():
-    """Test function vector extraction with varied ICL and properly shuffled control prompts."""
+    """Test function vector Extract with varied ICL and properly shuffled control prompt."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
     print(f"CUDA available: {torch.cuda.is_available()}")
@@ -51,7 +51,7 @@ def test_compute_aie_with_varied_prompts():
     attn0 = get_attn(blocks[0])
     assert get_o_proj(attn0) is not None
 
-    # Create simpler ICL examples for memory efficiency
+    # Build simpler ICL example for memory efficiency
     icl_examples = [("a", "A"), ("b", "B"), ("c", "C")]
     
     # Build just 2 ICL prompts to reduce memory usage
@@ -60,12 +60,12 @@ def test_compute_aie_with_varied_prompts():
         demo_start = i % (len(icl_examples) - 1)
         demo1 = icl_examples[demo_start]
         demo2 = icl_examples[demo_start + 1]
-        test_input = "d"  # Simple test case
+        test_input = "d"  # simple test case
         
         prompt = f"Examples:\n{demo1[0]} -> {demo1[1]}\n{demo2[0]} -> {demo2[1]}\n\nTask: {test_input} ->"
         icl_texts.append(prompt)
     
-    # Create corresponding control prompts
+    # Build corresponding control prompt
     import random
     inputs = ["a", "b", "c"]
     outputs = ["A", "B", "C"]
@@ -136,7 +136,7 @@ def test_compute_aie_with_varied_prompts():
     assert torch.any(torch.abs(aie) > 1e-8), "AIE is all zeros - no difference between ICL and controls"
     
     # Test function vector construction
-    aie_np = aie.transpose(0, 1).detach().cpu().numpy()  # Convert to (D, H) format
+    aie_np = aie.transpose(0, 1).detach().cpu().numpy()  # convertto (D, H) format
     head_means = TaskHeadMeans(task_name="test_uppercase", residual_means=aie_np)
     headset = Headset(mode="topk", heads=[(layer_idx, h) for h in range(num_heads)], weights=None)
     
@@ -160,7 +160,7 @@ def test_compute_aie_with_varied_prompts():
 )
 @torch.no_grad()
 def test_compute_aie_with_scoring():
-    """Test the original compute_aie_for_layer function with answer scoring."""
+    """Test the original compute_aie_for_layer function with Answer scoring."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     tok = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -168,7 +168,7 @@ def test_compute_aie_with_scoring():
         tok.pad_token = tok.eos_token
     model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(device).eval()
 
-    # Simple ICL-style prompts + answers for scoring (more explicit format)
+    # simple ICL-style prompt + Answer for scoring (more explicit format)
     icl_texts = [
         "Examples:\na -> A\nb -> B\nc -> C\n\nTask: d ->",
         "Examples:\nb -> B\nc -> C\nd -> D\n\nTask: e ->", 
@@ -176,9 +176,9 @@ def test_compute_aie_with_scoring():
     ]
     icl_answers = [" D", " E", " F"]  # Expected uppercase outputs
 
-    # Control texts with broken patterns (same format but random mappings)
+    # Control texts with broken patterns (same Formatbut random mappings)
     ctrl_texts = [
-        "Examples:\na -> C\nb -> A\nc -> D\n\nTask: d ->",  # Shuffled mappings
+        "Examples:\na -> C\nb -> A\nc -> D\n\nTask: d ->",  # shuffled mappings
         "Examples:\nb -> D\nc -> B\nd -> E\n\nTask: e ->", 
         "Examples:\nc -> F\nd -> C\ne -> B\n\nTask: f ->"
     ]
@@ -187,7 +187,7 @@ def test_compute_aie_with_scoring():
     blocks = get_blocks(model)
     last_layer = len(blocks) - 1
 
-    # Debug: Check if the model can predict the right answers first
+    # Debug: Check if the model can predict the right Answer first
     from function_vecs.extract_function_vecs import _score_batch, _first_answer_token_ids
     
     gold_ids = _first_answer_token_ids(tok, icl_answers)
@@ -202,7 +202,7 @@ def test_compute_aie_with_scoring():
     print(f"Control scores: {ctrl_scores}")
     print(f"Score difference: {icl_scores - ctrl_scores}")
 
-    # Only run the full AIE if there's a meaningful difference in base scores
+    # Only run the full AIE if there's a meaningful difference in Base scores
     score_diff = torch.abs(icl_scores - ctrl_scores)
     print(f"Max score difference: {score_diff.max().item():.6f}")
     
@@ -231,4 +231,4 @@ def test_compute_aie_with_scoring():
     else:
         print("⚠️  Skipping AIE test: no meaningful score difference between ICL and controls")
         print("   This suggests the model isn't learning the task or answers are unpredictable")
-        # Don't fail the test - this is expected with tiny models on simple tasks
+        # Don't fail the test - this is expected with tiny model on simple task

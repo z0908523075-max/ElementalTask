@@ -1,4 +1,4 @@
-"""Indirect object identification (pronoun resolution) task for identifying correct referents in context using mib-bench/ioi dataset."""
+"""indirect object identification (pronoun resolution) for identifying correct referents in context using mib-bench/ioi dataset."""
 
 from typing import Dict, List, Any
 import re
@@ -8,20 +8,20 @@ from datasets import load_dataset
 
 
 class IOITask(BaseTask):
-    """Task for indirect object identification using IOI dataset from mib-bench/ioi."""
+    """Task for indirect object identification using the IOI dataset from mib-bench/ioi."""
 
-    TASK_NAME = "ioi_task"  # Auto-discovery key
+    TASK_NAME = "ioi_task"  # automatic discovery key
     
     def __init__(self, config: TaskConfig):
         super().__init__(config)
     pass
     
     def _load_data(self):
-        """Load the IOI (Indirect Object Identification) dataset from mib-bench."""
+        """LoadIOI (indirect object identification) dataset from mib-bench."""
         self.data = load_dataset("mib-bench/ioi")
 
     def get_icl_examples(self, num_examples: int = 10, shuffle: bool = True, seed: int = None, fresh: bool = True) -> List[Dict[str, str]]:
-        """Return ICL examples for IOI-style data using the test split."""
+        """ReturnsICL example for IOI-style data using the test split."""
         data = self.get_split("test")
         if not data:
             return []
@@ -45,44 +45,54 @@ class IOITask(BaseTask):
         return examples
 
     def get_split(self, split: str = "test") -> List[Dict[str, Any]]:
-        """Get data split for evaluation."""
+        """Get data split for Evaluate."""
         if split in self.data:
             split_data = self.data[split]
-            # Convert to list of dictionaries
+            # convertto list of dictionaries
             return [dict(example) for example in split_data]
         elif hasattr(self.data, 'to_dict'):
             return self.data.to_dict('records')
         return self.data if isinstance(self.data, list) else []
     
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
-        """Build prompt for pronoun resolution problems.
+        """Build a prompt for pronoun resolution problems.
         
-        Args:
-            instance: The instance to build a prompt for
-            num_shots: Number of in-context learning examples (default: 5)
+        Args: 
+            instance: The instance to Build a prompt for
+            num_shots: number of in-context learning example (default: 5)
         
-        Returns:
-            Formatted prompt string
+        Returns: 
+            Format prompt string
         """
-        # The mib-bench/ioi dataset typically has these fields:
-        # - 'prompt': the incomplete sentence
-        # - 'choices': list of possible completions 
-        # - 'answer_index': index of correct choice
-        
         prompt_text = instance.get('prompt', '')
-        
-        # For IOI, we want the model to complete the sentence with the correct name
-        # The prompt should be the incomplete sentence ending with the preposition
-        prompt = f"""Complete the following sentence by identifying who should be referenced:
 
-Sentence: {prompt_text}
+        sections = [
+            "Complete the following sentence by identifying who should be referenced.",
+            "Answer with only the name of the person who should be referenced.",
+        ]
 
-Answer with only the name of the person who should be referenced."""
-        
-        return prompt
+        if num_shots > 0:
+            icl_examples = self.get_icl_examples(
+                num_examples=num_shots,
+                shuffle=True,
+                seed=42,
+                fresh=False,
+            )
+            if icl_examples:
+                demo_lines = []
+                for ex in icl_examples:
+                    demo_lines.append(f"Sentence: {ex.get('input', '')}")
+                    demo_lines.append(f"Answer: {ex.get('output', '')}")
+                    demo_lines.append("")
+                sections.append("\n".join(demo_lines).strip())
+                sections.append("Now answer the next one.")
+
+        sections.append(f"Sentence: {prompt_text}")
+        sections.append("Answer:")
+        return "\n\n".join(sections)
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate indirect object identification predictions."""
+        """Evaluateindirect object identification predictions."""
         data = self.get_split(split)
         
         if len(predictions) != len(data):
@@ -96,21 +106,21 @@ Answer with only the name of the person who should be referenced."""
         detailed_results = []
         
         for pred, example in zip(predictions, data):
-            # Get the correct answer from the choices and answer_index
+            # Get correct Answer from the choices and answer_index
             choices = example.get('choices', [])
             answer_index = example.get('answer_index', 0)
             
             if choices and 0 <= answer_index < len(choices):
                 expected = choices[answer_index]
             else:
-                # Fallback to other possible answer fields
+                # Fallback to other possible Answer fields
                 expected = example.get('answer', example.get('correct_answer', ''))
             
-            # Extract name from prediction and expected answer
+            # Extract name from predictions and expected Answer
             pred_name = self._extract_name(pred)
             expected_name = self._extract_name(expected)
             
-            # Check if prediction matches expected answer
+            # Check if predictions matches expected Answer
             is_correct = (pred_name is not None and 
                          expected_name is not None and 
                          pred_name.lower() == expected_name.lower())
@@ -145,9 +155,9 @@ Answer with only the name of the person who should be referenced."""
         
         # Common patterns in responses
         patterns = [
-            r'^([A-Z][a-z]+)(?:\s|$)',  # Name at start
+            r'^([A-Z][a-z]+)(?:\s|$)',  # name at start
             r'(?:is|answer|name)?\s*:?\s*([A-Z][a-z]+)',  # After common prefixes
-            r'([A-Z][a-z]+)(?:\s*\.?\s*$)',  # Name at end
+            r'([A-Z][a-z]+)(?:\s*\.?\s*$)',  # name at end
         ]
         
         for pattern in patterns:
@@ -158,10 +168,10 @@ Answer with only the name of the person who should be referenced."""
         # Fallback: look for any capitalized word that could be a name
         words = text.split()
         for word in words:
-            # Remove punctuation and check if it's a likely name
+            # Remove punctuation and Check if it's a likely name
             clean_word = re.sub(r'[^\w]', '', word)
             if clean_word and clean_word[0].isupper() and clean_word.isalpha():
-                # Additional check: common English names are typically 3+ characters
+                # Additional check: common English name are typically 3+ character
                 if len(clean_word) >= 3:
                     return clean_word
         
@@ -178,7 +188,7 @@ def create_ioi_task(
         data_format="huggingface",
         data_path="mib-bench/ioi",  # HuggingFace dataset name
         input_column="prompt",  # The incomplete sentence
-        output_column="choices",  # List of choices, use with answer_index
+        output_column="choices",  # list of choices, use with answer_index
         evaluation_metrics=["accuracy"],
         metadata={
             "task_type": "pronoun_resolution", 

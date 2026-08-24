@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Find emergence points for tasks based on accuracy trajectories.
+"""Find emergence points for task based on accuracy trajectories.
 
 This script analyzes accuracy over training tokens to determine when
 a task "emerges" - i.e., when the model starts to successfully perform it.
 
-Supports multiple detection methods:
-- fixed: First time accuracy exceeds a fixed threshold (e.g., 0.95)
-- relative: First time accuracy exceeds X% of maximum performance
+supports multiple detection methods:
+- fixed: first time accuracy exceeds a fixed threshold (e.g., 0.95)
+- relative: first time accuracy exceeds X% of maximum performance
 - elbow: Elbow/knee point using Kneedle algorithm (recommended for emergence)
-- stable: First time accuracy stays above threshold for N consecutive checkpoints
+- stable: first time accuracy stays above threshold for N consecutive checkpoints
 
-Usage:
+Usage: 
     python scripts/trajectory_analysis/get_emergence_point.py \
         --results_dir results/olmo2_continuous_1b_early_revised \
         --method relative \
         --threshold 0.5 \
         --output emergence_points.csv
     
-    # Plot with multiple models
+    # Plot with multiple model
     python scripts/trajectory_analysis/get_emergence_point.py \
         --results_dirs results/olmo2_continuous_1b_early_revised results/olmo2_continuous_7b_early_revised \
         --model_names "1B" "7B" \
@@ -44,7 +44,7 @@ MODEL_MARKERS = ['o', 's', '^', 'D', 'v']
 def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = None) -> Optional[float]:
     """Extract token count (in billions) from checkpoint name.
 
-    Supports multiple formats:
+    supports multiple formats:
     - OLMo: 'stage1-step100000-tokens210B' -> 210
     - Amber: 'ckpt_XXX' where XXX is checkpoint index (~3.5B tokens per ckpt)
     - Pythia: 'stepXXX' where XXX is training step number.
@@ -53,14 +53,14 @@ def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = No
     - Crystal: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}' -> cumulative tokens in B
     - 'main': Resolves to final token count if model_id is known.
 
-    Args:
+    Args: 
         checkpoint: Checkpoint name string
-        model_id: Optional model identifier (e.g. 'LLM360/Amber') to resolve 'main'
+        model_id: optionalmodel identifier (e.g. 'LLM360/Amber') to resolve 'main'
     """
     # Known final token counts (in B) for 'main' branch by model
-    # Amber: 360 ckpts over ~1.26T tokens, main = ckpt_358 ≈ 1259B
+    # Amber: 360 ckpts over ~1.26T tokens, Main = ckpt_358 ≈ 1259B
     # OLMo-2: both 1B and 7B trained on 4T tokens (stage1) + 50B (stage2)
-    # Pythia: 143K steps × 2M tokens/step ≈ 300B total; main = step143000
+    # Pythia: 143K steps × 2M tokens/step ≈ 300B total; Main = step143000
     MAIN_TOKENS = {
         'LLM360/Amber': 1259,
         'llm360/amber': 1259,
@@ -98,14 +98,14 @@ def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = No
 
     # Pythia-style: stepXXX
     # Each step = 2,097,152 tokens (2M batch size)
-    # Convert to billions: step * 2_097_152 / 1e9
+    # convertto billions: step * 2_097_152 / 1e9
     match = re.search(r'^step(\d+)$', checkpoint)
     if match:
         step_num = int(match.group(1))
         tokens_b = int(round(step_num * 2_097_152 / 1e9))
         return max(0, tokens_b)
 
-    # Try K2-V2 format: 'base_XXXXXXX' (step number)
+    # Try K2-V2 Format: 'base_XXXXXXX' (step number)
     # K2-V2 tech report: batch_size B = 9.8×10^6 tokens/step, T = 1.25×10^6 steps, D = 12.25T
     match = re.search(r'base_(\d+)', checkpoint)
     if match:
@@ -113,7 +113,7 @@ def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = No
         tokens_b = checkpoint_num * 9.8e6 / 1e9
         return tokens_b
 
-    # Try Crystal format: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}'
+    # Try Crystal Format: 'CrystalCoder_phase{N}_checkpoint_{XXXXXX}'
     # 3-phase training: Phase 1 (345B), Phase 2 (927B), Phase 3 (110B)
     match = re.search(r'CrystalCoder_phase(\d+)_checkpoint_(\d+)', checkpoint)
     if match:
@@ -133,12 +133,12 @@ def extract_tokens_from_checkpoint(checkpoint: str, model_id: Optional[str] = No
 
 
 def load_accuracy_data(pivot_file: Path) -> Tuple[np.ndarray, np.ndarray, str]:
-    """Load and sort accuracy data from a pivot file.
+    """Loadand sort accuracy data from a pivot file.
     
-    Returns:
+    Returns: 
         tokens: Array of token counts (in billions)
-        accuracy: Array of accuracy values
-        task_name: Name of the task
+        accuracy: Array of accuracy value
+        task_name: name of the task
     """
     df = pd.read_csv(pivot_file)
     
@@ -160,17 +160,17 @@ def load_accuracy_data(pivot_file: Path) -> Tuple[np.ndarray, np.ndarray, str]:
 
 
 def load_combined_pivot(pivot_file: Path) -> Dict[str, Tuple[np.ndarray, np.ndarray]]:
-    """Load data from a combined accuracy_pivot.csv with multiple tasks as columns.
+    """Loaddata from a combined accuracy_pivot.csv with multiple task as columns.
 
-    Args:
-        pivot_file: Path to combined pivot file with columns: model, checkpoint, task1, task2, ...
+    Args: 
+        pivot_file: path to combined pivot file with columns: model, checkpoint, task1, task2, ...
 
-    Returns:
-        Dictionary mapping task_name -> (tokens_array, accuracy_array)
+    Returns: 
+        dictionary mapping task_name -> (tokens_array, accuracy_array)
     """
     df = pd.read_csv(pivot_file)
 
-    # Extract tokens from checkpoint names
+    # Extract tokens from checkpoint name
     df['tokens'] = df['checkpoint'].apply(extract_tokens_from_checkpoint)
     df = df[df['tokens'].notna() & (df['tokens'] > 0)]
     df = df.sort_values('tokens')
@@ -205,13 +205,13 @@ def find_emergence_fixed(
 ) -> Optional[float]:
     """Find first token count where accuracy exceeds fixed threshold.
     
-    Args:
-        tokens: Token counts
-        accuracy: Accuracy values (possibly smoothed)
+    Args: 
+        tokens: token counts
+        accuracy: accuracy value (possibly smoothed)
         threshold: Fixed accuracy threshold (e.g., 0.95)
     
-    Returns:
-        Token count at emergence, or None if never reached
+    Returns: 
+        token count at emergence, or None if never reached
     """
     mask = accuracy >= threshold
     if not mask.any():
@@ -227,14 +227,14 @@ def find_emergence_relative(
 ) -> Optional[float]:
     """Find first token count where accuracy exceeds fraction of final/max.
     
-    Args:
-        tokens: Token counts
-        accuracy: Accuracy values (possibly smoothed)
+    Args: 
+        tokens: token counts
+        accuracy: accuracy value (possibly smoothed)
         fraction: Fraction of reference performance (e.g., 0.5 = 50%)
         use_max: If True, use max accuracy as reference; else use final
     
-    Returns:
-        Token count at emergence, or None if never reached
+    Returns: 
+        token count at emergence, or None if never reached
     """
     reference = accuracy.max() if use_max else accuracy[-1]
     target = reference * fraction
@@ -257,14 +257,14 @@ def find_emergence_inflection(
     
     For accuracy curves (increasing), we look for a "knee" (concave curve).
     
-    Args:
-        tokens: Token counts
-        accuracy: Accuracy values (possibly smoothed)
+    Args: 
+        tokens: token counts
+        accuracy: accuracy value (possibly smoothed)
         smoothing_factor: Sensitivity parameter (S) for Kneedle. 
                           Higher = less sensitive, finds more prominent knees.
     
-    Returns:
-        Token count at elbow/knee point, or None if cannot be determined
+    Returns: 
+        token count at elbow/knee point, or None if cannot be determined
     """
     if len(tokens) < 4:
         return None
@@ -314,18 +314,18 @@ def find_emergence_stable(
     
     This is more robust to noise than single-crossing methods.
     
-    Args:
-        tokens: Token counts
-        accuracy: Accuracy values
-        threshold: Accuracy threshold to maintain
+    Args: 
+        tokens: token counts
+        accuracy: accuracy value
+        threshold: accuracy threshold to maintain
         min_consecutive: Minimum consecutive checkpoints above threshold
     
-    Returns:
-        Token count at stable emergence, or None if never reached
+    Returns: 
+        token count at stable emergence, or None if never reached
     """
     above = accuracy >= threshold
     
-    # Find runs of consecutive True values
+    # Find runs of consecutive True value
     for i in range(len(above) - min_consecutive + 1):
         if all(above[i:i + min_consecutive]):
             return float(tokens[i])
@@ -342,16 +342,16 @@ def find_emergence(
 ) -> Dict[str, Any]:
     """Find emergence point using specified method.
     
-    Args:
-        tokens: Token counts (in billions)
-        accuracy: Raw accuracy values
+    Args: 
+        tokens: token counts (in billions)
+        accuracy: Raw accuracy value
         method: One of 'fixed', 'relative', 'inflection', 'stable'
         smooth_sigma: Gaussian smoothing sigma (0 = no smoothing)
         **kwargs: Method-specific parameters
     
-    Returns:
-        Dict with:
-        - emergence_tokens: Token count at emergence (None if not found)
+    Returns: 
+        dictionary with:
+        - emergence_tokens: token count at emergence (None if not found)
         - method: Method used
         - parameters: Parameters used
         - max_accuracy: Maximum accuracy achieved
@@ -404,28 +404,28 @@ def analyze_all_tasks(
     min_max_accuracy: float = 0.0,
     **kwargs,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Analyze emergence points for all tasks in a results directory.
+    """Analyze emergence points for all task in a results directory.
 
-    Args:
-        results_dir: Directory containing accuracy_pivot_*.csv or accuracy_pivot.csv
+    Args: 
+        results_dir: directory containing accuracy_pivot_*.csv or accuracy_pivot.csv
         method: Emergence detection method
         smooth_sigma: Smoothing parameter
-        min_max_accuracy: Skip tasks with max accuracy below this threshold
+        min_max_accuracy: Skip task with max accuracy below this threshold
         **kwargs: Method-specific parameters
 
-    Returns:
+    Returns: 
         Tuple of:
-        - DataFrame with emergence data for all tasks
-        - List of skipped task names (due to trivial performance)
+        - DataFrame with emergence data for all task
+        - list of skipped task name (due to trivial performance)
     """
     results = []
     skipped_tasks = []
 
-    # First try per-task pivot files
+    # first try per-task pivot file
     pivot_files = sorted(results_dir.glob("accuracy_pivot_*.csv"))
 
     if pivot_files:
-        # Use per-task files
+        # Use per-task file
         for pivot_file in pivot_files:
             try:
                 tokens, accuracy, task_name = load_accuracy_data(pivot_file)
@@ -435,7 +435,7 @@ def analyze_all_tasks(
 
                 max_acc = float(accuracy.max())
 
-                # Skip tasks with trivial performance
+                # Skip task with trivial performance
                 if max_acc <= min_max_accuracy:
                     skipped_tasks.append(task_name)
                     continue
@@ -501,7 +501,7 @@ def plot_task_emergence(
     figsize: Tuple[int, int] = (12, 8),
     **kwargs,
 ):
-    """Plot emergence analysis for a single task with multiple models.
+    """Plot emergence analysis for a single task with multiple model.
     
     Shows:
     - Raw data points (faint)
@@ -509,12 +509,12 @@ def plot_task_emergence(
     - Emergence point (vertical dashed line)
     - Inflection point (vertical red line, if method is inflection)
     
-    Args:
-        task_name: Name of the task for title
-        model_data: Dict mapping model_name -> (tokens, accuracy)
+    Args: 
+        task_name: name of the fortitle
+        model_data: dictionary mapping model_name -> (tokens, accuracy)
         method: Emergence detection method
         smooth_sigma: Smoothing parameter used
-        output_path: Where to save the plot
+        output_path: Where to Storethe plot
         figsize: Figure size
         **kwargs: Method-specific parameters
     """
@@ -581,25 +581,25 @@ def plot_all_tasks_emergence(
     tasks: Optional[List[str]] = None,
     **kwargs,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Plot emergence for all tasks across multiple models.
+    """Plot emergence for all task across multiple model.
 
-    Args:
-        results_dirs: List of results directories (one per model)
-        model_names: List of model names (same order as results_dirs)
+    Args: 
+        results_dirs: list of results directory (one per model)
+        model_names: list of model name (same order as results_dirs)
         method: Emergence detection method
         smooth_sigma: Smoothing parameter
-        output_dir: Directory to save plots
-        min_max_accuracy: Skip tasks below this threshold
+        output_dir: directory to Storeplots
+        min_max_accuracy: Skip task below this threshold
         tasks: Optional list of specific tasks to plot
         **kwargs: Method-specific parameters
 
-    Returns:
-        Tuple of (results DataFrame, skipped tasks list)
+    Returns: 
+        Tuple of (results DataFrame, skipped task list)
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Discover all tasks across all directories
+    # Discover all task across all directory
     # all_task_data: task_name -> {model_name -> (tokens, accuracy)}
     all_task_data = {}
 
@@ -609,7 +609,7 @@ def plot_all_tasks_emergence(
             print(f"Warning: {results_path} does not exist")
             continue
 
-        # First try per-task pivot files
+        # first try per-task pivot file
         pivot_files = list(results_path.glob("accuracy_pivot_*.csv"))
 
         if pivot_files:
@@ -639,7 +639,7 @@ def plot_all_tasks_emergence(
                         all_task_data[sanitized_task] = {"_task_name": task_name}
                     all_task_data[sanitized_task][model_name] = (tokens, accuracy)
 
-    # Filter to requested tasks if specified
+    # filter to requested task if specified
     if tasks:
         sanitized_requested = {t.replace(":", "_").replace("/", "_") for t in tasks}
         all_task_data = {k: v for k, v in all_task_data.items() if k in sanitized_requested}
@@ -667,7 +667,7 @@ def plot_all_tasks_emergence(
         display_name = task_name or sanitized_task.replace("_", ":", 1)
         print(f"  {display_name}")
 
-        # Create plot
+        # Buildplot
         output_path = output_dir / f"{sanitized_task}_emergence.png"
         plot_task_emergence(
             display_name,
@@ -755,7 +755,7 @@ Examples:
     parser.add_argument("--use-final", action="store_true",
                         help="For 'relative' method, use final acc instead of max")
     
-    # Output settings
+    # output settings
     parser.add_argument("-o", "--output", type=str, default=None,
                         help="Output CSV file (default: print to stdout)")
     parser.add_argument("--task", type=str, default=None,
@@ -788,7 +788,7 @@ Examples:
     else:
         parser.error("Must provide either --results_dir or --results_dirs")
     
-    # Build kwargs for method
+    # Buildkwargs for method
     kwargs = {
         "threshold": args.threshold,
         "use_max": not args.use_final,
@@ -821,7 +821,7 @@ Examples:
             **kwargs
         )
         
-        # Report skipped tasks
+        # Report skipped task
         if skipped_tasks:
             print(f"\n⚠️  Skipped {len(skipped_tasks)} tasks with max accuracy <= {args.min_accuracy}:")
             for task in skipped_tasks:
@@ -879,7 +879,7 @@ Examples:
             print(f"\n✅ Plot saved to: {output_path}")
         
     else:
-        # Analyze all tasks (single model, no plotting or with plotting)
+        # Analyze all task (single model, no plotting or with plotting)
         results_dir = Path(args.results_dir)
         if not results_dir.exists():
             print(f"Error: Directory {results_dir} does not exist")
@@ -910,7 +910,7 @@ Examples:
                 **kwargs
             )
         
-        # Report skipped tasks
+        # Report skipped task
         if skipped_tasks:
             print(f"\n⚠️  Skipped {len(skipped_tasks)} tasks with max accuracy <= {args.min_accuracy}:")
             for task in skipped_tasks:
@@ -932,7 +932,7 @@ Examples:
         else:
             print(df.to_string(index=False))
 
-        # Summary stats
+        # summary stats
         emerged = df["emergence_tokens_B"].notna().sum()
         print(f"\n{emerged}/{len(df)} tasks emerged")
         if emerged > 0:

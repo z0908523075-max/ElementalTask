@@ -9,20 +9,20 @@ from tasks.base_task import BaseTask, TaskConfig
 class BasicArithmeticTask(BaseTask):
     """Task for basic arithmetic operations."""
     
-    TASK_NAME = "basic_arithmetic"  # Auto-discovery key
+    TASK_NAME = "basic_arithmetic"  # automatic discovery key
     
     def __init__(self, config: TaskConfig):
         super().__init__(config)
     
     def _load_data(self):
-        """Load arithmetic problems - uses in-memory data if provided, otherwise defaults."""
+        """Load arithmetic problems — uses in-memory data if provided, otherwise uses defaults."""
         import pandas as pd
         
         if self.config.in_memory_data:
             self.data = pd.DataFrame(self.config.in_memory_data)
             return
         
-        # Default arithmetic problems
+        # default arithmetic problems
         default_problems = [
             {"question": "What is 5 + 3?", "answer": "8"},
             {"question": "What is 12 - 7?", "answer": "5"},
@@ -45,20 +45,20 @@ class BasicArithmeticTask(BaseTask):
         return self.data
     
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
-        """Build prompt for arithmetic problems with optional ICL examples.
+        """Build a prompt for arithmetic problems with optional ICL examples.
         
-        Args:
+        Args: 
             instance: The instance to build a prompt for
             num_shots: Number of in-context learning examples (default: 5)
         
-        Returns:
-            Formatted prompt string
+        Returns: 
+            Format prompt string
         """
         prompt = ""
         
-        # Add ICL examples if requested and we have demonstrations
+        # Add ICL example if requested and we have demonstration
         if num_shots > 0 and self.demonstrations:
-            # Use the first num_shots demonstrations
+            # Use the first num_shots demonstration
             prompt += ""
             for demo in self.demonstrations[:num_shots]:
                 prompt += f"{demo}\n"
@@ -66,12 +66,12 @@ class BasicArithmeticTask(BaseTask):
         
         # Add instruction and current problem
         question = instance[self.config.input_column]
-        prompt += f"Input: {question}\Output:"
+        prompt += f"Input: {question}\nOutput:"
         
         return prompt
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate arithmetic predictions by extracting numbers."""
+        """Evaluate arithmetic predictions by extracting number."""
         data = self.get_split(split)
         
         if len(predictions) != len(data):
@@ -87,7 +87,7 @@ class BasicArithmeticTask(BaseTask):
         for pred, example in zip(predictions, data):
             expected = example[self.config.output_column]
             
-            # Extract number from prediction (handle various formats)
+            # Extract number from predictions (handle various formats)
             pred_number = self._extract_number(pred)
             expected_number = self._extract_number(expected)
             
@@ -134,7 +134,7 @@ def create_basic_arithmetic_task(
     name: str = "basic_arithmetic"
 ) -> BasicArithmeticTask:
     """Create a BasicArithmeticTask instance."""
-    # Define static demonstrations (separate from test set)
+    # Define static demonstration (separate from test set)
     demonstrations = [
         "Input: What is 7 + 5?\nOutput: 12",
         "Input: What is 18 - 9?\nOutput: 9",
@@ -147,8 +147,8 @@ def create_basic_arithmetic_task(
         name=name,
         description="Basic arithmetic evaluation task",
         data_format="memory",
-        in_memory_data=problems,  # Use provided problems or None for defaults
-        in_memory_demonstrations=demonstrations,  # Static ICL examples
+        in_memory_data=problems,  # Use provided problems or None for default
+        in_memory_demonstrations=demonstrations,  # static ICL example
         input_column="question",
         output_column="answer",
         evaluation_metrics=["accuracy"],

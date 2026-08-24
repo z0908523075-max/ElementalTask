@@ -1,4 +1,4 @@
-"""Simple ICL task implementation with category-based demonstrations."""
+"""simple ICL task implementation with category-based demonstration."""
 
 from typing import Dict, List, Any
 import pandas as pd
@@ -8,17 +8,24 @@ from ..base_task import BaseTask, TaskConfig
 class SimpleICLTask(BaseTask):
     """Task for simple in-context learning with category-based demonstrations."""
     
-    TASK_NAME = "simple_icl"  # Auto-registration name
+    TASK_NAME = "simple_icl"  # automaticregistername
     
     def __init__(self, config: TaskConfig):
         super().__init__(config)
         
-        # Define hardcoded demonstrations for each category
+        # Define hardcoded demonstration for each class
         import string
+        import random
 
-        # Build full alphabet demonstrations for completeness
+        # Buildfull alphabet demonstration for completeness.
+        # shuffle with a fixed seed so the 5 shown demos are non-consecutive,
+        # which eliminates the "consecutive alphabetic shift" ambiguity that
+        # arises when the model always sees a->A, b->B, c->C, d->D, e->E.
+        _rng = random.Random(42)
         uppercase_demos = [f"{ch.lower()} -> {ch}" for ch in string.ascii_uppercase]
+        _rng.shuffle(uppercase_demos)
         lowercase_demos = [f"{ch} -> {ch.lower()}" for ch in string.ascii_uppercase]
+        _rng.shuffle(lowercase_demos)
 
         self.category_demonstrations = {
             "uppercase": uppercase_demos,
@@ -121,40 +128,40 @@ class SimpleICLTask(BaseTask):
         }
     
     def _load_data(self):
-        """Load data from CSV file."""
+        """Loaddata from CSV file."""
         import pandas as pd
         
         if self.config.data_path:
             self.data = pd.read_csv(self.config.data_path)
         else:
-            # If no data path, create empty DataFrame
+            # If no data path, Buildempty DataFrame
             self.data = pd.DataFrame(columns=[self.config.input_column, self.config.output_column])
     
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
-        """Build a prompt with category-specific demonstrations.
+        """Build a prompt with category-specific demonstration.
         
-        Args:
-            instance: The instance to build a prompt for
-            num_shots: Number of in-context learning examples (default: 5)
+        Args: 
+            instance: The instance to Build a prompt for
+            num_shots: number of in-context learning example (default: 5)
         
-        Returns:
-            Formatted prompt string
+        Returns: 
+            Format prompt string
         """
         category = instance.get('category_name', '')
         
-        # Check if we have demonstrations in the config (from in-memory data)
+        # Check if we have demonstration in the configuration (from in-memory data)
         if (self.config.in_memory_demonstrations and 
             isinstance(self.config.in_memory_demonstrations, dict)):
             demos = self.config.in_memory_demonstrations.get(category, [])
         else:
-            # Fallback to hardcoded demonstrations
+            # Fallback to hardcoded demonstration
             demos = self.category_demonstrations.get(category, [])
         
-        # Exclude demonstrations that match the current instance input to avoid leaking the test item
+        # Exclude demonstration that match the current instance input to avoid leaking the test item
         instance_input = instance.get(self.config.input_column, '')
         filtered_demos = []
         for d in demos:
-            # Each demo may be formatted like 'input -> output'
+            # Each demo may be Format like 'input -> output'
             demo_input = d.split('->', 1)[0].strip()
             if demo_input != instance_input:
                 filtered_demos.append(d)
@@ -170,13 +177,13 @@ class SimpleICLTask(BaseTask):
             for demo in demos:
                 prompt += f"{demo}\n"
         
-        # Add the current question
+        # Add the current Question
         prompt += f"{instance[self.config.input_column]} ->"
         
         return prompt
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy, including per-category metrics."""
+        """Evaluate predictions using exact-match accuracy, including per-category metrics."""
         ground_truth = self.get_ground_truth(split)
         task_data = self.get_split(split)
         

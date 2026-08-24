@@ -1,13 +1,13 @@
-"""Ignoring Context Task - Information retrieval with distractors.
+"""Ignoring context task - Information retrieval with distractors.
 
-Tests the model's ability to extract relevant information while ignoring
+Tests the model's ability to Extract relevant information while ignoring
 irrelevant context. Similar to "needle in a haystack" but simpler.
 
-Format:
+Format: 
     [Filler text] KEY FACT [More filler] Question: [Query about KEY FACT]
     Answer: [Extracted information]
 
-Example:
+Example: 
     Some text here. X = 5. More text here.
     Question: What is X?
     Answer: 5
@@ -23,9 +23,9 @@ from tasks.base_task import BaseTask, TaskConfig
 
 class IgnoringContextTask(BaseTask):
     """
-    Task testing the ability to extract key information from irrelevant context.
+    task testing the ability to Extract key information from irrelevant context.
     
-    The model must find and extract a variable assignment buried in filler text.
+    The model must find and Extract a variable assignment buried in filler text.
     """
     TASK_NAME = "ignoring_context"
     
@@ -33,9 +33,9 @@ class IgnoringContextTask(BaseTask):
         """
         Initialize IgnoringContextTask.
         
-        Args:
-            config: TaskConfig with task settings
-            use_generator: If True, generate synthetic examples with random variables
+        Args: 
+            configuration: a TaskConfig with task settings
+            use_generator: If True, Generate synthetic example with random variable
         """
         self.use_generator = use_generator
         super().__init__(config)
@@ -45,7 +45,7 @@ class IgnoringContextTask(BaseTask):
         if seed is not None:
             random.seed(seed)
         
-        # Simple words for filler
+        # simple word for filler
         filler_words = [
             "the", "a", "is", "was", "are", "were", "has", "have", "had",
             "today", "yesterday", "tomorrow", "here", "there", "then", "now",
@@ -67,15 +67,15 @@ class IgnoringContextTask(BaseTask):
     ) -> Dict[str, str]:
         """Generate a single example with a variable assignment buried in context.
         
-        Args:
-            variable: Variable name (e.g., "X"). If None, randomly chosen.
-            value: Value to assign. If None, random integer 1-20.
-            filler_before: Number of filler words before the key fact.
-            filler_after: Number of filler words after the key fact.
-            seed: Random seed for reproducibility.
+        Args: 
+            variable: variable name (e.g., "X"). If None, randomly chosen.
+            value: value to assign. If None, random integer 1-20.
+            filler_before: number of filler words before the key fact.
+            filler_after: number of filler words after the key fact.
+            seed: random seed for reproducibility.
             
-        Returns:
-            Dict with input, output, variable, and value.
+        Returns: 
+            dictionary with input, output, variable, and value.
         """
         if seed is not None:
             random.seed(seed)
@@ -91,7 +91,7 @@ class IgnoringContextTask(BaseTask):
         before = self._generate_filler_text(filler_before, seed)
         after = self._generate_filler_text(filler_after, seed=(seed+1) if seed else None)
         
-        # Create the context with embedded fact
+        # Build the context with embedded fact
         context = f"{before} {variable} = {value}. {after}"
         question = f"Question: What is {variable}?"
         
@@ -112,15 +112,15 @@ class IgnoringContextTask(BaseTask):
         filler_range: tuple = (3, 8),
         seed: Optional[int] = None
     ) -> List[Dict[str, str]]:
-        """Generate multiple examples with varying context lengths.
+        """Generate multiple example with varying context lengths.
         
-        Args:
-            num_examples: Number of examples to generate.
-            filler_range: (min, max) words for filler text.
-            seed: Random seed for reproducibility.
+        Args: 
+            num_examples: number of examples to Generate.
+            filler_range: (min, max) word for filler text.
+            seed: random seed for reproducibility.
             
-        Returns:
-            List of example dictionaries.
+        Returns: 
+            list of example dictionaries.
         """
         if seed is not None:
             random.seed(seed)
@@ -146,23 +146,23 @@ class IgnoringContextTask(BaseTask):
         filler_range: tuple = (3, 8),
     ) -> List[Dict[str, str]]:
         """
-        Return ICL-formatted examples.
+        Return examples in ICL format.
         
-        If use_generator=True, generates synthetic examples.
+        If use_generator=True, Generate synthetic example.
         Otherwise, uses the standard BaseTask logic with stored data.
         
-        Args:
-            num_examples: Number of examples to return.
+        Args: 
+            num_examples: number of examples to return.
             shuffle: Whether to shuffle (ignored if use_generator=True).
-            seed: Random seed for reproducibility.
-            fresh: Whether to prefer unused examples (ignored if use_generator=True).
-            filler_range: (min, max) words for filler text in generated examples.
+            seed: random seed for reproducibility.
+            fresh: Whether to prefer unused example (ignored if use_generator=True).
+            filler_range: (min, max) word for filler text in generated example.
             
-        Returns:
-            List of example dictionaries with 'input' and 'output' keys.
+        Returns: 
+            list of example dictionaries with 'input' and 'output' keys.
         """
         if self.use_generator:
-            # Generate fresh examples on-the-fly
+            # Generate fresh example on the fly
             return self.generate_examples(num_examples, filler_range, seed)
         else:
             # Use the standard BaseTask logic with stored data
@@ -174,7 +174,7 @@ class IgnoringContextTask(BaseTask):
             )
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """Evaluate predictions with exact match accuracy."""
+        """Evaluate predictions using exact-match accuracy."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
@@ -186,7 +186,7 @@ class IgnoringContextTask(BaseTask):
         # Preprocess predictions
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate exact match accuracy
+        # Calculate exact-match accuracy
         correct = sum(
             1 for pred, gt in zip(processed_predictions, ground_truth)
             if pred.strip() == gt.strip()
@@ -204,18 +204,18 @@ def make_ignoring_context_task(
     config: TaskConfig = None,
     use_generator: bool = False,
 ) -> IgnoringContextTask:
-    """Factory function to create an IgnoringContextTask.
+    """factory function to Create a IgnoringContextTask.
     
-    Args:
-        config: Optional TaskConfig. If None, creates default config with examples.
-        use_generator: If True, generate synthetic examples on-the-fly.
+    Args: 
+        configuration: optional TaskConfig. If None, creates default configuration with example.
+        use_generator: If True, Generate synthetic example on the fly.
     
-    Returns:
+    Returns: 
         IgnoringContextTask instance.
     """
     if config is None:
         if use_generator:
-            # Minimal config for generator mode
+            # Minimal configuration for generator mode
             default_examples = [
                 {
                     "input": "Some text here. X = 5. More text.\nQuestion: What is X?",
@@ -223,7 +223,7 @@ def make_ignoring_context_task(
                 }
             ]
         else:
-            # Static examples with varying context lengths
+            # static example with varying context lengths
             default_examples = [
                 {
                     "input": "The cat sat. X = 3. A dog ran.\nQuestion: What is X?",

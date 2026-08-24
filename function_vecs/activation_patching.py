@@ -17,9 +17,9 @@ class HeadSwap:
         """
         Create a hook that swaps head activations.
         
-        Args:
+        Args: 
             head_index: Which head to swap
-            t_star_dst: Decision token indices for the destination (ICL) batch
+            t_star_dst: decision token indices for the destination (ICL) batch
         
         The hook reads from self.src at t_star_src (control's last token)
         and writes to x at t_star_dst (ICL's last token).
@@ -45,5 +45,5 @@ class HeadSwap:
             _src = self.src.to(dev) if self.src.device != dev else self.src
             # Read from control at control's decision token, write to ICL at ICL's decision token
             x[b_idx, _t_star_dst, start:end] = _src[b_idx, _t_star_src, start:end]
-            return (x,)  # must return tuple for pre-hook
+            return (x,)  # must Returnstuple for pre-hook
         return _hook

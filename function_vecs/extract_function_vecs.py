@@ -17,7 +17,7 @@ import torch.nn as nn
 class ExtractConfig:
     # function vector related arguments
     model_name: str = "EleutherAI/gpt-j-6B"
-    checkpoint: Optional[str] = None  # Model checkpoint/revision (e.g., "step1000-tokens5B" for OLMo-2)
+    checkpoint: Optional[str] = None  # model checkpoint/revision (e.g., "step1000-tokens5B" for OLMo-2)
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     batch_size: int = 8
     seed: int = 42
@@ -27,7 +27,7 @@ class ExtractConfig:
     num_shuffled_controls_per_task: int = 10
     head_selection: Literal["topk", "soft"] = "topk"
     topk_heads: int = 10
-    cached_headset_path: Optional[str] = None # use a cached set of heads to save computation time
+    cached_headset_path: Optional[str] = None # use a cached set of heads to Storecomputation time
     score_metric: str = "logprob"  # "logprob" or "margin" for AIE computation
 
     # basis related arguments
@@ -36,15 +36,15 @@ class ExtractConfig:
     eps: float = 0.01 # for eps-rank, see notes
     
     # Filtering options - results_dir contains all checkpoints for a model
-    only_correct: bool = False  # Only use instances where model prediction was correct
-    results_dir: Optional[str] = None  # Path to results dir (e.g., "results/olmo2_continuous_1b_early_revised")
+    only_correct: bool = False  # Only use instance where model predictions was correct
+    results_dir: Optional[str] = None  # path to results dir (e.g., "results/olmo2_continuous_1b_early_revised")
     # Note: uses 'checkpoint' field above for filtering when only_correct=True
 
 @dataclass
 class Headset:
     mode: Literal["topk", "soft"]
     heads: List[Tuple[int, int]] = field(default_factory=list)  # list of (layer, head) tuples
-    weights: Optional[np.ndarray] = None  # Optional weights for each head
+    weights: Optional[np.ndarray] = None  # optionalweights for each head
 
 @dataclass
 class TaskHeadMeans:
@@ -80,12 +80,12 @@ class SkillBasis:
         """
         Reconstruct a task vector using top-k basis vectors.
         
-        Args:
+        Args: 
             task_vec: Vector to reconstruct
-            k: Number of basis vectors to use (None = use all available)
+            k: number of basis vectors to use (None = use all available)
             normalize: Whether to normalize the reconstruction (for cosine-based analysis)
             
-        Returns:
+        Returns: 
             Reconstructed vector (d_model,)
         """
         v = np.asarray(task_vec.function_vec, dtype=np.float64)
@@ -129,23 +129,23 @@ class SkillBasis:
         """
         Find minimum k basis vectors needed to reconstruct task_vec within epsilon.
         
-        Args:
+        Args: 
             task_vec: The task function vector to reconstruct
-            epsilon: Error threshold (default 0.01 = 1%)
+            epsilon: Error threshold (default0.01 = 1%)
             metric: Error metric to use:
                 - "cosine": 1 - cosine_similarity (best for normalized vectors, range [0,2])
-                - "relative": ||v - v̂|| / ||v|| (L2 relative error, range [0,1])  
+                - "relative": ||v - v̂|| / ||v|| (L2 relative error, range [0,1]) 
                 - "absolute": ||v - v̂|| (raw L2 error)
-            return_details: If True, return dict with errors, projections, etc.
+            return_details: If True, Returnsdict with errors, projections, etc.
             
-        Returns:
+        Returns: 
             If return_details=False: just the epsilon-rank (int)
-            If return_details=True: dict with {
+            If return_details=True: dictionary with {
                 "epsilon_rank": int,
-                "errors": np.ndarray,  # error for k=0, 1, 2, ..., max_k
-                "cosine_errors": np.ndarray,  # cosine distance
-                "projections": np.ndarray,  # coordinates in basis
-                "reconstruction": np.ndarray  # reconstructed vector at epsilon_rank
+                "errors": np.ndarray, # error for k=0, 1, 2, ..., max_k
+                "cosine_errors": np.ndarray, # cosine distance
+                "projections": np.ndarray, # coordinates in basis
+                "reconstruction": np.ndarray # reconstructed vector at epsilon_rank
             }
         """
         v = np.asarray(task_vec.function_vec, dtype=np.float64)
@@ -170,7 +170,7 @@ class SkillBasis:
         l2_errors[0] = v_norm
         cosine_errors[0] = 1.0  # Worst case: orthogonal
         
-        epsilon_rank = max_k  # default if threshold never met
+        epsilon_rank = max_k  # defaultif threshold never met
         
         for k in range(1, max_k + 1):
             # Reconstruct with top k vectors
@@ -232,13 +232,13 @@ class SkillBasis:
         """
         Compute epsilon-rank for multiple task vectors efficiently.
         
-        Args:
-            task_vecs: List of task function vectors to analyze
+        Args: 
+            task_vecs: list of task function vectors to analyze
             epsilon: Error threshold
             metric: Error metric to use ("cosine", "relative", or "absolute")
             
-        Returns:
-            Dictionary mapping task_name -> epsilon_rank
+        Returns: 
+            dictionary mapping task_name -> epsilon_rank
         """
         results = {}
         for task_vec in task_vecs:
@@ -249,17 +249,17 @@ class SkillBasis:
     
     def explained_variance_ratio(self) -> np.ndarray:
         """
-        Return the cumulative fraction of variance explained by first k components.
+        Returnsthe cumulative fraction of variance explained by first k components.
         Useful for scree plots.
         
-        Returns:
+        Returns: 
             Array of shape (k,) with cumulative variance ratios
         """
         variance_explained = self.S**2 / np.sum(self.S**2)
         return np.cumsum(variance_explained)
 
 def save_function_vec(vec: TaskFunctionVec, filepath: str):
-    """Save a TaskFunctionVec to .npz file."""
+    """Storea TaskFunctionVec to .npz file."""
     np.savez_compressed(
         filepath,
         task_name=vec.task_name,
@@ -268,7 +268,7 @@ def save_function_vec(vec: TaskFunctionVec, filepath: str):
     )
 
 def load_function_vec(filepath: str) -> TaskFunctionVec:
-    """Load a TaskFunctionVec from .npz file."""
+    """Loada TaskFunctionVec from .npz file."""
     data = np.load(filepath, allow_pickle=True)
     return TaskFunctionVec(
         task_name=str(data['task_name']),
@@ -277,7 +277,7 @@ def load_function_vec(filepath: str) -> TaskFunctionVec:
     )
 
 def save_skill_basis(basis: SkillBasis, filepath: str):
-    """Save a SkillBasis to .npz file."""
+    """Storea SkillBasis to .npz file."""
     np.savez_compressed(
         filepath,
         method=basis.method,
@@ -289,7 +289,7 @@ def save_skill_basis(basis: SkillBasis, filepath: str):
     )
 
 def load_skill_basis(filepath: str) -> SkillBasis:
-    """Load a SkillBasis from .npz file."""
+    """Loada SkillBasis from .npz file."""
     data = np.load(filepath, allow_pickle=True)
     mean = data['mean'] if data['mean'].size > 0 else None
     return SkillBasis(
@@ -320,7 +320,7 @@ def _score_batch(
 ) -> torch.Tensor:
     """
     Score the model on each prompt at the decision token (last non-pad).
-    If gold_ids is provided (B,), return log p(gold) or margin at that token.
+    If gold_ids is provided (B,), Returnslog p(gold) or margin at that token.
     """
     batch = tokenizer(texts, return_tensors="pt", padding=True, truncation=False).to(device)
     out = model(**batch, use_cache=False, return_dict=True)
@@ -361,7 +361,7 @@ def _batch_per_head_contribs(
     device: str = "cuda",
 ) -> torch.Tensor:
     """
-    Returns per-head contributions to the residual at the decision token
+    Returnsper-head contributions to the residual at the decision token
     using your hook-only path. Shape: (B, H, D)
     """
     # tokenize
@@ -389,7 +389,7 @@ def first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
     ids = []
     for a in answers:
         enc = tokenizer(a, add_special_tokens=False, return_tensors="pt")
-        # guard against empty strings
+        # guard against empty string
         if enc.input_ids.numel() == 0:
             # fall back to EOS if empty
             tok = tokenizer.eos_token_id
@@ -399,7 +399,7 @@ def first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
     return torch.tensor(ids, dtype=torch.long)
 
 def discover_all_tasks():
-    """Discover and list all available tasks."""
+    """Discover and list all available task."""
     print("Listing available tasks...")
     tasks = discover_tasks()
     print(f"Found {len(tasks)} tasks:")
@@ -424,21 +424,21 @@ def _sample_task_prompts(
     only_correct: bool = False,
     strict: bool = False
 ) -> List[str]:
-    """Sample prompts from a task, optionally filtering to only correct instances.
+    """Sample prompt from a task, optionally filtering to only correct instance.
     
-    Args:
-        task: Task object
-        n: Number of samples to return
-        results_dir: Path to results dir for filtering correct instances
+    Args: 
+        Task: task object
+        n: number of samples to Returns
+        results_dir: path to results dir for filtering correct instance
         checkpoint: Checkpoint to use when filtering
-        only_correct: If True, only use instances that were correct
-        strict: If True and only_correct=True but no correct instances found, return empty list
-                instead of falling back to all instances
+        only_correct: If True, only use instance that were correct
+        strict: If True and only_correct=True but no correct instance found, Return an empty list list
+                instead of falling back to all instance
     """
-    # Get the full task name (e.g., "simple_icl:uppercase" instead of just "simple_icl")
+    # Get full task name (e.g., "simple_icl:uppercase" instead of just "simple_icl")
     full_task_name = getattr(task, '_full_name', task.config.name)
     
-    # If only_correct and we have results_dir, load from detailed results
+    # If only_correct and we have results_dir, Load from detailed results
     if only_correct and results_dir:
         correct_instances = load_correct_instances_from_detailed_results(
             results_dir, full_task_name, checkpoint
@@ -447,8 +447,8 @@ def _sample_task_prompts(
             n = min(n, len(correct_instances))
             instances = correct_instances[:n]
             
-            # Build prompts — prefer the original eval prompt from JSONL
-            # (it already has proper demonstrations), fall back to build_prompt
+            # Build a prompts — prefer the original eval prompt from JSONL
+            # (it already has proper demonstration), fall back to build_prompt
             prompts = []
             for inst in instances:
                 # 1) Use the stored prompt from the JSONL if available
@@ -469,18 +469,18 @@ def _sample_task_prompts(
                 try:
                     prompts.append(task.build_prompt(row))
                 except:
-                    # Fallback: just use the question directly
+                    # Fallback: just use the Question directly
                     prompts.append(inst['question'])
             return prompts
         else:
             if strict:
-                # In strict mode, return empty list to signal no valid data
+                # In strict mode, Return an empty list list to signal no valid data
                 print(f"  ⚠️  No correct instances found for {full_task_name}, skipping (strict mode)")
                 return []
             else:
                 print(f"  ⚠️  No correct instances found, falling back to all instances")
     
-    # Original behavior: use all instances
+    # Original behavior: use all instance
     rows = task.get_split("test")
     if len(rows) == 0:
         return []
@@ -499,16 +499,16 @@ def load_correct_instances_from_detailed_results(
     category: str = None
 ) -> Optional[List[Dict[str, Any]]]:
     """
-    Load only the correct instances from detailed results JSONL files.
+    Load only the correct instance from detailed results JSONL file.
     
-    Args:
-        results_dir: Path to results directory (e.g., "results/olmo2_continuous_1b_early_revised")
-        task_name: Task name (e.g., "basic_arithmetic" or "simple_icl:translate_eng_fr")
+    Args: 
+        results_dir: path to results directory (e.g., "results/olmo2_continuous_1b_early_revised")
+        task_name: task name (e.g., "basic_arithmetic" or "simple_icl:translate_eng_fr")
         checkpoint: Checkpoint to filter by (e.g., "main" or "stage1-step10000-tokens21B")
-        category: Optional category name for subtasks (e.g., "translate_eng_fr")
+        Categories: optionalcategory name for subtasks (e.g., "translate_eng_fr")
     
-    Returns:
-        List of correct instances with 'question', 'expected', and metadata keys, or None if not found
+    Returns: 
+        list of correct instance with 'question', 'expected', and metadata keys, or None if not found
     """
     import json
     import glob
@@ -522,7 +522,7 @@ def load_correct_instances_from_detailed_results(
         base_task = task_name
     
     # Find the checkpoint directory
-    # Directory naming: {model_short_name}_{checkpoint}
+    # directory naming: {model_short_name}_{checkpoint}
     # e.g., OLMo-2-0425-1B_main or OLMo-2-0425-1B_stage1-step10000-tokens21B
     checkpoint_dirs = list(results_path.glob(f"*_{checkpoint}"))
     
@@ -534,9 +534,9 @@ def load_correct_instances_from_detailed_results(
     
     # Find the detailed JSONL file
     # Naming patterns:
-    # - For tasks with categories: {model}_{checkpoint}_{task}_{category}_detailed.jsonl
-    # - For simple tasks: {model}_{checkpoint}_{task}_detailed.jsonl
-    # - New compositional tasks:  {model}_{checkpoint}_{task}_{category}_{category}_detailed.jsonl
+    # - For task with Categories: {model}_{checkpoint}_{task}_{category}_detailed.jsonl
+    # - For simple Task: {model}_{checkpoint}_{task}_detailed.jsonl
+    # - new compositional Task: {model}_{checkpoint}_{task}_{category}_{category}_detailed.jsonl
     #   (doubled name, e.g., compositional_gerund_lower_gerund_lower_detailed.jsonl)
     task_sanitized = base_task.replace(":", "_").replace(",", "_")
     
@@ -545,9 +545,9 @@ def load_correct_instances_from_detailed_results(
         category_sanitized = category.replace(":", "_").replace(",", "_").replace(" ", "_")
         # Try standard pattern first
         candidates.append(f"*_{task_sanitized}_{category_sanitized}_detailed.jsonl")
-        # Try doubled-name pattern (new compositional tasks)
+        # Try doubled-name pattern (new compositional task)
         candidates.append(f"*_{task_sanitized}_{category_sanitized}_{category_sanitized}_detailed.jsonl")
-    # Fallback: just the base task
+    # Fallback: just the Base task
     candidates.append(f"*_{task_sanitized}_detailed.jsonl")
     
     jsonl_files = []
@@ -568,7 +568,7 @@ def load_correct_instances_from_detailed_results(
     try:
         correct_instances = []
         total_instances = 0
-        category_instances = 0  # Track instances matching the category filter
+        category_instances = 0  # Track instance matching the class filter
         
         with open(jsonl_file, 'r', encoding='utf-8') as f:
             for line in f:
@@ -577,13 +577,13 @@ def load_correct_instances_from_detailed_results(
                 item = json.loads(line)
                 total_instances += 1
                 
-                # Get item's category from metadata
+                # Get item's class from metadata
                 metadata = item.get('metadata', {})
                 item_category = metadata.get('category_name', '')
                 item_category_id = metadata.get('category_id', '')
                 
                 # If we're filtering by category, skip non-matching items
-                # Match against both category_name and category_id (e.g., "Scrambled Words" vs "CV1")
+                # Match against both category_name and category_id (e.g., "Scrambled word" vs "CV1")
                 if category and item_category and item_category_id:
                     if item_category != category and item_category_id != category:
                         continue
@@ -596,17 +596,17 @@ def load_correct_instances_from_detailed_results(
                 if 'correct' in item:
                     is_correct = item['correct']
                 else:
-                    # Compute correctness by comparing prediction to target
+                    # Compute correctness by comparing predictions to target
                     prediction = item.get('prediction', '')
                     target = item.get('target', item.get('ground_truth', ''))
                     
-                    # Clean prediction (take first line, strip whitespace)
+                    # Clean predictions (take first line, strip whitespace)
                     pred_clean = prediction.split('\n')[0].strip().lower() if prediction else ""
                     target_clean = target.strip().lower() if target else ""
                     is_correct = (pred_clean == target_clean)
                 
                 if is_correct:
-                    # Extract question and expected answer
+                    # Extract Question and expected Answer
                     question = metadata.get('question', item.get('input', ''))
                     expected = item.get('target', metadata.get('answer', item.get('ground_truth', '')))
                     
@@ -641,21 +641,21 @@ def _sample_prompts_and_answers(
     only_correct: bool = False,
     strict: bool = False,
 ):
-    """Sample prompts and their corresponding answers.
+    """Sample prompt and their corresponding Answer.
     
-    Args:
-        task: Task object
-        n: Number of samples to return
-        results_dir: Path to results dir for filtering correct instances
+    Args: 
+        Task: task object
+        n: number of samples to Returns
+        results_dir: path to results dir for filtering correct instance
         checkpoint: Checkpoint to use when filtering (e.g., "main" or "stage1-step10000-tokens21B")
-        only_correct: If True, only use instances that were correct
-        strict: If True and only_correct=True but no correct instances found, return None
-                instead of falling back to all instances
+        only_correct: If True, only use instance that were correct
+        strict: If True and only_correct=True but no correct instance found, ReturnsNone
+                instead of falling back to all instance
     """
-    # Get the full task name (e.g., "simple_icl:uppercase" instead of just "simple_icl")
+    # Get full task name (e.g., "simple_icl:uppercase" instead of just "simple_icl")
     full_task_name = getattr(task, '_full_name', task.config.name)
     
-    # If only_correct and we have results_dir, load from detailed results
+    # If only_correct and we have results_dir, Load from detailed results
     if only_correct and results_dir:
         correct_instances = load_correct_instances_from_detailed_results(
             results_dir, full_task_name, checkpoint
@@ -664,7 +664,7 @@ def _sample_prompts_and_answers(
             n = min(n, len(correct_instances))
             instances = correct_instances[:n]
             
-            # Build prompts — prefer the original eval prompt from JSONL
+            # Build a prompts — prefer the original eval prompt from JSONL
             texts = []
             answers = []
             for inst in instances:
@@ -685,23 +685,23 @@ def _sample_prompts_and_answers(
                     try:
                         texts.append(task.build_prompt(row))
                     except:
-                        # Fallback: just use the question directly
+                        # Fallback: just use the Question directly
                         texts.append(inst['question'])
                 answers.append(inst['expected'])
             
             return texts, answers
         else:
             if strict:
-                # In strict mode, return None to signal no valid data
+                # In strict mode, ReturnsNone to signal no valid data
                 return None, None
             else:
                 print(f"  ⚠️  No correct instances found, falling back to all instances")
     
-    # Original behavior: use all instances
+    # Original behavior: use all instance
     rows = task.get_split("test")[:n]
     texts = [task.build_prompt(r) for r in rows]
     
-    # Try to get answers from the output column
+    # Try to Get answers from the output column
     try:
         answers = [r[task.config.output_column] for r in rows]
     except (KeyError, TypeError) as e:
@@ -710,7 +710,7 @@ def _sample_prompts_and_answers(
         if rows:
             print(f"     Available columns: {list(rows[0].keys())}")
         
-        # Try common alternative column names
+        # Try common alternative column name
         for alt_col in ['answer', 'target', 'label', 'gold', 'expected', 'answerKey']:
             try:
                 answers = [r[alt_col] for r in rows]
@@ -719,7 +719,7 @@ def _sample_prompts_and_answers(
             except (KeyError, TypeError):
                 continue
         else:
-            # If no alternative works, return None to signal skip
+            # If no alternative works, ReturnsNone to signal skip
             print(f"     ✗ No compatible column found - will skip this task")
             return None, None
     
@@ -735,15 +735,15 @@ def get_shuffled_prompts(task: BaseTask, n: int) -> List[str]:
     inputs = [r[task.config.input_column] for r in rows]
     outputs = [r[task.config.output_column] for r in rows]
     
-    # Shuffle the outputs to break input->output mapping
+    # shuffle the outputs to break input->output mapping
     import random
     shuffled_outputs = outputs.copy()
     random.Random(0).shuffle(shuffled_outputs)
     
-    # Build new prompts with shuffled mappings
+    # Build new prompt with shuffled mappings
     ctrl_prompts = []
     for i, row in enumerate(rows):
-        # Create varied broken demonstration examples for each prompt
+        # Buildvaried broken demonstration examples for each prompt
         prompt = ""
         
         # Use different demonstration pairs for each prompt to add variety
@@ -766,11 +766,11 @@ def get_shuffled_prompts(task: BaseTask, n: int) -> List[str]:
 
 @torch.no_grad()
 def _first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
-    """Return a (B,) tensor with the first non-special token id of each answer (EOS if empty)."""
+    """Returnsa (B,) tensor with the first non-special token id of each Answer (EOS if empty)."""
     vocab_size = tokenizer.vocab_size
     ids = []
     for a in answers:
-        # Handle None or empty answers
+        # Handle None or empty Answer
         if a is None or (isinstance(a, str) and len(a.strip()) == 0):
             tok = tokenizer.eos_token_id
         else:
@@ -780,7 +780,7 @@ def _first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
             else:
                 tok = enc.input_ids[0, 0].item()
         
-        # Validate token is in vocabulary bounds
+        # Validate that the token is within the vocabulary bounds
         if tok is None or tok < 0 or tok >= vocab_size:
             print(f"  Warning: Invalid token ID {tok} for answer '{a}', using EOS")
             tok = tokenizer.eos_token_id
@@ -793,7 +793,7 @@ def compute_aie_for_layer(
     model: nn.Module,
     tokenizer,
     icl_texts: List[str],
-    icl_answers: List[str],     # NEW: true answers aligned with icl_texts
+    icl_answers: List[str],     # new: true Answer aligned with icl_texts
     ctrl_texts: List[str],
     layer_idx: int,
     device: str = "cuda",
@@ -802,22 +802,22 @@ def compute_aie_for_layer(
     """
     Attention-importance estimate (AIE) per head at a given layer.
 
-    Args:
+    Args: 
         model, tokenizer: HF CausalLM + tokenizer (eval mode).
-        icl_texts: list of ICL prompts (B items).
-        icl_answers: list of gold answers (B items), same order as icl_texts.
-        ctrl_texts: control prompts (B items), same length as icl_texts.
+        icl_texts: list of ICL prompt (B items).
+        icl_answers: list of gold Answer (B items), same order as icl_texts.
+        ctrl_texts: control prompt (B items), same length as icl_texts.
         layer_idx: which transformer block to analyze.
         device: torch device.
         score_metric: "logprob" or "margin".
 
-    Returns:
+    Returns: 
         aie: (H,) tensor with mean score drop when head h is swapped.
     """
     # ---- 0) Prep and sanity checks
     assert len(icl_texts) == len(ctrl_texts) == len(icl_answers), "Batch sizes must match"
     
-    # Filter out any None or empty answers
+    # filter out any None or empty Answer
     valid_indices = []
     for i, ans in enumerate(icl_answers):
         if ans is not None and (not isinstance(ans, str) or len(str(ans).strip()) > 0):
@@ -830,7 +830,7 @@ def compute_aie_for_layer(
         ctrl_texts = [ctrl_texts[i] for i in valid_indices]
     
     if len(icl_texts) == 0:
-        # Return zeros if no valid samples
+        # Returnszeros if no valid samples
         blocks = get_blocks(model)
         block = blocks[layer_idx]
         attn = get_attn(block)
@@ -872,7 +872,7 @@ def compute_aie_for_layer(
         raise RuntimeError("Attention module has no explicit output projection")
 
     for h in range(H):
-        # Build a pre-hook that replaces the h-th head slice (at decision token) with control
+        # Builda pre-hook that replaces the h-th head slice (at decision token) with control
         swapper = HeadSwap(attn_pre_ctrl, mask_ctrl, H, Hd).make_hook(h, t_star)
         handle = o_proj.register_forward_pre_hook(swapper)
         try:
@@ -880,7 +880,7 @@ def compute_aie_for_layer(
         finally:
             handle.remove()
 
-        # Mean drop = base - swapped
+        # Mean drop = Base - swapped
         aie[h] = (s_icl - s_swapped).mean()
 
     return aie  # (H,)
@@ -889,23 +889,23 @@ def compute_aie_for_layer(
 def extract_informative_heads(
     config: ExtractConfig, 
     tasks: List[BaseTask],
-    max_screen_tasks: int = None,  # None = use all tasks
-    min_screen_tasks: int = 5,     # Minimum tasks to successfully screen
+    max_screen_tasks: int = None,  # None = use all task
+    min_screen_tasks: int = 5,     # Minimum task to successfully screen
     model=None,       # Pre-loaded model (optional, avoids reloading)
     tokenizer=None,   # Pre-loaded tokenizer (optional)
 ) -> Headset:
     """
     Select informative attention heads using AIE metric.
     
-    Args:
-        config: Extraction configuration
-        tasks: List of tasks to screen
-        max_screen_tasks: Maximum number of tasks to try screening (None = all)
-        min_screen_tasks: Minimum number of tasks that must be successfully screened
-        model: Pre-loaded model (if None, loads from config)
-        tokenizer: Pre-loaded tokenizer (if None, loads from config)
+    Args: 
+        configuration: Extract configuration
+        Task: list of task to screen
+        max_screen_tasks: Maximum number of task to try screening (None = all)
+        min_screen_tasks: Minimum number of task that must be successfully screened
+        model: Pre-loaded model (if None, Load from configuration)
+        tokenizer: Pre-loaded tokenizer (if None, Load from configuration)
     
-    Returns:
+    Returns: 
         Headset with top-k informative heads
     """
     from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -925,7 +925,7 @@ def extract_informative_heads(
     blocks = get_blocks(model)
     layers = config.layers if config.layers is not None else [len(blocks)-1]
 
-    # Determine how many tasks to try
+    # Determine how many task to try
     if max_screen_tasks is None:
         max_screen_tasks = len(tasks)
     
@@ -941,22 +941,22 @@ def extract_informative_heads(
             
         tasks_tried += 1
         
-        # Skip known incompatible tasks
+        # Skip known incompatible task
         if t.config.name in ['ioi_task']:
             print(f"  [{tasks_tried}] Skipping: {t.config.name} (known incompatible format)")
             continue
         
-        # Try to get prompts and answers
+        # Try to Get prompts and Answer
         icl, answers = _sample_prompts_and_answers(
             t, 
             config.num_samples_per_task,
             results_dir=config.results_dir,
             checkpoint=getattr(config, 'checkpoint', 'main'),
             only_correct=config.only_correct,
-            strict=True  # Don't fall back to all instances
+            strict=True  # Don't fall back to all instance
         )
         
-        # Skip if no valid data (e.g., no correct instances when only_correct=True)
+        # Skip if no valid data (e.g., no correct instance when only_correct=True)
         if icl is None or answers is None or len(icl) == 0:
             print(f"  [{tasks_tried}] Skipping: {t.config.name} (no valid instances)")
             continue
@@ -1019,14 +1019,14 @@ def extract_task_function_vec(
     else:
         assert tokenizer is not None
 
-    # 1) sample prompts (+ optional shuffled)
+    # 1) sample prompt (+ optionalshuffled)
     prompts = _sample_task_prompts(
         task, 
         config.num_samples_per_task,
         results_dir=config.results_dir,
         checkpoint=config.checkpoint,
         only_correct=config.only_correct,
-        strict=config.only_correct  # strict mode when filtering by correct instances
+        strict=config.only_correct  # strict mode when filtering by correct instance
     )
     if len(prompts) == 0:
         raise ValueError(f"No data for task {task.config.name} (no correct instances when only_correct=True)")
@@ -1083,7 +1083,7 @@ def get_task_head_means(
         results_dir=config.results_dir,
         checkpoint=config.checkpoint,
         only_correct=config.only_correct,
-        strict=config.only_correct  # strict mode when filtering by correct instances
+        strict=config.only_correct  # strict mode when filtering by correct instance
     )
     
     if len(prompts) == 0:
@@ -1202,25 +1202,25 @@ def stack_function_vecs(task_vecs: List[TaskFunctionVec]) -> TaskMatrix:
     return TaskMatrix(V=v_space, task_names=[tv.task_name for tv in task_vecs])
 
 def build_skill_basis(task_vec_matrix: TaskMatrix, method="svd", k=-1, center=False) -> SkillBasis:
-    """Build a skill basis from a set of function vectors.
+    """Builda skill basis from a set of function vectors.
     
     Mathematical note: SVD with centering IS equivalent to PCA!
     - method="svd" with center=False: SVD on original (normalized) vectors
-    - method="svd" with center=True: PCA (SVD on centered vectors)  
+    - method="svd" with center=True: PCA (SVD on centered vectors) 
     - method="pca": Forces center=True and uses SVD (mathematically equivalent to PCA)
     
-    Args:
+    Args: 
         task_vec_matrix: Matrix of task function vectors (d_model x n_tasks)
         method: Method to use ("svd" or "pca")
                 - "svd": Use raw SVD, respecting the center parameter
                 - "pca": Force centering (standard PCA), ignores center=False if provided
-        k: Number of components to keep (-1 for 95% variance threshold)
+        k: number of components to keep (-1 for 95% variance threshold)
         center: Whether to center the data before decomposition.
                - False (default): No centering, good for L2-normalized vectors (cosine-based metrics)
                - True: Center data (standard PCA), good for unnormalized data
                Note: Ignored if method="pca" (always centers)
     
-    Returns:
+    Returns: 
         SkillBasis with the computed basis vectors in U
     """
     V = np.asarray(task_vec_matrix.V, dtype=np.float64)
@@ -1276,26 +1276,26 @@ def extract_function_vector_simple(
     """
     Simplified one-stop interface for extracting function vectors.
     
-    Args:
-        task_name: Name of task (e.g., "simple_icl", "math")
-        task_config: Optional custom config, will use defaults if None
-        model_name: Model to use for extraction
-        checkpoint: Model checkpoint/revision (e.g., "step1000-tokens5B" for OLMo-2, or "CrystalCoder_phase1_checkpoint_055500" for Crystal)
-        num_samples: Number of examples to use
+    Args: 
+        task_name: name of task (e.g., "simple_icl", "math")
+        task_config: optionalcustom configuration, will use default if None
+        model_name: model to use for Extract
+        checkpoint: model checkpoint/revision (e.g., "step1000-tokens5B" for OLMo-2, or "CrystalCoder_phase1_checkpoint_055500" for Crystal)
+        num_samples: number of examples to use
         device: Device to run on ("auto", "cuda", "cpu")
         
-    Returns:
+    Returns: 
         TaskFunctionVec with the extracted function vector
     """
     if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    # Create task
+    # Buildtask
     if task_config is None:
         task_config = TaskConfig(name=task_name)
     task = get_task(task_name, task_config)
     
-    # Load model and tokenizer
+    # Load the model and tokenizer
     from transformers import AutoTokenizer, AutoModelForCausalLM
     tokenizer = AutoTokenizer.from_pretrained(
         model_name,
@@ -1307,7 +1307,7 @@ def extract_function_vector_simple(
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(model_name).to(device).eval()
     
-    # Simple config
+    # simple configuration
     config = ExtractConfig(
         model_name=model_name,
         checkpoint=checkpoint,
@@ -1328,5 +1328,5 @@ def extract_function_vector_simple(
 
 
 if __name__ == "__main__":
-    # Discover and list all tasks
+    # Discover and list all task
     discover_all_tasks()

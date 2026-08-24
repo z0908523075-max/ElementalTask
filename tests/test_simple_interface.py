@@ -19,7 +19,7 @@ def test_simple_interface_existing_task():
     """Test the simplified interface with an existing task."""
     print("Testing simplified interface with existing task...")
     
-    # Use one of our working basic ICL tasks
+    # Use one of our working basic ICL taskss
     function_vec = extract_function_vector_simple(
         task_name="basic_arithmetic",
         model_name="distilgpt2",  # Smaller model for testing
@@ -27,7 +27,7 @@ def test_simple_interface_existing_task():
         device="cpu"  # Force CPU to avoid CUDA issues
     )
 
-    # Verify the result
+    # Verify the results
     assert function_vec.task_name == "basic_arithmetic"
     assert function_vec.function_vec.shape[0] > 0  # Should have some dimensions
     assert abs(function_vec.function_vec.dot(function_vec.function_vec) - 1.0) < 1e-5  # Should be L2 normalized
@@ -59,7 +59,7 @@ def test_simple_interface_different_tasks():
             device="cpu"
         )
         
-        # Verify the result
+        # Verify the results
         assert function_vec.task_name == task_name
         assert function_vec.function_vec.shape[0] > 0
         assert abs(function_vec.function_vec.dot(function_vec.function_vec) - 1.0) < 1e-5
@@ -78,7 +78,7 @@ def test_simple_interface_defaults():
     """Test that the simplified interface works with all defaults."""
     print("Testing simplified interface with defaults...")
     
-    # Test with minimal parameters - should use all defaults
+    # Test with minimal parameters — should use all defaults
     function_vec = extract_function_vector_simple("basic_arithmetic")
 
     # Verify basic properties
@@ -96,7 +96,7 @@ def test_readme_example():
     
     print("Testing simple interface README example...")
     
-    # Simple usage - use a working basic ICL task
+    # simple usage — use a working basic ICL task
     function_vec = extract_function_vector_simple("basic_arithmetic", num_samples=3)
     print(f"Function vector shape: {function_vec.function_vec.shape}")
 
