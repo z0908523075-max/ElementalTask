@@ -1,4 +1,4 @@
-"""任務 evaluator for running 模型 on 任務 with different 後端."""
+"""Task evaluator for running models on tasks with different backends."""
 
 import json
 import torch
@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-# 模型 後端
+# model backend
 try:
     import vllm
     VLLM_AVAILABLE = True
@@ -41,7 +41,7 @@ from .base_task import BaseTask
 
 @dataclass
 class ModelConfig:
-    """設定 for 模型 載入 and 生成."""
+    """Configuration for model loading and generation."""
     model_id: str
     backend: str  # 'vllm', 'transformers', 'openai', 'together'
     checkpoint: Optional[str] = None
@@ -58,7 +58,7 @@ class ModelConfig:
 
 @dataclass
 class EvaluationConfig:
-    """設定 for 評估 settings."""
+    """Configuration for evaluation settings."""
     output_dir: str = "results"
     save_predictions: bool = True
     save_detailed_results: bool = True
@@ -66,7 +66,7 @@ class EvaluationConfig:
     retry_attempts: int = 3
     retry_delay: float = 1.0
     
-    # 評估 mode: "exact_match", "continuous", "all"
+    # Evaluate mode: "exact_match", "continuous", "all"
     eval_mode: str = "exact_match"
     
     # Continuous metrics settings
@@ -75,7 +75,7 @@ class EvaluationConfig:
 
 
 class TaskEvaluator:
-    """主要 evaluator 類別 for running 模型 on 任務."""
+    """Main evaluator class for running models on tasks."""
     
     def __init__(self, model_config: ModelConfig, eval_config: EvaluationConfig):
         self.model_config = model_config
@@ -84,13 +84,13 @@ class TaskEvaluator:
         self.tokenizer = None
         self.client = None
         
-        # 建立輸出目錄
+        # Build the output directory
         Path(self.eval_config.output_dir).mkdir(parents=True, exist_ok=True)
         
         self._load_model()
     
     def _load_model(self):
-        """載入model based on the 後端 設定."""
+        """Load the model based on the backend configuration."""
         backend = self.model_config.backend.lower()
         
         if backend == 'vllm':
@@ -105,7 +105,7 @@ class TaskEvaluator:
             raise ValueError(f"Unsupported backend: {backend}")
     
     def _load_vllm_model(self):
-        """載入model using vLLM 後端."""
+        """Load the model using the vLLM backend."""
         if not VLLM_AVAILABLE:
             raise ImportError("vLLM is not available. Please install it with: pip install vllm")
         
@@ -122,17 +122,17 @@ class TaskEvaluator:
         )
     
     def _load_transformers_model(self):
-        """載入model using Transformers 後端."""
+        """Load the model using the Transformers backend."""
         if not TRANSFORMERS_AVAILABLE:
             raise ImportError("Transformers is not available. Please install it with: pip install transformers")
         
         model_path = self.model_config.local_path or self.model_config.model_id
         
-        # Try to 載入tokenizer with fallback chain
+        # Try to Loadtokenizer with fallback chain
         tokenizer_loaded = False
         tokenizer_errors = []
         
-        # Attempt 1: Try 載入 tokenizer from the 特定 checkpoint
+        # Attempt 1: Try Load tokenizer from the specific checkpoint
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 model_path,
@@ -143,7 +143,7 @@ class TaskEvaluator:
         except Exception as e:
             tokenizer_errors.append(f"Checkpoint tokenizer failed: {e}")
             
-            # Attempt 2: Try 載入 from 主要 branch (tokenizers are usually the 相同)
+            # Attempt 2: Try Load from Main branch (tokenizers are usually the same)
             try:
                 print(f"⚠️  Tokenizer loading failed for checkpoint, falling back to 'main' branch...")
                 self.tokenizer = AutoTokenizer.from_pretrained(
@@ -158,7 +158,7 @@ class TaskEvaluator:
         if not tokenizer_loaded:
             raise RuntimeError(f"Failed to load tokenizer after all attempts: {tokenizer_errors}")
         
-        # Handle missing pad token (common in GPT-2 based 模型)
+        # Handle missing pad token (common in GPT-2 based model)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
             print(f"⚠️  No pad token found, using EOS token as pad token: '{self.tokenizer.pad_token}'")
@@ -173,7 +173,7 @@ class TaskEvaluator:
         )
     
     def _load_openai_client(self):
-        """載入OpenAI client."""
+        """LoadOpenAI client."""
         if not OPENAI_AVAILABLE:
             raise ImportError("OpenAI is not available. Please install it with: pip install openai")
         
@@ -188,7 +188,7 @@ class TaskEvaluator:
         self.client = OpenAI(api_key=api_key)
     
     def _load_together_client(self):
-        """載入Together client."""
+        """LoadTogether client."""
         if not TOGETHER_AVAILABLE:
             raise ImportError("Together is not available. Please install it with: pip install together")
         
@@ -205,7 +205,7 @@ class TaskEvaluator:
         self.client = Together()
     
     def generate(self, prompts: List[str]) -> List[str]:
-        """生成responses for a 列表 of 提示."""
+        """Generateresponses for a list of prompt."""
         backend = self.model_config.backend.lower()
         
         if backend == 'vllm':
@@ -218,7 +218,7 @@ class TaskEvaluator:
             raise ValueError(f"Unsupported backend: {backend}")
     
     def _generate_vllm(self, prompts: List[str]) -> List[str]:
-        """生成using vLLM."""
+        """Generateusing vLLM."""
         sampling_params = vllm.SamplingParams(
             temperature=self.model_config.temperature,
             max_tokens=self.model_config.max_tokens,
@@ -231,7 +231,7 @@ class TaskEvaluator:
         return [output.outputs[0].text for output in outputs]
     
     def _generate_transformers(self, prompts: List[str]) -> List[str]:
-        """生成using Transformers."""
+        """Generateusing Transformers."""
         generated_texts = []
         
         # Use tqdm for progress tracking
@@ -239,7 +239,7 @@ class TaskEvaluator:
             inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, padding=True)
             inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
             
-            # Prepare 生成 arguments
+            # Prepare Generate arguments
             generation_kwargs = {
                 "max_new_tokens": self.model_config.max_tokens,
                 "pad_token_id": self.tokenizer.pad_token_id,
@@ -262,7 +262,7 @@ class TaskEvaluator:
                     **generation_kwargs
                 )
             
-            # Decode only the 已生成 part (exclude 輸入)
+            # Decode only the generated part (exclude input)
             generated_text = self.tokenizer.decode(
                 outputs[0][inputs['input_ids'].shape[1]:], 
                 skip_special_tokens=True
@@ -272,7 +272,7 @@ class TaskEvaluator:
         return generated_texts
     
     def _generate_api(self, prompts: List[str]) -> List[str]:
-        """生成using API 後端 (OpenAI/Together)."""
+        """Generateusing API backend (OpenAI/Together)."""
         generated_texts = []
         
         for prompt in tqdm(prompts, desc="Generating predictions", unit="prompt"):
@@ -304,17 +304,17 @@ class TaskEvaluator:
     
     def compute_target_metrics(self, prompts: List[str], targets: List[str]) -> List[Dict[str, float]]:
         """
-        Compute continuous metrics (loss, perplexity, probability) for each (提示, target) pair.
+        Compute continuous metrics (loss, perplexity, probability) for each (prompt, target) pair.
         
-        This provides a much smoother and more informative metric than binary 完全匹配,
-        capturing "partial" learning and 模型 confidence.
+        This provides a much smoother and more informative metric than binary exact-match,
+        capturing "partial" learning and model confidence.
         
-        參數：
-            提示: 列表 of 輸入 提示
-            targets: 列表 of expected target outputs
+        Args: 
+            prompt: list of input prompt
+            targets: list of expected target outputs
             
-        回傳：
-            列表 of dicts with loss, perplexity, probability for each 範例
+        Returns: 
+            list of dicts with loss, perplexity, probability for each example
         """
         backend = self.model_config.backend.lower()
         
@@ -329,12 +329,12 @@ class TaskEvaluator:
             raise ValueError(f"Continuous metrics not supported for backend: {backend}")
     
     def _compute_target_metrics_transformers(self, prompts: List[str], targets: List[str]) -> List[Dict[str, float]]:
-        """Compute loss/perplexity for each (提示, target) pair using Transformers."""
+        """Compute loss/perplexity for each (prompt, target) pair using Transformers."""
         device = next(self.model.parameters()).device
         results = []
         
         for prompt, target in tqdm(zip(prompts, targets), total=len(prompts), desc="Computing target metrics"):
-            # Tokenize 提示 and full sequence separately
+            # Tokenize prompt and full sequence separately
             prompt_ids = self.tokenizer(prompt, return_tensors="pt", truncation=True)["input_ids"]
             full_text = prompt + target
             full_ids = self.tokenizer(full_text, return_tensors="pt", truncation=True)["input_ids"]
@@ -342,7 +342,7 @@ class TaskEvaluator:
             prompt_len = prompt_ids.shape[1]
             full_len = full_ids.shape[1]
             
-            # If target adds no 新的 tokens, skip
+            # If target adds no new tokens, skip
             if full_len <= prompt_len:
                 results.append({
                     "loss": float('inf'),
@@ -395,13 +395,13 @@ class TaskEvaluator:
         return results
     
     def _compute_target_metrics_vllm(self, prompts: List[str], targets: List[str]) -> List[Dict[str, float]]:
-        """Compute loss/perplexity for each (提示, target) pair using vLLM."""
+        """Compute loss/perplexity for each (prompt, target) pair using vLLM."""
         results = []
         
-        # vLLM can 回傳logprobs - we'll use prompt_logprobs
+        # vLLM can Returnslogprobs - we'll use prompt_logprobs
         sampling_params = vllm.SamplingParams(
             max_tokens=1,
-            prompt_logprobs=0,  # 回傳logprobs for 提示 tokens
+            prompt_logprobs=0,  # Returnslogprobs for prompt tokens
             temperature=0.0
         )
         
@@ -419,7 +419,7 @@ class TaskEvaluator:
                     prompt_tokens = self.model.get_tokenizer().encode(prompt)
                     prompt_len = len(prompt_tokens)
                     
-                    # 取得logprobs for target tokens
+                    # Get logprobs for target tokens
                     target_logprobs = []
                     for i, lp in enumerate(output.prompt_logprobs):
                         if i >= prompt_len and lp is not None:
@@ -444,7 +444,7 @@ class TaskEvaluator:
                         })
                         continue
                 
-                # Fallback if logprobs not 可用
+                # Fallback if logprobs not available
                 results.append({
                     "loss": float('inf'),
                     "perplexity": float('inf'),
@@ -467,9 +467,9 @@ class TaskEvaluator:
         return results
     
     def _compute_target_metrics_api(self, prompts: List[str], targets: List[str]) -> List[Dict[str, float]]:
-        """Compute metrics using API (limited 支援)."""
-        # Most chat 模型 don't 支援 logprobs directly
-        # 回傳placeholder 結果
+        """Compute metrics using API (limited supports)."""
+        # Most chat model don't supports logprobs directly
+        # Returnsplaceholder results
         return [
             {
                 "loss": None,
@@ -482,29 +482,29 @@ class TaskEvaluator:
     
     def evaluate_task(self, task: BaseTask, split: str = "test") -> Dict[str, Any]:
         """
-        評估a 模型 on a 特定 任務.
+        Evaluate a model on a specific task.
         
-        支援 multiple 評估 modes:
-        - "exact_match": Traditional binary 準確率 (預設)
-        - "continuous": Loss/perplexity-based 評估 (smoother metrics)
+        supports multiple Evaluate modes:
+        - "exact_match": Traditional binary accuracy (default)
+        - "continuous": Loss/perplexity-based Evaluate (smoother metrics)
         - "all": Both exact_match and continuous metrics
         """
         eval_mode = self.eval_config.eval_mode
         print(f"Evaluating task: {task.config.name}")
         print(f"Evaluation mode: {eval_mode}")
         
-        # 取得task 資料
+        # Get task data
         task_data = task.get_split(split)
         print(f"Loaded {len(task_data)} examples")
         
-        # 建立提示s
+        # Build a prompts
         prompts = [task.build_prompt(instance) for instance in task_data]
         
-        # 取得targets for continuous metrics
+        # Get targets for continuous metrics
         output_col = task.config.output_column or "answer"
         targets = [str(instance.get(output_col, instance.get("output", ""))) for instance in task_data]
         
-        # 初始化results
+        # Initialize results
         results = {
             "task_name": task.config.name,
             "model_id": self.model_config.model_id,
@@ -524,7 +524,7 @@ class TaskEvaluator:
         predictions = None
         target_metrics = None
         
-        # === 完全匹配 評估 ===
+        # === exact-match Evaluate ===
         if eval_mode in ["exact_match", "all"]:
             print("\nGenerating predictions for exact match...")
             predictions = self.generate(prompts)
@@ -534,7 +534,7 @@ class TaskEvaluator:
             results["metrics"]["exact_match"] = exact_match_metrics
             results["predictions"] = predictions
         
-        # === CONTINUOUS METRICS 評估 ===
+        # === CONTINUOUS METRICS Evaluate ===
         if eval_mode in ["continuous", "all"]:
             print("\nComputing continuous metrics (loss/perplexity)...")
             target_metrics = self.compute_target_metrics(prompts, targets)
@@ -560,7 +560,7 @@ class TaskEvaluator:
             
             results["target_metrics"] = target_metrics
         
-        # 儲存results
+        # Storeresults
         if self.eval_config.save_predictions or self.eval_config.save_detailed_results:
             self._save_results(results, task_data, prompts, predictions, target_metrics, targets)
         
@@ -570,28 +570,28 @@ class TaskEvaluator:
                      prompts: List[str], predictions: Optional[List[str]] = None,
                      target_metrics: Optional[List[Dict]] = None, 
                      targets: Optional[List[str]] = None):
-        """儲存evaluation 結果 to 檔案.
+        """Storeevaluation results to file.
         
-        For 任務 with subtasks/類別 (like simple_icl), saves separate 檔案
-        per 類別 to avoid overwriting.
+        For task with subtasks/class (like simple_icl), saves separate file
+        per class to avoid overwriting.
         """
         model_name = self.model_config.model_id.replace('/', '_')
         task_name = results["task_name"]
-        # Sanitize 任務 名稱 for 檔案 路徑 (replace : and , with _)
+        # Sanitize task name for file path (replace : and , with _)
         task_name_safe = task_name.replace(':', '_').replace(',', '_')
         checkpoint = self.model_config.checkpoint or "main"
         
         base_filename = f"{model_name}_{checkpoint}_{task_name_safe}"
         
-        # 儲存summary metrics
+        # Storesummary metrics
         summary_path = Path(self.eval_config.output_dir) / f"{base_filename}_metrics.json"
         with open(summary_path, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2, default=str)
         
-        # 儲存detailed 預測 if requested
+        # Storedetailed predictions if requested
         if self.eval_config.save_detailed_results:
-            # 群組 items by 類別 if present
-            category_items = {}  # category_name -> 列表 of items
+            # group items by class if present
+            category_items = {}  # category_name -> list of items
             
             for i, data in enumerate(task_data):
                 item = {
@@ -602,44 +602,44 @@ class TaskEvaluator:
                     "metadata": {k: v for k, v in data.items() if k not in ["input", "output"]}
                 }
                 
-                # Add 預測 若可用
+                # Add predictions if available
                 if predictions is not None:
                     item["prediction"] = predictions[i]
                     
-                    # Add 正確 field by comparing 預測 to target
+                    # Add correct field by comparing predictions to target
                     if targets is not None:
                         pred_clean = predictions[i].split('\n')[0].strip().lower() if predictions[i] else ""
                         target_clean = targets[i].strip().lower() if targets[i] else ""
                         item["correct"] = (pred_clean == target_clean)
                 
-                # Add target and continuous metrics 若可用
+                # Add target and continuous metrics if available
                 if targets is not None:
                     item["target"] = targets[i]
                 
                 if target_metrics is not None:
                     item["continuous_metrics"] = target_metrics[i]
                 
-                # 群組 by 類別 if present
+                # group by class if present
                 category = data.get("category_name", None)
                 if category:
                     if category not in category_items:
                         category_items[category] = []
                     category_items[category].append(item)
                 else:
-                    # No 類別 - use 預設
+                    # No class - use default
                     if "_default" not in category_items:
                         category_items["_default"] = []
                     category_items["_default"].append(item)
             
-            # 儲存files - one per 類別 or single 檔案 if no 類別
+            # Storefiles - one per class or single file if no class
             if len(category_items) == 1 and "_default" in category_items:
-                # No 類別 - 儲存single 檔案
+                # No class - Storesingle file
                 detailed_path = Path(self.eval_config.output_dir) / f"{base_filename}_detailed.jsonl"
                 with open(detailed_path, 'w', encoding='utf-8') as f:
                     for item in category_items["_default"]:
                         f.write(json.dumps(item, default=str) + '\n')
             else:
-                # Multiple 類別 - 儲存separate 檔案 per 類別
+                # Multiple class - Storeseparate file per class
                 for category, items in category_items.items():
                     if category == "_default":
                         continue
@@ -654,14 +654,14 @@ class TaskEvaluator:
         print(f"Results saved to {self.eval_config.output_dir}")
 
 
-# Convenience function for quick 評估
+# Convenience function for quick Evaluate
 def evaluate_model_on_task(
     model_config: ModelConfig,
     task: BaseTask,
     eval_config: Optional[EvaluationConfig] = None,
     split: str = "test"
 ) -> Dict[str, Any]:
-    """Convenience function to 評估a 模型 on a 任務."""
+    """Convenience function to Evaluate a model on a task."""
     if eval_config is None:
         eval_config = EvaluationConfig()
     

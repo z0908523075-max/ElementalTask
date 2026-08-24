@@ -2,7 +2,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 class TokenReversalTask(BaseTask):
     """
-    A 簡單 任務 that reverses the 輸入 字串.
+    A simple task that reverses the input string.
     """
     TASK_NAME = "token_reversal"
     

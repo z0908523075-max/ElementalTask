@@ -1,5 +1,5 @@
 """
-Test the simplified one-stop interface for function vector 擷取.
+Test the simplified one-stop interface for function vector Extract.
 """
 import pytest
 import torch
@@ -16,18 +16,18 @@ from tasks.base_task import TaskConfig
     reason="Skip on CI by default to avoid network downloads."
 )
 def test_simple_interface_existing_task():
-    """Test the simplified interface with an existing 任務."""
+    """Test the simplified interface with an existing task."""
     print("Testing simplified interface with existing task...")
     
-    # Use one of our working basic ICL 任務
+    # Use one of our working basic ICL task
     function_vec = extract_function_vector_simple(
         task_name="basic_arithmetic",
-        model_name="distilgpt2",  # Smaller 模型 for testing
+        model_name="distilgpt2",  # Smaller model for testing
         num_samples=3,
         device="cpu"  # Force CPU to avoid CUDA issues
     )
 
-    # Verify the 結果
+    # Verify the results
     assert function_vec.task_name == "basic_arithmetic"
     assert function_vec.function_vec.shape[0] > 0  # Should have some dimensions
     assert abs(function_vec.function_vec.dot(function_vec.function_vec) - 1.0) < 1e-5  # Should be L2 normalized
@@ -44,10 +44,10 @@ def test_simple_interface_existing_task():
     reason="Skip on CI by default to avoid network downloads."
 )
 def test_simple_interface_different_tasks():
-    """Test the simplified interface with different built-in 任務."""
+    """Test the simplified interface with different built-in task."""
     print("Testing simplified interface with different tasks...")
     
-    # Test multiple basic ICL 任務 (use actual 可用 任務)
+    # Test multiple basic ICL task (use actual available task)
     tasks_to_test = ["simple_icl", "token_reversal", "part_of_speech"]
     
     for task_name in tasks_to_test:
@@ -59,7 +59,7 @@ def test_simple_interface_different_tasks():
             device="cpu"
         )
         
-        # Verify the 結果
+        # Verify the results
         assert function_vec.task_name == task_name
         assert function_vec.function_vec.shape[0] > 0
         assert abs(function_vec.function_vec.dot(function_vec.function_vec) - 1.0) < 1e-5
@@ -75,10 +75,10 @@ def test_simple_interface_different_tasks():
     reason="Skip on CI by default to avoid network downloads."
 )
 def test_simple_interface_defaults():
-    """Test that the simplified interface works with all 預設."""
+    """Test that the simplified interface works with all default."""
     print("Testing simplified interface with defaults...")
     
-    # Test with minimal parameters - should use all 預設
+    # Test with minimal parameters - should use all default
     function_vec = extract_function_vector_simple("basic_arithmetic")
 
     # Verify basic properties
@@ -92,11 +92,11 @@ def test_simple_interface_defaults():
 
 @pytest.mark.integration
 def test_readme_example():
-    """Test the README 範例 works as advertised."""
+    """Test the README example works as advertised."""
     
     print("Testing simple interface README example...")
     
-    # 簡單 usage - use a working basic ICL 任務
+    # simple usage - use a working basic ICL task
     function_vec = extract_function_vector_simple("basic_arithmetic", num_samples=3)
     print(f"Function vector shape: {function_vec.function_vec.shape}")
 

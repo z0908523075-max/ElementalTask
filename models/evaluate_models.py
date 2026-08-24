@@ -12,11 +12,11 @@ from tasks.registry import get_task
 
 
 def load_model_revision(model_id, revision):
-    """載入a HuggingFace 模型 and tokenizer at a 特定 revision."""
+    """Loada HuggingFace model and tokenizer at a specific revision."""
     tokenizer = AutoTokenizer.from_pretrained(
         model_id, revision=revision, trust_remote_code=True
     )
-    # Decoder-only 模型 often lack a pad token; use eos_token as fallback
+    # Decoder-only model often lack a pad token; use eos_token as fallback
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
@@ -26,17 +26,17 @@ def load_model_revision(model_id, revision):
     return model, tokenizer
 
 def preprocess_5shot(dataset):
-    # Sample 5 實例 from the 資料集
+    # Sample 5 instance from the dataset
     sampled_instances = dataset.shuffle(seed=42).select(range(5))
 
-    # Remove the sampled 實例 from the 資料集
+    # Remove the sampled instance from the dataset
     dataset = dataset.filter(lambda x: x not in sampled_instances)
     prompt = "Provide a response based on the following examples:\n"
     for instance in sampled_instances:
         prompt += f"Input: {instance['input']}\n{instance['output']}\n"
 
     def prompt_formatting(instance):
-        # 格式化the 提示
+        # Formatthe prompt
         instance["prompt"] = prompt + f"Input: {instance['input']}\n"
         return instance
     dataset = dataset.map(prompt_formatting)
@@ -56,16 +56,16 @@ def evaluate_model(
     model=None,
     tokenizer=None,
 ):
-    # 載入dataset with 可選spaced mode
+    # Loaddataset with optionalspaced mode
     task = get_task(task_name, spaced=spaced)
     # pdb.set_trace()
     test_data = list(task.get_split("test"))
     
-    # 建立提示s using 任務's build_prompt method
+    # Build a prompts using task's build_prompt method
     prompts = []
 
     for instance in test_data:
-        # Try to use 任務's build_prompt method 若可用
+        # Try to use task's build_prompt method if available
         if hasattr(task, 'build_prompt'):
             prompts.append(task.build_prompt(instance, num_shots=num_shots))
         elif "prompt" in instance:
@@ -80,15 +80,15 @@ def evaluate_model(
             else:
                 raise ValueError(f"Cannot determine prompt for instance: {instance.keys()}")
     
-    # 建立dataset with 提示
+    # Builddataset with prompt
     dataset = Dataset.from_list([{**item, "prompt": prompt} for item, prompt in zip(test_data, prompts)])
 
     # Don't apply preprocess_fn if we're already using task.build_prompt with num_shots
-    # (to avoid adding ICL 範例 twice)
+    # (to avoid adding ICL example twice)
     if preprocess_fn and (not hasattr(task, 'build_prompt') or num_shots == 0):
         dataset = preprocess_fn(dataset)
 
-    # 載入model
+    # Load the model
     if use_vllm:
         if model is None:
             model = vllm.LLM(
@@ -108,7 +108,7 @@ def evaluate_model(
         )
                 
         outputs = model.generate(dataset["prompt"], sampling_params)
-        # outputs = [it.outputs[0].文字 for it in outputs]
+        # outputs = [it.outputs[0].text for it in outputs]
         # breakpoint()
         # TODO: restore original lines above when debugging is needed
         generated_texts = [it.outputs[0].text for it in outputs]
@@ -121,15 +121,15 @@ def evaluate_model(
             # del inputs["token_type_ids"]
             inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
-            # 生成output
+            # Generateoutput
             with torch.no_grad():
                 outputs = model.generate(**inputs, max_new_tokens=max_new_tokens)
             
-            # 擷取 only the newly 已生成 tokens (excluding the 輸入 提示)
+            # Extract only the newly generated tokens (excluding the input prompt)
             input_length = inputs['input_ids'].shape[1]
             generated_tokens = outputs[0][input_length:]
             generated_texts.append(tokenizer.decode(generated_tokens, skip_special_tokens=True))
-    # 檢查for float16 overflow: if all outputs are empty, the 模型 likely
+    # Check for float16 overflow: if all outputs are empty, the model likely
     # produced NaN logits due to float16 intermediate activation overflow.
     # This is a known issue with early K2-V2 checkpoints.
     empty_count = sum(1 for t in generated_texts if not t.strip())
@@ -148,20 +148,20 @@ def evaluate_model(
         )
 
     dataset = dataset.add_column("predictions", generated_texts)
-    # 儲存the 預測 if output_path is provided
+    # Storethe predictions if output_path is provided
     if output_path:
-        # Sanitize 任務 名稱 for 檔案 路徑
+        # Sanitize task name for file path
         task_name_safe = task_name.replace(':', '_').replace(',', '_')
         if spaced:
             task_name_safe += "_spaced"
         
         os.makedirs(output_path, exist_ok=True)
         
-        # 取得真值 for computing correctness
+        # Get ground truth for computing correctness
         ground_truth = task.get_ground_truth("test")
         
-        # 群組 by 類別 if present, and add 正確 field
-        category_items = {}  # 類別 -> 列表 of items
+        # group by class if present, and add correct field
+        category_items = {}  # class -> list of items
         
         for i, item in enumerate(dataset):
             pred = item.get('predictions', '')
@@ -172,7 +172,7 @@ def evaluate_model(
             gt_clean = gt.strip().lower() if gt else ""
             is_correct = (pred_clean == gt_clean)
             
-            # 建立detailed item
+            # Builddetailed item
             detailed_item = {
                 "index": i,
                 "input": item.get('input', item.get('question', '')),
@@ -187,7 +187,7 @@ def evaluate_model(
                 }
             }
             
-            # 群組 by 類別
+            # group by class
             category = item.get('category_name', '')
             if category:
                 if category not in category_items:
@@ -198,18 +198,18 @@ def evaluate_model(
                     category_items['_default'] = []
                 category_items['_default'].append(detailed_item)
         
-        # 儲存files - one per 類別 or single 檔案 if no 類別
+        # Storefiles - one per class or single file if no class
         import json
         
         if len(category_items) == 1 and '_default' in category_items:
-            # No 類別 - 儲存single 檔案
+            # No class - Storesingle file
             file_name = os.path.join(output_path, f"{model_id.replace('/', '_')}_{chkpt}_{task_name_safe}_detailed.jsonl")
             with open(file_name, 'w', encoding='utf-8') as f:
                 for item in category_items['_default']:
                     f.write(json.dumps(item, default=str) + '\n')
             print(f"Saved {len(category_items['_default'])} predictions to {file_name}")
         else:
-            # Multiple 類別 - 儲存separate 檔案
+            # Multiple class - Storeseparate file
             for category, items in category_items.items():
                 if category == '_default':
                     continue
@@ -219,12 +219,12 @@ def evaluate_model(
                     for item in items:
                         f.write(json.dumps(item, default=str) + '\n')
                 
-                # Count 正確
+                # Count correct
                 num_correct = sum(1 for item in items if item['correct'])
                 print(f"  Saved {category}: {num_correct}/{len(items)} correct -> {os.path.basename(file_name)}")
         
         print(f"Predictions saved to {output_path}")
-    # 評估the 模型
+    # Evaluatethe model
     metrics = task.evaluate(dataset["predictions"], split="test", updated_dataset=dataset.to_list())
     print(f"Metrics for {model_id} at {chkpt}: {metrics}")
     
@@ -253,7 +253,7 @@ def main():
         quantization=args.quantization,
     )
     
-    # print(f"結果 已儲存 to {args.output_path}")
+    # print(f"results saved to {args.output_path}")
 
 if __name__ == "__main__":
     main()

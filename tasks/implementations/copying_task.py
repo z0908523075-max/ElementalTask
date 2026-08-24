@@ -1,29 +1,29 @@
-"""Copying 用於testing induction heads.
+"""Copying for testing induction heads.
 
-This 任務 presents 範例 where 輸入 equals 輸出, testing the 模型's
+This task presents examples where input equals output, testing the model's
 ability to perform exact copying - a key capability of induction heads.
 
-Two modes of 操作:
+Two modes of operation:
 
-1. **靜態 mode** (use_generator=False):
-   - Uses a fixed set of 範例 (預設: 10 簡單 詞/字串)
-   - ICL 範例 are sampled from this 靜態 set
-   - Good 以確保可重現性 and consistency
+1. **static mode** (use_generator=False):
+   - Uses a fixed set of examples (default: 10 simple word/string)
+   - ICL examples are sampled from this static set
+   - Good for reproducibility and consistency
    
 2. **Generator mode** (use_generator=True):
-   - 生成 unlimited 隨機 字元 sequences 即時
-   - Each call to get_icl_examples() produces 新的 隨機 字串
-   - Configurable length range and 字元 set
-   - Perfect for testing with diverse inputs without 資料 limitations
+   - Generate unlimited random character sequences on the fly
+   - Each call to get_icl_examples() produces a new random string
+   - Configurable length range and character set
+   - Perfect for testing with diverse inputs without data limitations
 
-範例 usage:
-    # 靜態 mode
+Example usage:
+    # static mode
     task = make_copying_task(use_generator=False)
-    範例 = task.get_icl_examples(num_examples=5)
+    example = task.get_icl_examples(num_examples=5)
     
-    # Generator mode with 自訂 parameters
+    # Generator mode with custom parameters
     task = make_copying_task(use_generator=True, min_length=3, max_length=8)
-    範例 = task.get_icl_examples(num_examples=10, charset="abc123", seed=42)
+    example = task.get_icl_examples(num_examples=10, charset="abc123", seed=42)
 """
 
 import random
@@ -34,21 +34,21 @@ from typing import Dict, List, Iterator
 
 class CopyingTask(BaseTask):
     """
-    A 任務 where the 輸出 is an exact copy of the 輸入.
-    This tests induction head capabilities in language 模型.
+    A task where the output is an exact copy of the input.
+    This tests induction head capabilities in language model.
     """
     TASK_NAME = "copying"
     
     def __init__(self, config: TaskConfig, use_generator: bool = False, 
                  min_length: int = 3, max_length: int = 8):
         """
-        初始化the CopyingTask.
+        Initialize the CopyingTask.
         
-        參數：
-            設定: TaskConfig with 任務 settings
-            use_generator: If True, 生成random 範例 即時 instead of using 靜態 資料
-            min_length: Minimum length of 已生成 隨機 字串 (預設: 3)
-            max_length: Maximum length of 已生成 隨機 字串 (預設: 8)
+        Args: 
+            configuration: a TaskConfig with task settings
+            use_generator: If True, Generate random example on the fly instead of using static data
+            min_length: Minimum length of generated random string (default: 3)
+            max_length: Maximum length of generated random string (default: 8)
         """
         self.use_generator = use_generator
         self.min_length = min_length
@@ -59,15 +59,15 @@ class CopyingTask(BaseTask):
                                charset: str = None, 
                                seed: int = None) -> Dict[str, str]:
         """
-        生成a 隨機 copying 範例.
+        Generate a random copying example.
         
-        參數：
-            length: Length of the 隨機 字串. If None, randomly chosen between min_length and max_length
-            charset: 字元 set to use. If None, uses letters and digits
-            seed: 隨機種子 以確保可重現性
+        Args: 
+            length: Length of the random string. If None, randomly chosen between min_length and max_length
+            charset: character set to use. If None, uses letters and digits
+            seed: random seed for reproducibility
             
-        回傳：
-            字典 with 'input' and 'output' keys (both identical)
+        Returns: 
+            dictionary with 'input' and 'output' keys (both identical)
         """
         if seed is not None:
             random.seed(seed)
@@ -85,15 +85,15 @@ class CopyingTask(BaseTask):
                          charset: str = None,
                          seed: int = None) -> List[Dict[str, str]]:
         """
-        生成multiple 隨機 copying 範例.
+        Generate multiple random copying example.
         
-        參數：
-            num_examples: 數字 of 範例 to 生成
-            charset: 字元 set to use for 生成
-            seed: 隨機種子 以確保可重現性
+        Args: 
+            num_examples: number of examples to Generate
+            charset: character set to use for Generate
+            seed: random seed for reproducibility
             
-        回傳：
-            列表 of 範例 dictionaries
+        Returns: 
+            list of example dictionaries
         """
         if seed is not None:
             random.seed(seed)
@@ -112,26 +112,26 @@ class CopyingTask(BaseTask):
         charset: str = None,
     ) -> List[Dict[str, str]]:
         """
-        回傳 ICL 格式的範例.
+        Return examples in ICL format.
         
-        If use_generator=True, 生成 新的 隨機 範例 each time.
-        Otherwise, uses the standard BaseTask logic with stored 資料.
+        If use_generator=True, Generate new random example each time.
+        Otherwise, uses the standard BaseTask logic with stored data.
         
-        參數：
-            num_examples: 數字 of 範例 to 回傳
-            shuffle: Whether to 打亂 (ignored if use_generator=True)
-            seed: 隨機種子 以確保可重現性
-            fresh: Whether to prefer 未使用 範例 (ignored if use_generator=True)
-            charset: 字元 set for 隨機 生成 (only used if use_generator=True)
+        Args: 
+            num_examples: number of examples to return
+            shuffle: Whether to shuffle (ignored if use_generator=True)
+            seed: random seed for reproducibility
+            fresh: Whether to prefer unused example (ignored if use_generator=True)
+            charset: character set for random Generate (only used if use_generator=True)
             
-        回傳：
-            列表 of 範例 dictionaries with 'input' and 'output' keys
+        Returns: 
+            list of example dictionaries with 'input' and 'output' keys
         """
         if self.use_generator:
-            # 生成fresh 隨機 範例 即時
+            # Generate fresh random example on the fly
             return self.generate_examples(num_examples, charset=charset, seed=seed)
         else:
-            # Use the standard BaseTask logic with stored 資料
+            # Use the standard BaseTask logic with stored data
             return super().get_icl_examples(
                 num_examples=num_examples,
                 shuffle=shuffle,
@@ -140,7 +140,7 @@ class CopyingTask(BaseTask):
             )
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """以完全匹配準確率評估預測."""
+        """Evaluate predictions using exact-match accuracy."""
         ground_truth = self.get_ground_truth(split)
         
         if len(predictions) != len(ground_truth):
@@ -149,10 +149,10 @@ class CopyingTask(BaseTask):
                 f"ground truth count ({len(ground_truth)})"
             )
         
-        # 預處理 預測
+        # Preprocess predictions
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Calculate 完全匹配 準確率
+        # Calculate exact-match accuracy
         correct = sum(
             1 for pred, gt in zip(processed_predictions, ground_truth)
             if pred.strip() == gt.strip()
@@ -171,28 +171,28 @@ def make_copying_task(config: TaskConfig = None,
                       min_length: int = 3,
                       max_length: int = 8,
                       test_size: int = 20) -> CopyingTask:
-    """工廠函式 to 建立一個CopyingTask with 預設examples.
+    """factory function to Create a CopyingTask with default examples.
     
-    參數：
-        設定: 可選TaskConfig. If None, creates a 預設config with
-                範例 資料 where 輸入 == 輸出.
-        use_generator: If True, 生成random 範例 即時 instead of using 靜態 資料.
-                      This allows for limitless unique 範例.
-        min_length: Minimum length of 已生成 隨機 字串 (only used if use_generator=True)
-        max_length: Maximum length of 已生成 隨機 字串 (only used if use_generator=True)
-        test_size: 數字 of test 範例 to 生成(預設: 20)
+    Args: 
+        configuration: optional TaskConfig. If None, creates a default configuration with
+                example data where input == output.
+        use_generator: If True, Generate random example on the fly instead of using static data.
+                      This allows for limitless unique example.
+        min_length: Minimum length of generated random string (only used if use_generator=True)
+        max_length: Maximum length of generated random string (only used if use_generator=True)
+        test_size: number of test examples to Generate(default: 20)
     
-    回傳：
-        CopyingTask 實例
+    Returns: 
+        CopyingTask instance
     """
     if config is None:
         if use_generator:
-            # 生成test 範例 once at 任務 creation for deterministic 評估
-            # We 建立一個temporary 實例 just to use the generate_examples method
+            # Generate test example once at task creation for deterministic Evaluate
+            # We Create a temporary instance just to use the generate_examples method
             import random
             import string
             
-            # 生成deterministic test set
+            # Generate a deterministic test set
             random.seed(42)
             test_examples = []
             for _ in range(test_size):
@@ -201,7 +201,7 @@ def make_copying_task(config: TaskConfig = None,
                 random_str = ''.join(random.choices(charset, k=length))
                 test_examples.append({"input": random_str, "output": random_str})
         else:
-            # 預設 範例 - 簡單 字串 that should be copied exactly
+            # default example - simple string that should be copied exactly
             test_examples = [
                 {"input": "cat", "output": "cat"},
                 {"input": "dog", "output": "dog"},

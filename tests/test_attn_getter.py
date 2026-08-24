@@ -52,7 +52,7 @@ def test_residual_capture_matches_attention_add_tiny_gpt2():
     diff = (resid_after - (resid_pre + attn_proj)).abs()
     assert diff.max().item() < 1e-5, f"Residual mismatch (tokenwise): {diff.max().item():.3e}"
 
-    # 檢查last non-pad token specifically
+    # Checklast non-pad token specifically
     B = resid_pre.size(0)
     idx = torch.arange(B, device=resid_pre.device)
     pre_last   = resid_pre[idx, t_star, :]
@@ -135,7 +135,7 @@ def test_olmo2_residual_capture():
     if tok.pad_token_id is None:
         tok.pad_token = tok.eos_token
 
-    # 簡單 test 提示
+    # simple test prompt
     prompts = [
         "The quick brown fox",
         "Hello, world!",
@@ -148,13 +148,13 @@ def test_olmo2_residual_capture():
     with ResidualCapture(model, layer_idx) as cap:
         _ = model(**batch, output_attentions=False, use_cache=False, return_dict=True)
 
-    # 檢查that all expected tensors were captured
+    # Checkthat all expected tensors were captured
     expected_keys = ["resid_pre_attn", "resid_after_attn_add", "attn_out_proj", "attn_pre_proj"]
     for key in expected_keys:
         assert key in cap.cache, f"Missing key: {key}"
         print(f"✓ Captured {key}: shape={cap.cache[key].shape}")
 
-    # Verify residual connection 數學 (with tolerance for float16)
+    # Verify residual connection math (with tolerance for float16)
     resid_pre = cap.cache["resid_pre_attn"]
     resid_after = cap.cache["resid_after_attn_add"]
     attn_proj = cap.cache["attn_out_proj"]
@@ -243,7 +243,7 @@ def test_crystal_residual_capture():
     if tok.pad_token_id is None:
         tok.pad_token = tok.eos_token
 
-    # 簡單 test 提示
+    # simple test prompt
     prompts = [
         "The quick brown fox",
         "Hello, world!",
@@ -256,13 +256,13 @@ def test_crystal_residual_capture():
     with ResidualCapture(model, layer_idx) as cap:
         _ = model(**batch, output_attentions=False, use_cache=False, return_dict=True)
 
-    # 檢查that all expected tensors were captured
+    # Checkthat all expected tensors were captured
     expected_keys = ["resid_pre_attn", "resid_after_attn_add", "attn_out_proj", "attn_pre_proj"]
     for key in expected_keys:
         assert key in cap.cache, f"Missing key: {key}"
         print(f"✓ Captured {key}: shape={cap.cache[key].shape}")
 
-    # Verify residual connection 數學 (with tolerance for float16)
+    # Verify residual connection math (with tolerance for float16)
     resid_pre = cap.cache["resid_pre_attn"]
     resid_after = cap.cache["resid_after_attn_add"]
     attn_proj = cap.cache["attn_out_proj"]
@@ -282,7 +282,7 @@ def test_crystal_residual_capture():
 @pytest.mark.skipif("CI" in os.environ and os.environ.get("CI") == "true",
                     reason="Skip network downloads on CI")
 def test_olmo2_checkpoint_loading():
-    """Test that OLMo-2 can be 已載入 with a 特定 checkpoint/revision."""
+    """Test that OLMo-2 can be loaded with a specific checkpoint/revision."""
     torch.set_grad_enabled(False)
     device = "cpu"
 
@@ -298,7 +298,7 @@ def test_olmo2_checkpoint_loading():
         trust_remote_code=True
     ).eval()
 
-    # Verify 模型 已載入 successfully
+    # Verify model loaded successfully
     blocks = get_blocks(model)
     assert len(blocks) == 32, f"Expected 32 blocks, got {len(blocks)}"
     print(f"✓ Successfully loaded checkpoint {checkpoint} with {len(blocks)} blocks")
@@ -315,7 +315,7 @@ def test_olmo2_checkpoint_loading():
 @pytest.mark.skipif("CI" in os.environ and os.environ.get("CI") == "true",
                     reason="Skip network downloads on CI")
 def test_crystal_checkpoint_loading():
-    """Test that Crystal can be 已載入 with a 特定 checkpoint/revision."""
+    """Test that Crystal can be loaded with a specific checkpoint/revision."""
     torch.set_grad_enabled(False)
     device = "cpu"
 
@@ -331,7 +331,7 @@ def test_crystal_checkpoint_loading():
         trust_remote_code=True
     ).eval()
 
-    # Verify 模型 已載入 successfully
+    # Verify model loaded successfully
     blocks = get_blocks(model)
     assert len(blocks) == 32, f"Expected 32 blocks, got {len(blocks)}"
     print(f"✓ Successfully loaded checkpoint {checkpoint} with {len(blocks)} blocks")

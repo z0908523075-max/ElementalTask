@@ -1,19 +1,19 @@
-"""共指 / 代詞消解 — elemental reading comprehension.
+"""coreference / pronoun resolution — elemental reading comprehension.
 
-Tests the 模型's ability to resolve pronouns and other referring expressions
+Tests the model's ability to resolve pronouns and other referring expressions
 to their antecedents. This is a prerequisite for WinoGrande-style benchmarks
 and general reading comprehension.
 
-類別：
-  - pronoun_simple: Unambiguous 代詞消解 (he/she/they)
+Categories: 
+  - pronoun_simple: Unambiguous pronoun resolution (he/she/they)
   - pronoun_hard:  Winograd-style where world knowledge is needed
 
-All cases are *unambiguous* — there is exactly one 正確 答案.
+All cases are *unambiguous* — there is exactly one correct Answer.
 
-格式化(ICL):
+Format (ICL):
     Sentence: "Alice told Bob that she would be late."
     Who does "she" refer to?
-    答案: Alice
+    Answer: Alice
 """
 
 import random
@@ -23,7 +23,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class CoreferenceTask(BaseTask):
-    """Elemental 共指 / 代詞消解 任務."""
+    """Elemental coreference / pronoun resolution task."""
 
     TASK_NAME = "coreference"
 
@@ -168,7 +168,7 @@ def create_coreference_task(
     category: str = None,
     name: str = "coreference",
 ) -> CoreferenceTask:
-    """建立一個CoreferenceTask, optionally 已篩選 to one 類別."""
+    """Create a CoreferenceTask, optionally filtered to one class."""
     data = None
     if category and category in CoreferenceTask.CATEGORY_DATA:
         data = [

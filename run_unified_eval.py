@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Command-line interface for the unified 任務 評估 system."""
+"""Command-line interface for the unified task Evaluate system."""
 
 import argparse
 import json
@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import os
 
-# Add project root to 路徑
+# Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tasks.base_task import TaskConfig
@@ -16,7 +16,7 @@ from tasks.registry import TaskRegistry
 
 
 def create_model_config_from_args(args) -> ModelConfig:
-    """建立ModelConfig from command 行 arguments."""
+    """BuildModelConfig from command line arguments."""
     return ModelConfig(
         model_id=args.model_id,
         backend=args.backend,
@@ -32,7 +32,7 @@ def create_model_config_from_args(args) -> ModelConfig:
 
 
 def create_eval_config_from_args(args) -> EvaluationConfig:
-    """建立EvaluationConfig from command 行 arguments."""
+    """BuildEvaluationConfig from command line arguments."""
     return EvaluationConfig(
         output_dir=args.output_dir,
         save_predictions=args.save_predictions,
@@ -44,17 +44,17 @@ def create_eval_config_from_args(args) -> EvaluationConfig:
 
 
 def main():
-    # 檢查for 列表 類別 flag 第一個 (before full argument parsing)
+    # Check for list class flag first (before full argument parsing)
     if "--list_textfrct_categories" in sys.argv:
         print_textfrct_categories()
         return 0
     
     parser = argparse.ArgumentParser(description="Unified Task Evaluation System")
     
-    # 任務參數
+    # taskparameters
     task_group = parser.add_argument_group("Task Configuration")
     
-    # Discover 可用 任務 dynamically
+    # Discover available task dynamically
     registry = TaskRegistry()
     available_tasks = list(registry.discover_tasks().keys())
     
@@ -62,7 +62,7 @@ def main():
                            choices=available_tasks,
                            help=f"Type of task to run. Available: {', '.join(available_tasks)}")
     
-    # TextFRCT 特定 arguments (only if textfrct is 可用)
+    # TextFRCT specific arguments (only if textfrct is available)
     if "textfrct" in available_tasks:
         task_group.add_argument("--skip_subjective", action="store_true",
                                help="Skip subjective categories (for TextFRCT)")
@@ -77,7 +77,7 @@ def main():
         textfrct_group.add_argument("--list_textfrct_categories", action="store_true",
                                    help="List all available TextFRCT categories and exit")
     
-    # 模型參數
+    # modelparameters
     model_group = parser.add_argument_group("Model Configuration")
     model_group.add_argument("--model_id", type=str, required=True,
                             help="Model identifier")
@@ -91,7 +91,7 @@ def main():
     model_group.add_argument("--api_key", type=str,
                             help="API key for OpenAI/Together")
     
-    # 生成參數
+    # Generateparameters
     gen_group = parser.add_argument_group("Generation Configuration")
     gen_group.add_argument("--temperature", type=float, default=0.0,
                           help="Generation temperature")
@@ -104,7 +104,7 @@ def main():
     gen_group.add_argument("--trust_remote_code", action="store_true", default=True,
                           help="Trust remote code for model loading")
     
-    # 評估參數
+    # Evaluateparameters
     eval_group = parser.add_argument_group("Evaluation Configuration")
     eval_group.add_argument("--output_dir", type=str, default="results",
                            help="Output directory for results")
@@ -121,22 +121,22 @@ def main():
     
     args = parser.parse_args()
     
-    # 建立設定
+    # Buildconfiguration
     model_config = create_model_config_from_args(args)
     eval_config = create_eval_config_from_args(args)
     
-    # 建立task dynamically using registry - NO HARDCODED CONDITIONALS!
+    # Buildtask dynamically using registry - NO HARDCODED CONDITIONALS!
     print(f"Creating {args.task_type} task...")
     
-    # 取得task 類別 from registry
+    # Get task class from registry
     task_class = registry.get_task_class(args.task_type)
     if not task_class:
         print(f"Error: Task '{args.task_type}' not found in registry")
         return 1
     
-    # 建立task-特定 設定
+    # Buildtask-specific configuration
     if args.task_type == "textfrct":
-        # TextFRCT needs special 設定 and constructor arguments
+        # TextFRCT needs special configuration and constructor arguments
         config = TaskConfig(
             name="textfrct_cli",
             description="TextFRCT evaluation from CLI",
@@ -159,36 +159,36 @@ def main():
             print(f"Filtering to categories: {args.textfrct_categories}")
         
     elif args.task_type == "basic_arithmetic":
-        # BasicArithmetic uses 記憶體內 資料
+        # BasicArithmetic uses in-memory data
         config = TaskConfig(
             name="basic_arithmetic_cli",
             description="Basic arithmetic evaluation from CLI",
             data_format="memory",
             data_path=None,
-            in_memory_data=None,  # Signal to use 任務's 預設data
+            in_memory_data=None,  # Signal to use task's defaultdata
             input_column="question",
             output_column="answer",
             evaluation_metrics=["accuracy"]
         )
         task = task_class(config)
     elif args.task_type == "ioi_task":
-        # IOITask uses mib-bench/ioi 資料集
+        # IOITask uses mib-bench/ioi dataset
         config = TaskConfig(
             name="ioi_task_cli",
             description="Indirect Object Identification (IOI) evaluation from mib-bench/ioi dataset",
             data_format="huggingface",
             data_path="mib-bench/ioi",
             input_column="prompt",  # The incomplete sentence
-            output_column="choices",  # 列表 of choices, use with answer_index
+            output_column="choices",  # list of choices, use with answer_index
             evaluation_metrics=["accuracy"]
         )
         task = task_class(config)
     else:
-        # Generic 任務 creation for other 任務
+        # Generic task creation for other task
         config = TaskConfig(
             name=f"{args.task_type}_cli",
             description=f"{args.task_type} evaluation from CLI",
-            data_path=f"dataset/{args.task_type}.csv",  # 預設 資料 路徑
+            data_path=f"dataset/{args.task_type}.csv",  # default data path
             data_format="csv",
             input_column="question",
             output_column="answer",
@@ -198,13 +198,13 @@ def main():
     
     print(f"✅ Successfully created {args.task_type} task")
     
-    # 建立evaluator and run 評估
+    # Buildevaluator and run Evaluate
     print("Creating evaluator...")
     evaluator = TaskEvaluator(model_config, eval_config)
     print("Running evaluation...")
     results = evaluator.evaluate_task(task)
     
-    # 列印摘要結果
+    # Printsummaryresults
     print("\n" + "="*50)
     print("EVALUATION RESULTS")
     print("="*50)
@@ -225,7 +225,7 @@ def main():
 
 
 def print_textfrct_categories():
-    """Print all 可用 TextFRCT 類別 with descriptions."""
+    """Print all available TextFRCT class with descriptions."""
     print("Available TextFRCT Categories:")
     print("=" * 50)
     
@@ -266,7 +266,7 @@ def print_textfrct_categories():
         "XU4": "Different Uses - Creative uses for objects"
     }
     
-    # 群組 by 主要 類別
+    # group by Main class
     groups = {
         "CV (Convergent Visual)": ["CV1", "CV2", "CV3"],
         "FA (Fluent Associational)": ["FA1", "FA2", "FA3"],

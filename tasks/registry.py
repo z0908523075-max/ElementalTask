@@ -1,4 +1,4 @@
-"""自動 任務 發現 and 註冊 system."""
+"""Automatic task discovery and registration system."""
 
 import os
 import importlib
@@ -9,9 +9,9 @@ from .base_task import BaseTask, TaskConfig
 
 
 class TaskRegistry:
-    """自動 任務 發現 and 註冊 system."""
+    """Automatic task discovery and registration system."""
 
-    # Legacy 組合式 任務 名稱 now backed by blended 組合 資料.
+    # Legacy compositional task name now backed by blended composition data.
     _COMPOSITIONAL_TO_BLENDED_ALIASES = {
         "coref_tracking_query",
         "decipher_apply_reason",
@@ -24,12 +24,12 @@ class TaskRegistry:
         self._discovered = False
     
     def discover_tasks(self, implementations_path: str = None) -> Dict[str, Type[BaseTask]]:
-        """自動地 discover and 註冊 任務 from the 實作 目錄."""
+        """automatically discover and register task from the implementation directory."""
         if self._discovered:
             return self._tasks
         
         if implementations_path is None:
-            # 預設 to 任務/實作 目錄
+            # default to tasks/implementations directory
             current_dir = Path(__file__).parent
             implementations_path = current_dir / "implementations"
         else:
@@ -40,7 +40,7 @@ class TaskRegistry:
             self._discovered = True
             return self._tasks
         
-        # 取得all Python 檔案 in the 實作 目錄
+        # Get all Python file in the implementation directory
         python_files = list(implementations_path.glob("*.py"))
         python_files = [f for f in python_files if f.name != "__init__.py"]
         
@@ -49,13 +49,13 @@ class TaskRegistry:
         
         for py_file in python_files:
             try:
-                # 轉換file 路徑 to module 名稱
+                # convert the file path to module name
                 module_name = f"tasks.implementations.{py_file.stem}"
                 
                 # Import the module
                 module = importlib.import_module(module_name)
                 
-                # Find all 類別 that inherit from BaseTask
+                # Find all class that inherit from BaseTask
                 for name, obj in inspect.getmembers(module, inspect.isclass):
                     if (issubclass(obj, BaseTask) and 
                         obj != BaseTask and 
@@ -85,7 +85,7 @@ class TaskRegistry:
         return self._tasks
     
     def register_task(self, name: str, task_class: Type[BaseTask]) -> None:
-        """Manually 註冊 a 任務 類別."""
+        """Manually register a task class."""
         if not issubclass(task_class, BaseTask):
             raise ValueError(f"Task class must inherit from BaseTask")
         
@@ -96,7 +96,7 @@ class TaskRegistry:
         print(f"✅ Manually registered task: '{name}'")
     
     def get_task_class(self, name: str) -> Type[BaseTask]:
-        """取得a 任務 類別 by 名稱."""
+        """Get a task class by name."""
         if not self._discovered:
             self.discover_tasks()
         
@@ -107,24 +107,24 @@ class TaskRegistry:
         return self._tasks[name]
     
     def create_task(self, name: str, spaced: bool = False, *args, **kwargs) -> BaseTask:
-        """建立一個task 實例 by 名稱.
+        """Create a task instance by name.
         
-        If no 設定/args are provided, tries to use 工廠函式s for proper 預設.
-        Falls back to 建立中 a basic TaskConfig if no factory is 可用.
+        If no configuration/args are provided, tries to use factory functions for proper default.
+        Falls back to building a basic TaskConfig if no factory is available.
         
-        參數：
-            名稱: 任務 名稱, optionally with subtask 篩選 (e.g., 'compositional:upper_reverse')
-            spaced: If True, use spaced version of 任務 (adds spaces between 字元)
-            *args, **kwargs: Additional arguments passed to 任務 constructor
+        Args: 
+            name: task name, optionally with subtask filter (e.g., 'compositional:upper_reverse')
+            spaced: If True, use spaced version of task (adds spaces between character)
+            *args, **kwargs: Additional arguments passed to task constructor
         """
         from .base_task import TaskConfig
         
-        # Allow a 簡單 subtask syntax: '任務:sub1,sub2' -> 基礎 任務 with 類別 filters
+        # Allow a simple subtask syntax: 'Task:sub1,sub2' -> Base task with class filters
         base_name = name
         subtask_specs = None
         if isinstance(name, str) and ':' in name:
             base_name, spec = name.split(':', 1)
-            subtask_specs = spec  # Keep as 字串 for 工廠函式s
+            subtask_specs = spec  # Keep as string for factory functions
 
         # If arguments are provided, use them directly (honor explicit kwargs)
         if args or kwargs:
@@ -132,10 +132,10 @@ class TaskRegistry:
             if not args and 'config' not in kwargs:
                 kwargs['config'] = TaskConfig(name=base_name)
             task_instance = task_class(*args, **kwargs)
-            # If subtasks were requested, try to apply a 簡單 post-filter
+            # If subtasks were requested, try to apply a simple post-filter
             if subtask_specs:
                 try:
-                    # 轉換string to 列表 for filtering
+                    # convert the string to list for filtering
                     filter_list = [s.strip() for s in subtask_specs.split(',') if s.strip()]
                     import pandas as pd
                     if hasattr(task_instance, 'data') and isinstance(task_instance.data, pd.DataFrame):
@@ -149,7 +149,7 @@ class TaskRegistry:
                     pass
             return task_instance
         
-        # Try to use 工廠函式s for 任務 that need special initialization
+        # Try to use factory functions for task that need special initialization
         factory_map = {
             'copying': lambda: self._import_and_call('tasks.implementations.copying_task', 'make_copying_task', use_generator=True),
             'ignoring_context': lambda: self._import_and_call('tasks.implementations.ignoring_context_task', 'make_ignoring_context_task', use_generator=True),
@@ -177,8 +177,8 @@ class TaskRegistry:
         if base_name in factory_map:
             try:
                 task_instance = factory_map[base_name]()
-                # Note: 組合式 and textfrct handle their own filtering via factory args
-                # For other 任務, apply post-filtering if subtasks were requested
+                # Note: compositional and textfrct handle their own filtering via factory args
+                # For other task, apply post-filtering if subtasks were requested
                 if subtask_specs and base_name not in ('compositional', 'textfrct'):
                     try:
                         filter_list = [s.strip() for s in subtask_specs.split(',') if s.strip()]
@@ -197,7 +197,7 @@ class TaskRegistry:
                 print(f"Warning: Factory function failed for '{name}': {e}")
                 print(f"Falling back to default config...")
         
-        # Fallback: 建立with minimal 設定
+        # Fallback: Buildwith minimal configuration
         task_class = self.get_task_class(base_name)
         return task_class(config=TaskConfig(name=name))
     
@@ -209,7 +209,7 @@ class TaskRegistry:
         return func(**kwargs)
     
     def _create_simple_icl_task(self):
-        """建立一個SimpleICLTask with 資料 from simple.csv."""
+        """Create a SimpleICLTask with data from simple.csv."""
         config = TaskConfig(
             name="simple_icl",
             description="Simple ICL task with category-based demonstrations",
@@ -223,7 +223,7 @@ class TaskRegistry:
         return task_class(config)
     
     def _create_simple_task(self):
-        """建立一個SimpleTask with 資料 from simple.csv."""
+        """Create a SimpleTask with data from simple.csv."""
         config = TaskConfig(
             name="simple",
             description="Simple task with exact match evaluation",
@@ -237,11 +237,11 @@ class TaskRegistry:
         return task_class(config)
     
     def _create_math_task(self):
-        """建立一個MathTask (生成 合成 資料)."""
+        """Create a MathTask (Generate synthetic data)."""
         config = TaskConfig(
             name="math",
             description="Math task with synthetic arithmetic problems",
-            data_format="generator",  # Indicates 合成/已生成 資料
+            data_format="generator",  # Indicates synthetic/generated data
             input_column="input",
             output_column="output",
             evaluation_metrics=["accuracy"],
@@ -250,20 +250,20 @@ class TaskRegistry:
         return task_class(config)
     
     def _create_compositional_task(self, category_filter=None, spaced=False):
-        """建立一個CompositionalTask with 可選category filtering and spacing.
+        """Create a CompositionalTask with optionalcategory filtering and spacing.
         
-        支援:
-            - 組合式 (all 類別)
-            - 組合式:upper_reverse (single 類別)
-            - 組合式:upper_reverse,lower_first (multiple 類別)
-            - spaced=True for character-spaced 輸入/輸出
+        supports:
+            - compositional (all class)
+            - compositional:upper_reverse (single class)
+            - compositional:upper_reverse,lower_first (multiple class)
+            - spaced=True for character-spaced input/output
         """
         if category_filter:
             categories = [c.strip() for c in category_filter.split(",") if c.strip()]
             if categories and all(c in self._COMPOSITIONAL_TO_BLENDED_ALIASES for c in categories):
                 from tasks.implementations.blended_compositions_task import create_blended_compositions_task
 
-                # Keep incoming namespace stable while routing to blended 資料.
+                # Keep incoming namespace stable while routing to blended data.
                 blended_name = f"blended_compositions:{','.join(categories)}"
                 return create_blended_compositions_task(name=blended_name)
 
@@ -285,15 +285,15 @@ class TaskRegistry:
         task_class = self.get_task_class("compositional")
         task = task_class(config, spaced=spaced)
         
-        # 篩選 by 類別 if specified
+        # filter by class if specified
         if category_filter:
             categories = [c.strip() for c in category_filter.split(",")]
             if hasattr(task, 'data') and task.data:
                 if isinstance(task.data, list):
                     task.data = [d for d in task.data if d.get('category_name') in categories]
 
-            # Fallback: 支援 blended 組合 via 組合式:<類別>
-            # so they remain discoverable under the 組合式 namespace.
+            # Fallback: supports blended composition via compositional:<class>
+            # so they remain discoverable under the compositional namespace.
             if (not getattr(task, 'data', None)) and len(categories) == 1:
                 blended_category = categories[0]
                 try:
@@ -309,16 +309,16 @@ class TaskRegistry:
         return task
     
     def _create_textfrct_task(self, category_filter=None):
-        """建立一個TextFRCT 任務 with 可選category filtering.
+        """Create a TextFRCT task with optionalcategory filtering.
         
-        支援:
-            - textfrct (all 類別)
-            - textfrct:CV1 (single 類別)
-            - textfrct:CV1,CV2,FA1 (multiple 類別)
+        supports:
+            - textfrct (all class)
+            - textfrct:CV1 (single class)
+            - textfrct:CV1,CV2,FA1 (multiple class)
         """
         from tasks.implementations.textfrct_task import TextFRCTTask
         
-        # Parse 類別 篩選 (can be single 類別 or comma-separated 列表)
+        # Parse class filter (can be single class or comma-separated list)
         categories = None
         if category_filter:
             if isinstance(category_filter, list):
@@ -340,7 +340,7 @@ class TaskRegistry:
         
         task = TextFRCTTask(config, skip_subjective=True, categories=categories)
         
-        # 篩選 資料 by category_id if 類別 specified
+        # filter data by category_id if class specified
         if categories and hasattr(task, 'data') and task.data:
             if isinstance(task.data, list):
                 task.data = [d for d in task.data if d.get('category_id') in categories]
@@ -348,9 +348,9 @@ class TaskRegistry:
         return task
     
     def _create_benchmark_task(self, task_name: str):
-        """建立一個benchmark 任務 (ARC-Challenge, BoolQ, WinoGrande, GSM8K) by 名稱.
+        """Create a benchmark task (ARC-Challenge, BoolQ, WinoGrande, GSM8K) by name.
 
-        支援:
+        supports:
             benchmark:arc_challenge
             benchmark:boolq
             benchmark:winogrande
@@ -360,18 +360,18 @@ class TaskRegistry:
         return make_benchmark_task(task_name)
 
     def list_tasks(self) -> List[str]:
-        """列表 all 可用 任務 名稱."""
+        """list all available task name."""
         if not self._discovered:
             self.discover_tasks()
         return list(self._tasks.keys())
     
     def get_task_info(self, name: str = None) -> Dict:
-        """取得information about 任務."""
+        """Get information about task."""
         if not self._discovered:
             self.discover_tasks()
         
         if name is None:
-            # 回傳info for all 任務
+            # Returnsinfo for all task
             return {
                 task_name: {
                     "class": task_class.__name__,
@@ -381,7 +381,7 @@ class TaskRegistry:
                 for task_name, task_class in self._tasks.items()
             }
         else:
-            # 回傳info for 特定 任務
+            # Returnsinfo for specific task
             if name not in self._tasks:
                 raise ValueError(f"Task '{name}' not found")
             
@@ -395,34 +395,34 @@ class TaskRegistry:
             }
 
 
-# Global registry 實例
+# Global registry instance
 _task_registry = TaskRegistry()
 
 # Public API functions
 def discover_tasks(implementations_path: str = None) -> Dict[str, Type[BaseTask]]:
-    """Discover and 註冊 all 任務 from the 實作 目錄."""
+    """Discover and register all task from the implementation directory."""
     return _task_registry.discover_tasks(implementations_path)
 
 def register_task(name: str, task_class: Type[BaseTask]) -> None:
-    """Manually 註冊 a 任務 類別."""
+    """Manually register a task class."""
     _task_registry.register_task(name, task_class)
 
 def get_task_class(name: str) -> Type[BaseTask]:
-    """取得a 任務 類別 by 名稱."""
+    """Get a task class by name."""
     return _task_registry.get_task_class(name)
 
 def get_task(name: str, spaced: bool = False, *args, **kwargs) -> BaseTask:
-    """建立一個task 實例 by 名稱.
+    """Create a task instance by name.
     
-    參數：
-        名稱: 任務 名稱, optionally with subtask 篩選 (e.g., 'compositional:upper_reverse')
-        spaced: If True, use spaced version (spaces between 字元 in 輸入/輸出)
-        *args, **kwargs: Additional arguments passed to 任務 constructor
+    Args: 
+        name: task name, optionally with subtask filter (e.g., 'compositional:upper_reverse')
+        spaced: If True, use spaced version (spaces between character in input/output)
+        *args, **kwargs: Additional arguments passed to task constructor
     
-    回傳：
-        任務 實例
+    Returns: 
+        task instance
     
-    範例：
+    Example: 
         >>> task = get_task("compositional:upper_reverse")
         >>> task = get_task("compositional:upper_reverse", spaced=True)
         >>> task = get_task("textfrct:CV1")
@@ -430,23 +430,23 @@ def get_task(name: str, spaced: bool = False, *args, **kwargs) -> BaseTask:
     return _task_registry.create_task(name, spaced=spaced, *args, **kwargs)
 
 def list_tasks() -> List[str]:
-    """列表 all 可用 任務 名稱."""
+    """list all available task name."""
     return _task_registry.list_tasks()
 
 def get_task_info(name: str = None) -> Dict:
-    """取得information about 任務."""
+    """Get information about task."""
     return _task_registry.get_task_info(name)
 
 def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = True, include_simple_icl: bool = True) -> Dict[str, List[str]]:
-    """列表 all 可用 任務 including subtasks.
+    """list all available task including subtasks.
     
-    參數：
-        include_compositional: If True, enumerate all 組合式 subtasks
+    Args: 
+        include_compositional: If True, enumerate all compositional subtasks
         include_textfrct: If True, enumerate all TextFRCT subtasks
-        include_simple_icl: If True, enumerate all simple_icl 類別
+        include_simple_icl: If True, enumerate all simple_icl class
     
-    回傳：
-        字典 mapping 任務 類別 to 列表 of 任務 名稱
+    Returns: 
+        dictionary mapping task class to list of task name
     """
     if not _task_registry._discovered:
         _task_registry.discover_tasks()
@@ -460,24 +460,24 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
     
     for task_name in sorted(_task_registry._tasks.keys()):
         if task_name == "compositional" and include_compositional:
-            # Add 基礎 組合式 任務
+            # Add Base compositional task
             result["base_tasks"].append("compositional")
             
-            # Enumerate all 組合式 subtasks
+            # Enumerate all compositional subtasks
             try:
                 from tasks.implementations.compositional_task import STRING_COMPOSITIONS, LOOKUP_COMPOSITIONS
                 
-                # Add all 字串組合
+                # Add all stringcomposition
                 for comp_name in sorted(STRING_COMPOSITIONS.keys()):
                     result["compositional_tasks"].append(f"compositional:{comp_name}")
                     result["compositional_tasks"].append(f"compositional:{comp_name} (spaced)")
                 
-                # Add all 基於查找的 組合
+                # Add all lookup-based composition
                 for comp_name in sorted(LOOKUP_COMPOSITIONS.keys()):
                     result["compositional_tasks"].append(f"compositional:{comp_name}")
                     result["compositional_tasks"].append(f"compositional:{comp_name} (spaced)")
 
-                # Add blended 組合 類別 under 組合式 namespace
+                # Add blended composition class under compositional namespace
                 try:
                     from tasks.implementations.blended_compositions_task import BlendedCompositionsTask
                     for comp_name in sorted(BlendedCompositionsTask.CATEGORY_DATA.keys()):
@@ -489,10 +489,10 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
                 print(f"Warning: Could not enumerate compositional tasks: {e}")
         
         elif task_name == "textfrct" and include_textfrct:
-            # Add 基礎 textfrct 任務
+            # Add Base textfrct task
             result["base_tasks"].append("textfrct")
             
-            # Enumerate all TextFRCT 類別
+            # Enumerate all TextFRCT class
             try:
                 import pandas as pd
                 from pathlib import Path
@@ -506,10 +506,10 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
                 print(f"Warning: Could not enumerate TextFRCT tasks: {e}")
         
         elif task_name == "simple_icl" and include_simple_icl:
-            # Add 基礎 simple_icl 任務
+            # Add Base simple_icl task
             result["base_tasks"].append("simple_icl")
             
-            # Enumerate all simple_icl 類別
+            # Enumerate all simple_icl class
             try:
                 import pandas as pd
                 from pathlib import Path
@@ -523,13 +523,13 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
                 print(f"Warning: Could not enumerate simple_icl tasks: {e}")
         
         else:
-            # Regular 任務
+            # Regular task
             result["base_tasks"].append(task_name)
     
     return result
 
 def print_all_tasks():
-    """Print a 格式化 列表 of all 可用 任務."""
+    """Print a Format list of all available task."""
     tasks = list_all_tasks()
     
     print("\n" + "="*70)

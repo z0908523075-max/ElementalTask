@@ -6,7 +6,7 @@ import re
 
 
 
-# === Determine 後端 ===
+# === Determine backend ===
 openai_models = [
     "gpt-4o-mini-2024-07-18", "gpt-4o-2024-05-13", "gpt-4o-2024-08-06",
     "gpt-4o-2024-11-20", "gpt-4.1-2025-04-14", "o1-mini-2024-09-12",
@@ -21,7 +21,7 @@ together_models = [
 ]
 
 
-# === 載入API keys from .env ===
+# === LoadAPI keys from .env ===
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")

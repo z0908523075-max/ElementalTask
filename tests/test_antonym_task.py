@@ -1,4 +1,4 @@
-"""Unit tests for the AntonymTask elemental 任務."""
+"""Unit tests for the AntonymTask elemental task."""
 
 import pytest
 
@@ -35,7 +35,7 @@ def test_build_prompt_uses_template():
     task = create_antonym_task()
     instance = {"input": "hot", "output": "cold"}
     prompt = task.build_prompt(instance, num_shots=0)
-    # prompt_template should place the 輸入 after "Input:"
+    # prompt_template should place the input after "Input:"
     assert "Input: hot" in prompt
     assert prompt.rstrip().endswith("Output:")
 
@@ -76,13 +76,13 @@ def test_evaluate_wrong_predictions():
 
 def test_evaluate_length_mismatch_returns_error():
     task = create_antonym_task()
-    result = task.evaluate(["cold"])  # far fewer than 真值
+    result = task.evaluate(["cold"])  # far fewer than ground truth
     assert result["accuracy"] == 0.0
     assert "error" in result
 
 
 def test_registry_discovers_antonym_task():
-    """The registry auto-discovers 任務 via TASK_NAME; ensure ours is found."""
+    """The registry auto-discovers task via TASK_NAME; ensure ours is found."""
     from tasks.registry import get_task_class, discover_tasks
 
     discover_tasks()

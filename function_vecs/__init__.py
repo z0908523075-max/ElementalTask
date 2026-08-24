@@ -1,8 +1,8 @@
 """
-function vector 擷取 package for ICL 範例.
+function vector Extract package for ICL example.
 
 This package contains utilities for extracting function vectors from 
-in-context learning 範例 across different 任務.
+in-context learning example across different task.
 """
 
 from .extract_function_vecs import discover_all_tasks

@@ -15,16 +15,16 @@ class HeadSwap:
 
     def make_hook(self, head_index: int, t_star_dst: torch.Tensor):
         """
-        建立一個hook that swaps head activations.
+        Create a hook that swaps head activations.
         
-        參數：
+        Args: 
             head_index: Which head to swap
-            t_star_dst: 決策 token indices for the destination (ICL) batch
+            t_star_dst: decision token indices for the destination (ICL) batch
         
-        The hook reads from self.src at t_star_src (control's 最後一個 token)
-        and writes to x at t_star_dst (ICL's 最後一個 token).
+        The hook reads from self.src at t_star_src (control's last token)
+        and writes to x at t_star_dst (ICL's last token).
         """
-        t_star_src = self.t_star_src  # 最後一個 token positions in control batch
+        t_star_src = self.t_star_src  # last token positions in control batch
         
         def _hook(_m, inputs):
             x = inputs[0]                   # (B,T,D) or (B*T,D)
@@ -38,12 +38,12 @@ class HeadSwap:
             start = head_index * self.Hd
             end = start + self.Hd
             b_idx = torch.arange(B, device=dev)
-            # Ensure index tensors and source are on the 相同 device as x
+            # Ensure index tensors and source are on the same device as x
             # (needed for device_map="auto" multi-GPU setups)
             _t_star_dst = t_star_dst.to(dev) if t_star_dst.device != dev else t_star_dst
             _t_star_src = t_star_src.to(dev) if t_star_src.device != dev else t_star_src
             _src = self.src.to(dev) if self.src.device != dev else self.src
-            # Read from control at control's 決策 token, write to ICL at ICL's 決策 token
+            # Read from control at control's decision token, write to ICL at ICL's decision token
             x[b_idx, _t_star_dst, start:end] = _src[b_idx, _t_star_src, start:end]
-            return (x,)  # must 回傳tuple for pre-hook
+            return (x,)  # must Returnstuple for pre-hook
         return _hook

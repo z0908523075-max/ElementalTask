@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""評估a 模型 across multiple checkpoints on all discovered 任務.
+"""Evaluate a model across multiple checkpoints on all discovered task.
 
-This script runs 評估 across different 模型 checkpoints, useful for
+This script runs Evaluate across different model checkpoints, useful for
 tracking performance improvements during training.
 
-用法：
-    # 評估OLMo-2-1124-7B across multiple checkpoints
+Usage: 
+    # EvaluateOLMo-2-1124-7B across multiple checkpoints
     python scripts/eval_across_checkpoints.py \
         --model_id allenai/OLMo-2-1124-7B \
-        --checkpoints step10000-tokens42B step50000-tokens210B 主要 \
-        --output_path 結果/olmo2_7b_progression \
-        --任務 basic_arithmetic copying simple_icl
+        --checkpoints step10000-tokens42B step50000-tokens210B Main \
+        --output_path results/olmo2_7b_progression \
+        --task basic_arithmetic copying simple_icl
 
-    # Or from a json 設定 檔案
+    # Or from a json configuration file
     python scripts/eval_across_checkpoints.py \
         --model_configs configs/model_checkpoints.json \
-        --output_path 結果/multi_model_eval
+        --output_path results/multi_model_eval
 """
 
 import os
@@ -32,7 +32,7 @@ from tasks.registry import TaskRegistry
 
 
 def sanitize_task_name(task_name: str, spaced: bool = False) -> str:
-    """Sanitize 任務 名稱 for use in 檔案 路徑 (replace : with _)."""
+    """Sanitize task name for use in file path (replace : with _)."""
     sanitized = task_name.replace(':', '_').replace(',', '_')
     if spaced:
         sanitized += "_spaced"
@@ -40,20 +40,20 @@ def sanitize_task_name(task_name: str, spaced: bool = False) -> str:
 
 
 def check_existing_results(output_dir: Path, model_id: str, checkpoint: str, task_name: str):
-    """檢查if 結果 already exist and 載入them 若可用.
+    """Check if results already exist and Loadthem if available.
     
-    Looks for detailed JSONL 檔案 with per-category 結果.
+    Looks for detailed JSONL file with per-category results.
     """
     model_name = model_id.replace('/', '_')
     chkpt_name = checkpoint.replace('/', '_')
     task_name_safe = sanitize_task_name(task_name)
     
-    # 檢查for 新的 detailed 預測 檔案 (per-category or single)
+    # Check for new detailed predictions file (per-category or single)
     # Pattern: {model}_{checkpoint}_{task}_detailed.jsonl or {model}_{checkpoint}_{task}_{category}_detailed.jsonl
     detailed_pattern = f"{model_name}_{chkpt_name}_{task_name_safe}*_detailed.jsonl"
     detailed_files = list(output_dir.glob(detailed_pattern))
     
-    # Also 檢查for 舊的 格式化for backwards compatibility
+    # Also Check for old Formatfor backwards compatibility
     old_predictions_file = output_dir / f"{model_name}_{chkpt_name}_{task_name_safe}.jsonl"
     
     if not detailed_files and (not old_predictions_file.exists() or old_predictions_file.stat().st_size == 0):
@@ -65,7 +65,7 @@ def check_existing_results(output_dir: Path, model_id: str, checkpoint: str, tas
         num_correct = 0
         
         if detailed_files:
-            # 載入from 新的 detailed 格式
+            # Load from new detailed format
             for detailed_file in detailed_files:
                 with open(detailed_file, 'r') as f:
                     for line in f:
@@ -76,7 +76,7 @@ def check_existing_results(output_dir: Path, model_id: str, checkpoint: str, tas
             
             print(f"  ✓ Found cached results: {num_correct}/{len(predictions)} correct ({len(detailed_files)} files)")
         else:
-            # 載入from 舊的 格式
+            # Load from old format
             with open(old_predictions_file, 'r') as f:
                 for line in f:
                     predictions.append(json.loads(line))
@@ -85,14 +85,14 @@ def check_existing_results(output_dir: Path, model_id: str, checkpoint: str, tas
         if len(predictions) == 0:
             return None
         
-        # Reconstruct metrics from 預測
+        # Reconstruct metrics from predictions
         metrics = {
             "cached": True,
             "predictions_file": str(detailed_files[0] if detailed_files else old_predictions_file),
             "num_predictions": len(predictions)
         }
         
-        # Add 準確率 if we have 正確 field
+        # Add accuracy if we have correct field
         if detailed_files and len(predictions) > 0:
             metrics["accuracy"] = num_correct / len(predictions)
             metrics["correct"] = num_correct
@@ -118,9 +118,9 @@ def run_single_evaluation(
     spaced: bool = False,
     quantization: str = None,
 ) -> Dict[str, Any]:
-    """Run 評估 for a single 模型 checkpoint."""
+    """Run Evaluate for a single model checkpoint."""
     
-    # 建立checkpoint-特定 輸出 目錄
+    # Buildcheckpoint-specific output directory
     chkpt_name = checkpoint.replace('/', '_')
     output_dir = output_base / f"{model_id.split('/')[-1]}_{chkpt_name}"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -131,7 +131,7 @@ def run_single_evaluation(
     print(f"Spaced mode: {spaced}")
     print(f"{'='*70}")
     
-    # 初始化evaluator for continuous metrics (reuse across 任務)
+    # Initialize evaluator for continuous metrics (reuse across task)
     evaluator = None
     if eval_mode in ["continuous", "all"]:
         from tasks.evaluator import TaskEvaluator, ModelConfig, EvaluationConfig
@@ -152,7 +152,7 @@ def run_single_evaluation(
         )
         evaluator = TaskEvaluator(model_config, eval_config)
 
-    # 載入model once and reuse across all 任務 for this checkpoint
+    # Load the model once and reuse across all task for this checkpoint
     # (avoids repeated init/teardown overhead)
     vllm_model = None
     hf_model = None
@@ -169,7 +169,7 @@ def run_single_evaluation(
             trust_remote_code=True,
             quantization=quantization,
             gpu_memory_utilization=0.9,
-            max_model_len=1024,  # 提示 are short; avoids KV cache OOM on large 模型
+            max_model_len=1024,  # prompt are short; avoids KV cache OOM on large model
             dtype="bfloat16",  # avoid float16 overflow (NaN logits) at early K2-V2 checkpoints
         )
     elif eval_mode == "exact_match" and not load_vllm:
@@ -182,10 +182,10 @@ def run_single_evaluation(
         display_name = f"{task_name} (spaced)" if spaced else task_name
         print(f"\n[{i}/{len(tasks)}] Task: {display_name}")
 
-        # Use sanitized 任務 名稱 for 檔案 操作
+        # Use sanitized task name for file operation
         task_name_sanitized = sanitize_task_name(task_name, spaced=spaced)
 
-        # 檢查for existing 結果
+        # Check for existing results
         if skip_existing:
             existing_metrics = check_existing_results(output_dir, model_id, checkpoint, task_name_sanitized)
             if existing_metrics is not None:
@@ -202,7 +202,7 @@ def run_single_evaluation(
 
         try:
             if eval_mode == "exact_match":
-                # Use original evaluate_model for 完全匹配 only
+                # Use original evaluate_model for exact-match only
                 from models.evaluate_models import evaluate_model
                 metrics = evaluate_model(
                     model_id=model_id,
@@ -219,7 +219,7 @@ def run_single_evaluation(
                     tokenizer=hf_tokenizer,
                 )
             else:
-                # Use 新的 evaluator for continuous/all modes
+                # Use new evaluator for continuous/all modes
                 from tasks.registry import get_task
                 task = get_task(task_name, spaced=spaced)
                 eval_result = evaluator.evaluate_task(task, split="test")
@@ -257,8 +257,8 @@ def run_single_evaluation(
                 "cached": False,
             })
     
-    # CRITICAL CLEANUP: Destroy vLLM engine to free GPU 記憶 and tear down
-    # distributed 處理 群組 before the 下一個 checkpoint iteration.
+    # CRITICAL CLEANUP: Destroy vLLM engine to free GPU memory and tear down
+    # distributed processing group before the next checkpoint iteration.
     # Without this, gloo/nccl can fail to rebind on subsequent inits.
     if vllm_model is not None:
         import gc
@@ -321,7 +321,7 @@ def main():
         epilog=__doc__
     )
     
-    # 模型 specification (either individual or 設定 檔案)
+    # model specification (either individual or configuration file)
     parser.add_argument("--model_id", type=str,
                         help="Single model identifier (HuggingFace model ID)")
     parser.add_argument("--checkpoints", nargs="+",
@@ -329,7 +329,7 @@ def main():
     parser.add_argument("--model_configs", type=str,
                         help="JSON file with model->checkpoints mapping")
     
-    # 評估 settings
+    # Evaluate settings
     parser.add_argument("--output_path", type=str, default="results/checkpoint_eval",
                         help="Base directory to save results")
     parser.add_argument("--tasks", nargs="+", default=None,
@@ -354,7 +354,7 @@ def main():
 
     args = parser.parse_args()
     
-    # 驗證 輸入
+    # Validate input
     if args.model_configs:
         with open(args.model_configs, 'r') as f:
             model_configs = json.load(f)
@@ -363,11 +363,11 @@ def main():
     else:
         parser.error("Must provide either --model_configs or both --model_id and --checkpoints")
     
-    # 建立輸出目錄
+    # Build the output directory
     output_base = Path(args.output_path)
     output_base.mkdir(parents=True, exist_ok=True)
     
-    # 儲存run 設定
+    # Storerun configuration
     run_config = {
         "model_configs": model_configs,
         "tasks": args.tasks,
@@ -396,7 +396,7 @@ def main():
     print(f"  spaced: {args.spaced}")
     print(f"  quantization: {args.quantization}")
     
-    # Discover 任務
+    # Discover task
     print("\n" + "="*70)
     print("DISCOVERING TASKS")
     print("="*70)
@@ -404,7 +404,7 @@ def main():
     registry = TaskRegistry()
     all_tasks = registry.discover_tasks()
     
-    # 篩選 任務. 支援 subtask syntax '任務:sub1,sub2' by matching 基礎 任務 名稱.
+    # filter task. supports subtask syntax 'Task:sub1,sub2' by matching Base task name.
     def _base_name(spec: str) -> str:
         return spec.split(':', 1)[0] if isinstance(spec, str) and ':' in spec else spec
 
@@ -461,12 +461,12 @@ def main():
             )
             all_results.append(result)
     
-    # 建立summary DataFrames
+    # Buildsummary DataFrames
     print("\n" + "="*70)
     print("CREATING SUMMARY")
     print("="*70)
     
-    # Count cached vs 新的 evaluations
+    # Count cached vs new evaluations
     total_evals = sum(len(r['results']) for r in all_results)
     cached_evals = sum(1 for r in all_results for t in r['results'] if t.get('cached', False))
     new_evals = total_evals - cached_evals
@@ -477,7 +477,7 @@ def main():
     print(f"  🔄 Newly evaluated: {new_evals}")
     print(f"  Time saved: ~{cached_evals * 3} minutes (est.)")
     
-    # Flatten 結果 for detailed CSV
+    # Flatten results for detailed CSV
     detailed_rows = []
     for eval_result in all_results:
         for task_result in eval_result['results']:
@@ -496,8 +496,8 @@ def main():
     
     detailed_df = pd.DataFrame(detailed_rows)
     
-    # 建立task-特定 suffix for 輸出 檔案 to avoid overwriting
-    # When running single 任務 (common in array jobs), include 任務 名稱 in filename
+    # Buildtask-specific suffix for output file to avoid overwriting
+    # When running single task (common in array jobs), include task name in filename
     if len(task_names) == 1:
         task_suffix = f"_{sanitize_task_name(task_names[0])}"
     else:
@@ -507,7 +507,7 @@ def main():
     detailed_df.to_csv(detailed_path, index=False)
     print(f"✓ Detailed results saved to: {detailed_path}")
     
-    # 建立pivot table for easy comparison (準確率)
+    # Buildpivot table for easy comparison (accuracy)
     if 'accuracy' in detailed_df.columns:
         pivot_df = detailed_df.pivot_table(
             index=['model', 'checkpoint'],
@@ -519,13 +519,13 @@ def main():
         pivot_df.to_csv(pivot_path)
         print(f"✓ Accuracy pivot table saved to: {pivot_path}")
         
-        # Print 摘要
+        # Print summary
         print("\n" + "="*70)
         print("ACCURACY SUMMARY")
         print("="*70)
         print(pivot_df.to_string())
     
-    # 建立pivot table for loss (continuous metrics)
+    # Buildpivot table for loss (continuous metrics)
     if 'mean_loss' in detailed_df.columns:
         loss_pivot_df = detailed_df.pivot_table(
             index=['model', 'checkpoint'],
@@ -537,13 +537,13 @@ def main():
         loss_pivot_df.to_csv(loss_pivot_path)
         print(f"✓ Loss pivot table saved to: {loss_pivot_path}")
         
-        # Print 摘要
+        # Print summary
         print("\n" + "="*70)
         print("LOSS SUMMARY (lower is better)")
         print("="*70)
         print(loss_pivot_df.to_string())
     
-    # Success 摘要
+    # Success summary
     success_df = detailed_df.groupby(['model', 'checkpoint'])['success'].agg(['sum', 'count'])
     success_df['success_rate'] = success_df['sum'] / success_df['count']
     
@@ -554,10 +554,10 @@ def main():
     
     print(f"\n💾 All results saved to: {output_base}")
     
-    # 生成plots if matplotlib is 可用
+    # Generateplots if matplotlib is available
     try:
         import matplotlib
-        matplotlib.use('Agg')  # Use non-interactive 後端
+        matplotlib.use('Agg')  # Use non-interactive backend
         from scripts.plot_checkpoint_results import prepare_plot_data, plot_all_tasks_overview, plot_task_progression
         
         print("\n" + "="*70)
@@ -567,14 +567,14 @@ def main():
         plot_dir = output_base / "plots"
         plot_dir.mkdir(exist_ok=True)
         
-        # Prepare 資料
+        # Prepare data
         plot_df = detailed_df[detailed_df['success'] == True].copy()
         
         if len(plot_df) > 0:
             plot_df = prepare_plot_data(plot_df)
             tasks = plot_df['task'].unique()
             
-            # === 準確率 PLOTS ===
+            # === accuracy PLOTS ===
             if 'accuracy' in plot_df.columns:
                 print("\n📊 Creating accuracy plots...")
                 
@@ -588,7 +588,7 @@ def main():
                     style='seaborn',
                 )
                 
-                # Individual 任務 plots
+                # Individual task plots
                 print(f"  Creating {len(tasks)} individual accuracy plots...")
                 for task in tasks:
                     task_path = plot_dir / f"{task}_accuracy.png"
@@ -616,7 +616,7 @@ def main():
                     style='seaborn',
                 )
                 
-                # Individual 任務 loss plots
+                # Individual task loss plots
                 print(f"  Creating {len(tasks)} individual loss plots...")
                 for task in tasks:
                     task_path = plot_dir / f"{task}_loss.png"
@@ -644,7 +644,7 @@ def main():
                     style='seaborn',
                 )
                 
-                # Individual 任務 perplexity plots
+                # Individual task perplexity plots
                 print(f"  Creating {len(tasks)} individual perplexity plots...")
                 for task in tasks:
                     task_path = plot_dir / f"{task}_perplexity.png"

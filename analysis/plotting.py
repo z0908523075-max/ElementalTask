@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Plotting script for analyzing checkpoint performance curves from measure_ckpt_interp_perf.py 結果.
+Plotting script for analyzing checkpoint performance curves from measure_ckpt_interp_perf.py results.
 
-This script creates performance curves showing how different interpretation 任務 evolve
-across 模型 checkpoints during training.
+This script creates performance curves showing how different interpretation task evolve
+across model checkpoints during training.
 """
 
 import pandas as pd
@@ -20,12 +20,12 @@ sns.set_palette("husl")
 
 def extract_checkpoint_info(checkpoint_name: str) -> Tuple[int, str, Optional[float]]:
     """
-    擷取 sorting key, display 名稱, and FLOPs from checkpoint 名稱.
+    Extract sorting key, display name, and FLOPs from checkpoint name.
     
-    參數：
-        checkpoint_name: 名稱 of the checkpoint
+    Args: 
+        checkpoint_name: name of the checkpoint
         
-    回傳：
+    Returns: 
         Tuple of (sort_key, display_name, flops_in_billions)
     """
     # Handle OLMo-style: stage1-step140000-tokens294B
@@ -37,8 +37,8 @@ def extract_checkpoint_info(checkpoint_name: str) -> Tuple[int, str, Optional[fl
         sort_key = stage * 10000000 + step  # Ensure stage ordering
         display_name = f"S{stage}-{tokens}B"
         # Estimate FLOPs: 6 * num_params * num_tokens
-        # Assuming OLMo-2 7B 模型: 7B params
-        flops = 6 * 7 * tokens  # 結果 in 10^21 FLOPs
+        # Assuming OLMo-2 7B model: 7B params
+        flops = 6 * 7 * tokens  # results in 10^21 FLOPs
         return sort_key, display_name, flops
     
     # Handle Crystal-style: CrystalCoder_phase1_checkpoint_055500
@@ -55,31 +55,31 @@ def extract_checkpoint_info(checkpoint_name: str) -> Tuple[int, str, Optional[fl
     step_match = re.search(r'step(\d+)', checkpoint_name.lower())
     if step_match:
         step = int(step_match.group(1))
-        # Try to 擷取 tokens if present
+        # Try to Extract tokens if present
         token_match = re.search(r'tokens(\d+)', checkpoint_name.lower())
         if token_match:
             tokens = int(token_match.group(1))
             display_name = f"{tokens}B"
-            # Estimate FLOPs (need to know 模型 size, assuming 7B)
+            # Estimate FLOPs (need to know model size, assuming 7B)
             flops = 6 * 7 * tokens
         else:
             display_name = f"Step {step}"
             flops = None
         return step, display_name, flops
     
-    # Fallback: use the checkpoint 名稱 as-is
+    # Fallback: use the checkpoint name as-is
     return 0, checkpoint_name, None
 
 def load_and_prepare_data(csv_path: str, model_params_b: float = 7.0) -> pd.DataFrame:
-    """載入CSV 資料 and prepare it for plotting.
+    """LoadCSV data and prepare it for plotting.
     
-    參數：
-        csv_path: 路徑 to CSV 檔案
-        model_params_b: 模型 parameters in billions (預設: 7.0 for OLMo-2 7B)
+    Args: 
+        csv_path: path to CSV file
+        model_params_b: model parameters in billions (default: 7.0 for OLMo-2 7B)
     """
     df = pd.read_csv(csv_path)
     
-    # 擷取 checkpoint information for sorting and display
+    # Extract checkpoint information for sorting and display
     checkpoint_info = [extract_checkpoint_info(ckpt) for ckpt in df['checkpoint']]
     df['sort_key'] = [info[0] for info in checkpoint_info]
     df['display_name'] = [info[1] for info in checkpoint_info]
@@ -95,26 +95,26 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
                           task_groups: Optional[List[List[str]]] = None,
                           x_axis: str = 'checkpoint'):
     """
-    Plot performance curves for all 任務.
+    Plot performance curves for all task.
     
-    參數：
-        df: DataFrame with checkpoint 結果
-        output_path: 路徑 to 儲存the plot
+    Args: 
+        df: DataFrame with checkpoint results
+        output_path: path to Storethe plot
         figsize: Figure size
-        task_groups: 可選grouping of 任務 for separate subplots
+        task_groups: optionalgrouping of task for separate subplots
         x_axis: 'checkpoint' or 'flops' for x-axis type
     """
-    # 取得task columns (excluding metadata columns)
+    # Get task columns (excluding metadata columns)
     task_columns = [col for col in df.columns 
                    if col not in ['checkpoint', 'sort_key', 'display_name', 'flops_1e21']]
     
     if task_groups is None:
-        # Single plot with all 任務
+        # Single plot with all task
         plt.figure(figsize=figsize)
         
-        # Determine x 值 based on axis type
+        # Determine x value based on axis type
         if x_axis == 'flops' and 'flops_1e21' in df.columns:
-            # 篩選 out rows without FLOP 資料 and sort by FLOPs
+            # filter out rows without FLOP data and sort by FLOPs
             df_plot = df.dropna(subset=['flops_1e21']).sort_values('flops_1e21')
             if df_plot.empty:
                 print("Warning: No FLOP data available. Falling back to checkpoint axis.")
@@ -125,7 +125,7 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
             df_plot = df
             x_values = range(len(df_plot))
         
-        # Plot each 任務
+        # Plot each task
         for task in task_columns:
             if x_axis == 'flops' and 'flops_1e21' in df.columns and not df_plot.empty:
                 plt.plot(x_values, df_plot[task], marker='o', label=task, linewidth=2, markersize=4)
@@ -157,7 +157,7 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
             plt.show()
     
     else:
-        # Multiple subplots for different 任務 群組
+        # Multiple subplots for different task group
         n_groups = len(task_groups)
         _, axes = plt.subplots(n_groups, 1, figsize=(figsize[0], figsize[1] * n_groups // 2))
         if n_groups == 1:
@@ -170,7 +170,7 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
             "Knowledge Tasks"
         ]
         
-        # Determine x 值 based on axis type
+        # Determine x value based on axis type
         if x_axis == 'flops' and 'flops_1e21' in df.columns:
             df_plot = df.dropna(subset=['flops_1e21']).sort_values('flops_1e21')
             if df_plot.empty:
@@ -216,9 +216,9 @@ def plot_performance_curves(df: pd.DataFrame, output_path: str = None,
             plt.show()
 
 def plot_task_categories(df: pd.DataFrame, output_path: str = None, x_axis: str = 'checkpoint'):
-    """Plot performance curves grouped by 任務 類別."""
+    """Plot performance curves grouped by task class."""
     
-    # Define 任務 群組
+    # Define task group
     task_groups = [
         ['uppercase', 'lowercase', 'first_letter', 'last_letter'],
         ['translate_eng_fr', 'translate_fr_eng', 'translate_eng_sp', 'translate_sp_eng'],
@@ -229,18 +229,18 @@ def plot_task_categories(df: pd.DataFrame, output_path: str = None, x_axis: str 
     plot_performance_curves(df, output_path, figsize=(14, 10), task_groups=task_groups, x_axis=x_axis)
 
 def plot_summary_stats(df: pd.DataFrame, output_path: str = None, x_axis: str = 'checkpoint'):
-    """Plot 摘要 statistics across checkpoints."""
-    # 取得task columns
+    """Plot summary statistics across checkpoints."""
+    # Get task columns
     task_columns = [col for col in df.columns 
                    if col not in ['checkpoint', 'sort_key', 'display_name', 'flops_1e21']]
     
-    # Calculate 摘要 stats
+    # Calculate summary stats
     df['mean_performance'] = df[task_columns].mean(axis=1)
     df['std_performance'] = df[task_columns].std(axis=1)
     df['min_performance'] = df[task_columns].min(axis=1)
     df['max_performance'] = df[task_columns].max(axis=1)
     
-    # Determine x 值 based on axis type
+    # Determine x value based on axis type
     if x_axis == 'flops' and 'flops_1e21' in df.columns:
         df_plot = df.dropna(subset=['flops_1e21']).sort_values('flops_1e21')
         if df_plot.empty:
@@ -321,7 +321,7 @@ def main():
     
     args = parser.parse_args()
     
-    # 載入and prepare 資料
+    # Loadand prepare data
     print(f"Loading data from {args.csv_path}")
     df = load_and_prepare_data(args.csv_path, model_params_b=args.model_params_b)
     print(f"Loaded {len(df)} checkpoints with {len([c for c in df.columns if c not in ['checkpoint', 'sort_key', 'display_name', 'flops_1e21']])} tasks")
@@ -330,10 +330,10 @@ def main():
         flop_count = df['flops_1e21'].notna().sum() if 'flops_1e21' in df.columns else 0
         print(f"Found FLOP data for {flop_count}/{len(df)} checkpoints")
     
-    # 建立輸出目錄
+    # Buildoutputdirectory
     os.makedirs(args.output_dir, exist_ok=True)
     
-    # 生成plots based on type
+    # Generateplots based on type
     base_name = os.path.splitext(os.path.basename(args.csv_path))[0]
     
     if args.plot_type in ['all', 'curves']:

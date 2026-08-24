@@ -1,4 +1,4 @@
-"""簡單 ICL 任務 實作 with category-based 示範."""
+"""simple ICL task implementation with category-based demonstration."""
 
 from typing import Dict, List, Any
 import pandas as pd
@@ -6,21 +6,21 @@ from ..base_task import BaseTask, TaskConfig
 
 
 class SimpleICLTask(BaseTask):
-    """用於simple in-context learning with category-based 示範."""
+    """forsimple in-context learning with category-based demonstration."""
     
-    TASK_NAME = "simple_icl"  # 自動註冊名稱
+    TASK_NAME = "simple_icl"  # automaticregistername
     
     def __init__(self, config: TaskConfig):
         super().__init__(config)
         
-        # Define hardcoded 示範 for each 類別
+        # Define hardcoded demonstration for each class
         import string
         import random
 
-        # 建立full alphabet 示範 for completeness.
-        # 打亂 with a fixed 種子 so the 5 shown demos are non-consecutive,
+        # Buildfull alphabet demonstration for completeness.
+        # shuffle with a fixed seed so the 5 shown demos are non-consecutive,
         # which eliminates the "consecutive alphabetic shift" ambiguity that
-        # arises when the 模型 always sees a->A, b->B, c->C, d->D, e->E.
+        # arises when the model always sees a->A, b->B, c->C, d->D, e->E.
         _rng = random.Random(42)
         uppercase_demos = [f"{ch.lower()} -> {ch}" for ch in string.ascii_uppercase]
         _rng.shuffle(uppercase_demos)
@@ -128,45 +128,45 @@ class SimpleICLTask(BaseTask):
         }
     
     def _load_data(self):
-        """載入data from CSV 檔案."""
+        """Loaddata from CSV file."""
         import pandas as pd
         
         if self.config.data_path:
             self.data = pd.read_csv(self.config.data_path)
         else:
-            # If no 資料 路徑, 建立empty DataFrame
+            # If no data path, Buildempty DataFrame
             self.data = pd.DataFrame(columns=[self.config.input_column, self.config.output_column])
     
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
-        """建立提示 with category-specific 示範.
+        """Build a prompt with category-specific demonstration.
         
-        參數：
-            實例: The 實例 to 建立提示 for
-            num_shots: 數字 of in-context learning 範例 (預設: 5)
+        Args: 
+            instance: The instance to Build a prompt for
+            num_shots: number of in-context learning example (default: 5)
         
-        回傳：
-            格式化 提示 字串
+        Returns: 
+            Format prompt string
         """
         category = instance.get('category_name', '')
         
-        # 檢查if we have 示範 in the 設定 (from 記憶體內 資料)
+        # Check if we have demonstration in the configuration (from in-memory data)
         if (self.config.in_memory_demonstrations and 
             isinstance(self.config.in_memory_demonstrations, dict)):
             demos = self.config.in_memory_demonstrations.get(category, [])
         else:
-            # Fallback to hardcoded 示範
+            # Fallback to hardcoded demonstration
             demos = self.category_demonstrations.get(category, [])
         
-        # Exclude 示範 that match the 當前 實例 輸入 to avoid leaking the test item
+        # Exclude demonstration that match the current instance input to avoid leaking the test item
         instance_input = instance.get(self.config.input_column, '')
         filtered_demos = []
         for d in demos:
-            # Each demo may be 格式化 like '輸入 -> 輸出'
+            # Each demo may be Format like 'input -> output'
             demo_input = d.split('->', 1)[0].strip()
             if demo_input != instance_input:
                 filtered_demos.append(d)
 
-        # Limit to num_shots 若有提供
+        # Limit to num_shots ifprovided
         if filtered_demos and num_shots > 0:
             demos = filtered_demos[:num_shots]
         else:
@@ -177,23 +177,23 @@ class SimpleICLTask(BaseTask):
             for demo in demos:
                 prompt += f"{demo}\n"
         
-        # Add the 當前 問題
+        # Add the current Question
         prompt += f"{instance[self.config.input_column]} ->"
         
         return prompt
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """以完全匹配準確率評估預測, including per-category metrics."""
+        """Evaluate predictions using exact-match accuracy, including per-category metrics."""
         ground_truth = self.get_ground_truth(split)
         task_data = self.get_split(split)
         
         if len(predictions) != len(ground_truth):
             raise ValueError(f"Prediction count ({len(predictions)}) doesn't match ground truth count ({len(ground_truth)})")
         
-        # 預處理 預測
+        # Preprocess predictions
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         
-        # Overall 準確率
+        # Overall accuracy
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
                      if pred.lower().strip() == gt.lower().strip())
         accuracy = correct / len(ground_truth)
@@ -204,7 +204,7 @@ class SimpleICLTask(BaseTask):
             "total": len(ground_truth)
         }
         
-        # Per-category 準確率
+        # Per-category accuracy
         category_stats = {}
         for pred, gt, item in zip(processed_predictions, ground_truth, task_data):
             category = item.get("category_name", "unknown")
@@ -215,7 +215,7 @@ class SimpleICLTask(BaseTask):
             if pred.lower().strip() == gt.lower().strip():
                 category_stats[category]["correct"] += 1
         
-        # Calculate per-category 準確率
+        # Calculate per-category accuracy
         for category, stats in category_stats.items():
             results[f"accuracy_{category}"] = stats["correct"] / stats["total"]
             results[f"correct_{category}"] = stats["correct"]

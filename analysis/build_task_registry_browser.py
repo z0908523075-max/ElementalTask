@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""建立a 靜態 HTML browser for auditing 任務 提示 and ICL 範例."""
+"""Builda static HTML browser for auditing task prompt and ICL example."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ from tasks.registry import get_task, get_task_info, list_all_tasks
 
 
 def serialize_value(value: Any) -> Any:
-    """轉換task 資料 to JSON-safe 值."""
+    """converttask data to JSON-safe value."""
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
     if isinstance(value, dict):
@@ -42,7 +42,7 @@ def serialize_value(value: Any) -> Any:
 
 
 def determine_num_shots(task: Any) -> int:
-    """Find the effective 預設number of shots for build_prompt()."""
+    """Find the effective defaultnumber of shots for build_prompt()."""
     signature = inspect.signature(task.build_prompt)
     param = signature.parameters.get("num_shots")
     if param is None or param.default is inspect._empty:
@@ -56,7 +56,7 @@ def determine_num_shots(task: Any) -> int:
 
 
 def determine_num_shots_from_data(task: Any, num_shots: int) -> int:
-    """Determine 預設num_shots from 任務's 資料, for CSV-based 任務."""
+    """Determine defaultnum_shots from task's data, for CSV-based task."""
     try:
         config = getattr(task, "config", None)
         if config and getattr(config, "data_format", None) == "csv":
@@ -130,7 +130,7 @@ def collect_task_records() -> List[Dict[str, Any]]:
             task_name = display_name.replace(" (spaced)", "")
             base_name = task_name.split(":", 1)[0]
             
-            # Skip 基礎 "simple_icl" and "compositional" 任務 (keep only variants with ":")
+            # Skip Base "simple_icl" and "compositional" task (keep only variants with ":")
             if base_name in ("simple_icl", "compositional") and ":" not in task_name:
                 continue
 
@@ -140,7 +140,7 @@ def collect_task_records() -> List[Dict[str, Any]]:
             example_instance = rows[0] if rows else None
             default_num_shots = determine_num_shots(task)
             
-            # For CSV-based 任務, adjust 預設shots based on 資料 size
+            # For CSV-based task, adjust defaultshots based on data size
             default_num_shots = determine_num_shots_from_data(task, default_num_shots)
             
             example_prompt = safe_build_prompt(task, example_instance, 0)

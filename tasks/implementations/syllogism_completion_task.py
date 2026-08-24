@@ -1,17 +1,17 @@
-"""Syllogism Completion 任務 based on Lampinen & Dasgupta (2024) (https://arxiv.org/pdf/2207.07051).
-This test deductive 推理, understanding of quantifiers, and 邏輯 operators.
+"""Syllogism Completion task based on Lampinen & Dasgupta (2024) (https://arxiv.org/pdf/2207.07051).
+This test deductive reasoning, understanding of quantifiers, and logical operators.
 It also requires some exact copying of spans.
 
-任務: Given two premises, provide the conclusion
-格式: 
-    輸入: [major premise] [minor premise] 
-    輸出: [conclusion]
+Task: Given two premises, provide the conclusion
+Format: 
+    input: [major premise] [minor premise] 
+    output: [conclusion]
 
-範例: 
-    輸入: All men are mortal. Socrates is a man. 
-    輸出: Socrates is mortal.
+Example: 
+    input: All men are mortal. Socrates is a man. 
+    output: Socrates is mortal.
 
-Following Lampinen & Dasgupta (2024), we provide three 類別 that differ on consistency with typicality/world knowledge:
+Following Lampinen & Dasgupta (2024), we provide three class that differ on consistency with typicality/world knowledge:
     - consistent
     - violate
     - nonce
@@ -22,7 +22,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class SyllogismCompletionTask(BaseTask):
-    """Syllogism completion 任務"""
+    """Syllogism completion task"""
 
     TASK_NAME = "syllogism_completion"
 
@@ -181,7 +181,7 @@ def create_syllogism_completion_task(
     category: str = None,
     name: str = "syllogism_completion",
 ) -> SyllogismCompletionTask:
-    """建立一個SyllogismCompletionTask, optionally 已篩選 to one 類別."""
+    """Create a SyllogismCompletionTask, optionally filtered to one class."""
     data = None
     if category and category in SyllogismCompletionTask.CATEGORY_DATA:
         data = [

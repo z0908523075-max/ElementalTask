@@ -7,14 +7,14 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class TokenReversalTask(BaseTask):
-    """用於reversing 輸入 詞 or 字串."""
-    TASK_NAME = "token_reversal"  # 自動發現鍵
+    """forreversing input word or string."""
+    TASK_NAME = "token_reversal"  # automatic discovery key
 
     def __init__(self, config: TaskConfig):
         super().__init__(config)
 
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """以完全匹配準確率評估預測 (不區分大小寫, 去除首尾空白)."""
+        """Evaluate predictions using exact-match accuracy (case-insensitive, trim leading and trailing whitespace)."""
         ground_truth = self.get_ground_truth(split)
 
         if len(predictions) != len(ground_truth):
@@ -42,9 +42,9 @@ def create_token_reversal_task(
     name: str = "token_reversal",
 ) -> TokenReversalTask:
     """
-    建立一個TokenReversalTask 實例.
+    Create a TokenReversalTask instance.
 
-    Since this is an ICL 任務, we pass 範例 directly as 記憶體內 資料 and rely on BaseTask.
+    Since this is an ICL task, we pass example directly as in-memory data and rely on BaseTask.
     """
     default_examples: List[Dict[str, str]] = [
         {"input": "cat", "output": "tac"},

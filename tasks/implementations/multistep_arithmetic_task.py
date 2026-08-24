@@ -1,18 +1,18 @@
-"""多步驟 算術 — chained computation primitive.
+"""multi-step arithmetic — chained computation primitive.
 
-Tests the 模型's ability to perform sequential 算術 操作,
-a prerequisite for GSM8k-style 數學 推理.
+Tests the model's ability to perform sequential arithmetic operation,
+a prerequisite for GSM8k-style math reasoning.
 
-類別：
+Categories: 
   - two_step:  "3 + 4, then multiply by 2" → "14"
   - three_step: "Start with 10, subtract 3, then multiply by 4" → "28"
 
-All operands and 結果 are small positive integers (≤200) to keep the
-任務 about *chaining* rather than large-number 算術.
+All operands and results are small positive integers (≤200) to keep the
+task about *chaining* rather than large-number arithmetic.
 
-格式化(ICL):
-    輸入: 3 + 4, then multiply by 2
-    輸出: 14
+Format (ICL):
+    input: 3 + 4, then multiply by 2
+    output: 14
 """
 
 import random
@@ -22,7 +22,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class MultistepArithmeticTask(BaseTask):
-    """多步驟 (chained) 算術 任務."""
+    """multi-step (chained) arithmetic task."""
 
     TASK_NAME = "multistep_arithmetic"
 
@@ -125,7 +125,7 @@ class MultistepArithmeticTask(BaseTask):
         return prompt
 
     def _extract_number(self, text: str) -> str:
-        """擷取 the 第一個 數字 (integer) from 模型 輸出."""
+        """Extract the first number (integer) from model output."""
         import re
         text = text.strip()
         match = re.search(r'-?\d+', text)
@@ -174,7 +174,7 @@ def create_multistep_arithmetic_task(
     category: str = None,
     name: str = "multistep_arithmetic",
 ) -> MultistepArithmeticTask:
-    """建立一個MultistepArithmeticTask, optionally 已篩選 to one 類別."""
+    """Create a MultistepArithmeticTask, optionally filtered to one class."""
     data = None
     if category and category in MultistepArithmeticTask.CATEGORY_DATA:
         data = [

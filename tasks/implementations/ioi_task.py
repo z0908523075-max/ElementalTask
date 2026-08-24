@@ -1,4 +1,4 @@
-"""間接受詞識別 (代詞消解) 用於identifying 正確 referents in 上下文 using mib-bench/ioi 資料集."""
+"""indirect object identification (pronoun resolution) for identifying correct referents in context using mib-bench/ioi dataset."""
 
 from typing import Dict, List, Any
 import re
@@ -8,20 +8,20 @@ from datasets import load_dataset
 
 
 class IOITask(BaseTask):
-    """用於間接受詞識別 using IOI 資料集 from mib-bench/ioi."""
+    """forindirect object identification using IOI dataset from mib-bench/ioi."""
 
-    TASK_NAME = "ioi_task"  # 自動發現鍵
+    TASK_NAME = "ioi_task"  # automatic discovery key
     
     def __init__(self, config: TaskConfig):
         super().__init__(config)
     pass
     
     def _load_data(self):
-        """載入IOI (間接受詞識別) 資料集 from mib-bench."""
+        """LoadIOI (indirect object identification) dataset from mib-bench."""
         self.data = load_dataset("mib-bench/ioi")
 
     def get_icl_examples(self, num_examples: int = 10, shuffle: bool = True, seed: int = None, fresh: bool = True) -> List[Dict[str, str]]:
-        """回傳ICL 範例 for IOI-style 資料 using the test 切分."""
+        """ReturnsICL example for IOI-style data using the test split."""
         data = self.get_split("test")
         if not data:
             return []
@@ -45,24 +45,24 @@ class IOITask(BaseTask):
         return examples
 
     def get_split(self, split: str = "test") -> List[Dict[str, Any]]:
-        """取得data 切分 for 評估."""
+        """Get data split for Evaluate."""
         if split in self.data:
             split_data = self.data[split]
-            # 轉換to 列表 of dictionaries
+            # convertto list of dictionaries
             return [dict(example) for example in split_data]
         elif hasattr(self.data, 'to_dict'):
             return self.data.to_dict('records')
         return self.data if isinstance(self.data, list) else []
     
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
-        """建立提示 for 代詞消解 problems.
+        """Build a prompt for pronoun resolution problems.
         
-        參數：
-            實例: The 實例 to 建立提示 for
-            num_shots: 數字 of in-context learning 範例 (預設: 5)
+        Args: 
+            instance: The instance to Build a prompt for
+            num_shots: number of in-context learning example (default: 5)
         
-        回傳：
-            格式化 提示 字串
+        Returns: 
+            Format prompt string
         """
         prompt_text = instance.get('prompt', '')
 
@@ -92,7 +92,7 @@ class IOITask(BaseTask):
         return "\n\n".join(sections)
     
     def evaluate(self, predictions: List[str], split: str = "test", **kwargs) -> Dict[str, float]:
-        """評估間接受詞識別 預測."""
+        """Evaluateindirect object identification predictions."""
         data = self.get_split(split)
         
         if len(predictions) != len(data):
@@ -106,21 +106,21 @@ class IOITask(BaseTask):
         detailed_results = []
         
         for pred, example in zip(predictions, data):
-            # 取得correct 答案 from the choices and answer_index
+            # Get correct Answer from the choices and answer_index
             choices = example.get('choices', [])
             answer_index = example.get('answer_index', 0)
             
             if choices and 0 <= answer_index < len(choices):
                 expected = choices[answer_index]
             else:
-                # Fallback to other possible 答案 fields
+                # Fallback to other possible Answer fields
                 expected = example.get('answer', example.get('correct_answer', ''))
             
-            # 擷取 名稱 from 預測 and expected 答案
+            # Extract name from predictions and expected Answer
             pred_name = self._extract_name(pred)
             expected_name = self._extract_name(expected)
             
-            # 檢查if 預測 matches expected 答案
+            # Check if predictions matches expected Answer
             is_correct = (pred_name is not None and 
                          expected_name is not None and 
                          pred_name.lower() == expected_name.lower())
@@ -147,7 +147,7 @@ class IOITask(BaseTask):
         }
     
     def _extract_name(self, text: str) -> str:
-        """擷取 the 名稱 from 文字, handling various response formats."""
+        """Extract the name from text, handling various response formats."""
         if not text:
             return None
         
@@ -155,9 +155,9 @@ class IOITask(BaseTask):
         
         # Common patterns in responses
         patterns = [
-            r'^([A-Z][a-z]+)(?:\s|$)',  # 名稱 at start
+            r'^([A-Z][a-z]+)(?:\s|$)',  # name at start
             r'(?:is|answer|name)?\s*:?\s*([A-Z][a-z]+)',  # After common prefixes
-            r'([A-Z][a-z]+)(?:\s*\.?\s*$)',  # 名稱 at end
+            r'([A-Z][a-z]+)(?:\s*\.?\s*$)',  # name at end
         ]
         
         for pattern in patterns:
@@ -165,13 +165,13 @@ class IOITask(BaseTask):
             if match:
                 return match.group(1)
         
-        # Fallback: look for any capitalized 詞 that could be a 名稱
+        # Fallback: look for any capitalized word that could be a name
         words = text.split()
         for word in words:
-            # Remove punctuation and 檢查if it's a likely 名稱
+            # Remove punctuation and Check if it's a likely name
             clean_word = re.sub(r'[^\w]', '', word)
             if clean_word and clean_word[0].isupper() and clean_word.isalpha():
-                # Additional check: common English 名稱 are typically 3+ 字元
+                # Additional check: common English name are typically 3+ character
                 if len(clean_word) >= 3:
                     return clean_word
         
@@ -181,14 +181,14 @@ class IOITask(BaseTask):
 def create_ioi_task(
     name: str = "ioi_task"
 ) -> IOITask:
-    """建立一個IOITask 實例 using mib-bench/ioi 資料集."""
+    """Create a IOITask instance using mib-bench/ioi dataset."""
     config = TaskConfig(
         name=name,
         description="Indirect Object Identification (IOI) evaluation task using mib-bench/ioi dataset",
         data_format="huggingface",
-        data_path="mib-bench/ioi",  # HuggingFace 資料集 名稱
+        data_path="mib-bench/ioi",  # HuggingFace dataset name
         input_column="prompt",  # The incomplete sentence
-        output_column="choices",  # 列表 of choices, use with answer_index
+        output_column="choices",  # list of choices, use with answer_index
         evaluation_metrics=["accuracy"],
         metadata={
             "task_type": "pronoun_resolution", 

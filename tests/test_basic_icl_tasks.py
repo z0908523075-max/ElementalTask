@@ -1,5 +1,5 @@
 """
-Test basic ICL 任務 for function vector basis formation and PCA analysis.
+Test basic ICL task for function vector basis formation and PCA analysis.
 """
 import pytest
 import torch
@@ -22,7 +22,7 @@ from function_vecs.extract_function_vecs import (
 
 
 class SimpleArithmeticTask(BaseTask):
-    """Basic addition 任務: a + b = c"""
+    """Basic addition Task: a + b = c"""
     
     def __init__(self):
         config = TaskConfig(
@@ -34,7 +34,7 @@ class SimpleArithmeticTask(BaseTask):
         super().__init__(config)
         
     def get_split(self, split_name: str):
-        # 生成simple addition problems
+        # Generate simple addition problems
         data = []
         for a in range(1, 6):
             for b in range(1, 6):
@@ -46,13 +46,13 @@ class SimpleArithmeticTask(BaseTask):
         return data[:20]  # Keep it small
     
     def build_prompt(self, row):
-        # ICL 格式化with 2 示範
+        # ICL Formatwith 2 demonstration
         prompt = "3 + 2 -> 5\n4 + 1 -> 5\n"
         prompt += f"{row['input']} ->"
         return prompt
     
     def evaluate(self, predictions, split="test", **kwargs):
-        """簡單 完全匹配 評估."""
+        """simple exact-match Evaluate."""
         ground_truth = self.get_ground_truth(split)
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
@@ -61,7 +61,7 @@ class SimpleArithmeticTask(BaseTask):
 
 
 class SimpleNegationTask(BaseTask):
-    """Basic negation 任務: not X = Y"""
+    """Basic negation Task: not X = Y"""
     
     def __init__(self):
         config = TaskConfig(
@@ -73,7 +73,7 @@ class SimpleNegationTask(BaseTask):
         super().__init__(config)
         
     def get_split(self, split_name: str):
-        # 簡單 yes/no negation
+        # simple yes/no negation
         data = [
             {"input": "yes", "output": "no"},
             {"input": "no", "output": "yes"},
@@ -89,13 +89,13 @@ class SimpleNegationTask(BaseTask):
         return data
     
     def build_prompt(self, row):
-        # ICL 格式
+        # ICL format
         prompt = "yes -> no\ntrue -> false\n"
         prompt += f"{row['input']} ->"
         return prompt
     
     def evaluate(self, predictions, split="test", **kwargs):
-        """簡單 完全匹配 評估."""
+        """simple exact-match Evaluate."""
         ground_truth = self.get_ground_truth(split)
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
@@ -104,7 +104,7 @@ class SimpleNegationTask(BaseTask):
 
 
 class SimpleCapitalizationTask(BaseTask):
-    """Basic capitalization 任務: lowercase -> UPPERCASE"""
+    """Basic capitalization Task: lowercase -> UPPERCASE"""
     
     def __init__(self):
         config = TaskConfig(
@@ -131,7 +131,7 @@ class SimpleCapitalizationTask(BaseTask):
         return prompt
     
     def evaluate(self, predictions, split="test", **kwargs):
-        """簡單 完全匹配 評估."""
+        """simple exact-match Evaluate."""
         ground_truth = self.get_ground_truth(split)
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
@@ -140,7 +140,7 @@ class SimpleCapitalizationTask(BaseTask):
 
 
 class SimpleRhymingTask(BaseTask):
-    """Basic rhyming 任務: cat -> bat, dog -> log"""
+    """Basic rhyming Task: cat -> bat, dog -> log"""
     
     def __init__(self):
         config = TaskConfig(
@@ -178,7 +178,7 @@ class SimpleRhymingTask(BaseTask):
         return prompt
     
     def evaluate(self, predictions, split="test", **kwargs):
-        """簡單 完全匹配 評估."""
+        """simple exact-match Evaluate."""
         ground_truth = self.get_ground_truth(split)
         processed_predictions = [self.preprocess_prediction(pred) for pred in predictions]
         correct = sum(1 for pred, gt in zip(processed_predictions, ground_truth) 
@@ -187,7 +187,7 @@ class SimpleRhymingTask(BaseTask):
 
 
 class FirstCharacterTask(BaseTask):
-    """擷取 第一個 字元: hello -> h"""
+    """Extract first character: hello -> h"""
     
     def __init__(self):
         config = TaskConfig(
@@ -222,7 +222,7 @@ class FirstCharacterTask(BaseTask):
 
 
 class LastCharacterTask(BaseTask):
-    """擷取 最後一個 字元: hello -> o"""
+    """Extract last character: hello -> o"""
     
     def __init__(self):
         config = TaskConfig(
@@ -257,7 +257,7 @@ class LastCharacterTask(BaseTask):
 
 
 class ReverseStringTask(BaseTask):
-    """Reverse 字串: cat -> tac"""
+    """Reverse string: cat -> tac"""
     
     def __init__(self):
         config = TaskConfig(
@@ -328,7 +328,7 @@ class VowelCountTask(BaseTask):
 
 
 class StringLengthTask(BaseTask):
-    """字串 length: cat -> 3"""
+    """string length: cat -> 3"""
     
     def __init__(self):
         config = TaskConfig(
@@ -363,7 +363,7 @@ class StringLengthTask(BaseTask):
 
 
 class AddOneTask(BaseTask):
-    """Add one to 數字: 5 -> 6"""
+    """Add one to number: 5 -> 6"""
     
     def __init__(self):
         config = TaskConfig(
@@ -399,9 +399,9 @@ class AddOneTask(BaseTask):
 
 @pytest.mark.integration
 def test_basic_function_vector_extraction():
-    """Test extracting function vectors from basic ICL 任務."""
+    """Test extracting function vectors from basic ICL task."""
     
-    # Use tiny 模型 for speed
+    # Use tiny model for speed
     config = ExtractConfig(
         model_name="distilgpt2",
         device="cpu",  # Force CPU to avoid CUDA issues
@@ -411,16 +411,16 @@ def test_basic_function_vector_extraction():
         topk_heads=4
     )
     
-    # 載入model once
+    # Loadmodel once
     tokenizer = AutoTokenizer.from_pretrained(config.model_name)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(config.model_name).eval()
     
-    # 建立simple headset (just pick a few heads)
+    # Buildsimple headset (just pick a few heads)
     headset = Headset(mode="topk", heads=[(5, 0), (5, 1), (5, 2), (5, 3)])
     
-    # Test 任務
+    # Test task
     tasks = [
         SimpleArithmeticTask(),
         SimpleNegationTask(), 
@@ -434,31 +434,31 @@ def test_basic_function_vector_extraction():
         AddOneTask()
     ]
     
-    # 擷取 function vectors
+    # Extract function vectors
     function_vecs = []
     for task in tasks:
         print(f"\nTesting task: {task.config.name}")
         
-        # Test basic 提示 sampling
+        # Test basic prompt sampling
         prompts = _sample_task_prompts(task, 5)
         print(f"Sample prompts ({len(prompts)}):")
         for i, p in enumerate(prompts[:2]):
             print(f"  {i+1}: {repr(p)}")
             
-        # Test control 生成
+        # Test control Generate
         controls = get_shuffled_prompts(task, 3)
         print(f"Control prompts ({len(controls)}):")
         for i, c in enumerate(controls[:2]):
             print(f"  {i+1}: {repr(c)}")
         
-        # Test contribution 擷取
+        # Test contribution Extract
         contribs = _batch_per_head_contribs(
             model, tokenizer, prompts[:2], layer_idx=5, device="cpu"
         )
         print(f"Contributions shape: {contribs.shape}")
         print(f"Contribution stats - mean: {contribs.mean():.4f}, std: {contribs.std():.4f}")
         
-        # 擷取 function vector
+        # Extract function vector
         func_vec = extract_task_function_vec(task, config, headset, model, tokenizer)
         function_vecs.append(func_vec)
         
@@ -487,16 +487,16 @@ def test_basis_formation_and_pca():
         topk_heads=4
     )
     
-    # 載入model
+    # Loadmodel
     tokenizer = AutoTokenizer.from_pretrained(config.model_name)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(config.model_name).eval()
     
-    # 簡單 headset
+    # simple headset
     headset = Headset(mode="topk", heads=[(5, 0), (5, 1), (5, 2), (5, 3)])
     
-    # 建立tasks
+    # Buildtasks
     tasks = [
         SimpleArithmeticTask(),
         SimpleNegationTask(),
@@ -510,7 +510,7 @@ def test_basis_formation_and_pca():
         AddOneTask()
     ]
     
-    # 擷取 function vectors
+    # Extract function vectors
     print("\n=== Extracting Function Vectors ===")
     function_vecs = []
     for task in tasks:
@@ -524,7 +524,7 @@ def test_basis_formation_and_pca():
     print(f"Task matrix shape: {task_matrix.V.shape}")
     print(f"Task names: {task_matrix.task_names}")
     
-    # 建立skill basis with SVD
+    # Buildskill basis with SVD
     print("\n=== Building Skill Basis (SVD) ===")
     skill_basis = build_skill_basis(task_matrix, method="svd", k=6)  # More components for richer analysis
     print(f"U shape: {skill_basis.U.shape}")
@@ -532,13 +532,13 @@ def test_basis_formation_and_pca():
     print(f"Vt shape: {skill_basis.Vt.shape}")
     print(f"Singular values: {skill_basis.S}")
     
-    # 檢查SVD properties
+    # CheckSVD properties
     assert skill_basis.U.shape[1] == 6  # k=6 components
     assert skill_basis.S.shape[0] == 6
     assert skill_basis.Vt.shape[0] == 6
     assert skill_basis.Vt.shape[1] == len(tasks)
     
-    # Singular 值 should be sorted in descending order
+    # Singular value should be sorted in descending order
     assert np.all(skill_basis.S[:-1] >= skill_basis.S[1:])
     
     print("\n=== PCA Analysis ===")
@@ -548,7 +548,7 @@ def test_basis_formation_and_pca():
     print(f"Explained variance ratios: {explained_var_ratio}")
     print(f"Cumulative explained variance: {np.cumsum(explained_var_ratio)}")
     
-    # Project 任務 onto principal components 
+    # Project task onto principal components 
     print(f"\nTask projections onto first 6 components:")
     projections = skill_basis.Vt.T  # (n_tasks, n_components)
     for i, task_name in enumerate(task_matrix.task_names):
@@ -556,7 +556,7 @@ def test_basis_formation_and_pca():
         print(f"  {task_name:20s}: [{proj[0]:6.3f}, {proj[1]:6.3f}, {proj[2]:6.3f}, {proj[3]:6.3f}, {proj[4]:6.3f}, {proj[5]:6.3f}]")
     
     # Basic sanity checks
-    assert explained_var_ratio[0] > 0.1  # 第一個 component should explain some variance
+    assert explained_var_ratio[0] > 0.1  # first component should explain some variance
     assert np.sum(explained_var_ratio) <= 1.0  # Can't explain more than 100%
     
     print("\n=== Function Vector Similarities ===")
@@ -575,7 +575,7 @@ def test_basis_formation_and_pca():
     try:
         import matplotlib.pyplot as plt
         
-        # 建立2D and 3D plots of 任務 projections
+        # Build2D and 3D plots of task projections
         projections = skill_basis.Vt.T  # (n_tasks, n_components)
         
         # 2D plot: PC1 vs PC2
@@ -611,7 +611,7 @@ def test_basis_formation_and_pca():
         fig = plt.figure(figsize=(10, 8))
         ax = fig.add_subplot(111, projection='3d')
         
-        # Color 任務 by type for better visualization
+        # Color task by type for better visualization
         task_colors = {
             'simple_arithmetic': 'red',
             'add_one': 'red', 
@@ -642,7 +642,7 @@ def test_basis_formation_and_pca():
         plt.savefig('/projects/bfcu/ElementalTask/task_pca_3d.png', dpi=150, bbox_inches='tight')
         print("📈 Saved 3D PCA plot to: task_pca_3d.png")
         
-        # 任務 type clustering analysis
+        # task type clustering analysis
         print("\n=== Task Type Analysis ===")
         numerical_tasks = ['simple_arithmetic', 'add_one', 'string_length', 'vowel_count']
         character_tasks = ['first_character', 'last_character']
@@ -681,13 +681,13 @@ def test_basis_formation_and_pca():
 
 
 class CompositeReverseCapitalizeTask(BaseTask):
-    """Composite 任務: Reverse a 字串 then capitalize it.
+    """Composite Task: Reverse a string then capitalize it.
     
-    This combines two 操作:
-    1. Reverse the 字串 (like ReverseStringTask)
-    2. Capitalize the 結果 (like SimpleCapitalizationTask)
+    This combines two operation:
+    1. Reverse the string (like ReverseStringTask)
+    2. Capitalize the results (like SimpleCapitalizationTask)
     
-    範例: "hello" -> "olleh" -> "Olleh"
+    example: "hello" -> "olleh" -> "Olleh"
     """
     
     def __init__(self):
@@ -714,7 +714,7 @@ class CompositeReverseCapitalizeTask(BaseTask):
         return data
     
     def build_prompt(self, row):
-        # Show the composite 操作 in 範例
+        # Show the composite operation in example
         prompt = "cat -> taC\ndog -> goD\n"
         prompt += f"{row['input']} ->"
         return prompt
