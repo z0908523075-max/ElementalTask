@@ -5,7 +5,7 @@ VANILLA_DEMONSTRATIONS = {
     'FA1': "Input:<br>short<br>Output:<br>brief<br>abbreviated<br>concise<br>momentary<br>little<br>limited<br>deficient<br>abrupt<br>prtite<br>crisp<br>compact<br>curtailed",
     'FA2': "Input:<br>EASY<br>Output:<br>hard<br>arduous<br>difficult<br>exacting<br>complicated<br>burdensome;;Input:<br>ACCEPT<br>Output:<br>decline<br>deny<br>disregard<br>neglect<br>reject<br>refuse",
     'FA3': "Input:<br>She was as pale as:<br>Output:<br>death<br>a shirt<br>a wax doll;;Input:<br>The jewels sparkled like:<br>Output:<br>fireflys<br>twinkling stars<br>dew drops in the sun",
-    'FE1': "Input:<br>E_*_R_T_*_.<br>Output:<br>Every boy read the book.;;Input:<br>T_*_W_W_*_.<br>Output:<br>This is what we need.", # <br>Termites eat wooden watches frequently.
+    'FE1': "Input:<br>E_*_R_T_*_.<br>Output:<br>Every boy read the book.;;Input:<br>T_*_W_W_*_.<br>Output:<br>This is what we need.", # <br>白蟻經常吃木製手錶。
     'FE2': "Input:<br>TAKE FEW LAND LITTLE<br>Output:<br>Few crops take little land.<br>A few little boats take supplies to land.<br>Take a few little boys with you to see the plane land.",
     'FE3': "Input:<br>In response to the teacher's question, a forest of hands shot up.<br>Output:<br>When the teacher asked a question, almost every hand was raised to answer it.",
     'FI1': "Input:<br>A train journey.<br>Output:<br>number of miles<br>catching the train",

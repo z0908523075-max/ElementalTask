@@ -8,7 +8,7 @@ import argparse
 sys.path.append(os.getcwd())
 from datasets import load_dataset
 #### OLMO
-# Base model path
+# 基礎模型路徑
 
 def load_model_revision(model_id: str, ckpt: Optional[str], use_vllm=False) -> Tuple[AutoModelForCausalLM, AutoTokenizer]:
     if "LLM360" in model_id:
@@ -34,12 +34,12 @@ def predict(model, tokenizer, dataset, output_path):
     for example in tqdm(dataset):
         input_text = example["lm_input"]
 
-        # Tokenize input and move to device
+        # 將輸入 token 化並移到裝置上
         inputs = tokenizer(input_text, return_tensors="pt", truncation=True, padding=True)
         del inputs["token_type_ids"]
         inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
-        # Generate output
+        # 生成輸出
         with torch.no_grad():
             outputs = model.generate(**inputs, max_new_tokens=100)
         generated_texts.append(tokenizer.decode(outputs[0], skip_special_tokens=True))
@@ -50,13 +50,13 @@ def predict(model, tokenizer, dataset, output_path):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Evaluate a model on a dataset.")
-    parser.add_argument("--model_id", type=str, required=True, help="Model identifier from Hugging Face.")
-    parser.add_argument("--chkpt", type=str, help="Checkpoint identifier for the model.")
-    parser.add_argument("--dataset_path", type=str, required=True, help="Path to the dataset for evaluation.")
-    parser.add_argument("--output_path", type=str, required=True, help="Path to save the evaluation results.")
-    parser.add_argument("--subset", type=str, required=True, help="The split from the datasets to use")
-    parser.add_argument("--local_dataset", action="store_true", help="Use a local dataset instead of downloading from Hugging Face.")
+    parser = argparse.ArgumentParser(description="在資料集上評估模型。")
+    parser.add_argument("--model_id", type=str, required=True, help="來自 Hugging Face 的模型識別碼。")
+    parser.add_argument("--chkpt", type=str, help="模型的 checkpoint 識別碼。")
+    parser.add_argument("--dataset_path", type=str, required=True, help="要用於評估的資料集路徑。")
+    parser.add_argument("--output_path", type=str, required=True, help="儲存評估結果的路徑。")
+    parser.add_argument("--subset", type=str, required=True, help="要使用的資料集 split")
+    parser.add_argument("--local_dataset", action="store_true", help="使用本機資料集，而不是從 Hugging Face 下載。")
     
     args = parser.parse_args()
 
@@ -66,11 +66,11 @@ if __name__ == "__main__":
     # model_id = "LLM360/CrystalCoder"
     # https://huggingface.co/LLM360/Crystal
 
-    # Load a specific revision (replace with actual revision string, e.g., a commit hash or tag)
-    ckpt = args.chkpt  # This should match the revision name in the repo
+    # 載入指定 revision（請替換成實際的 revision 字串，例如 commit hash 或 tag）
+    ckpt = args.chkpt  # 這應該與儲存庫中的 revision 名稱一致
     # ckpt = "CrystalCoder_phase1_checkpoint_055500"
 
-    # Load the model and tokenizer at the specific revision
+    # 在指定 revision 載入模型與 tokenizer
     if "LLM360" in model_id:
         tokenizer = AutoTokenizer.from_pretrained(
             "LLM360/CrystalCoder",
@@ -88,10 +88,9 @@ if __name__ == "__main__":
 
     dataset = load_dataset("your_dataset_name", split="train")
 
-    # Generate sample output
+    # 生成示範輸出
     prompt = "The universe began with"
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     outputs = model.generate(**inputs, max_new_tokens=100)
 
     print(tokenizer.decode(outputs[0], skip_special_tokens=True))
-

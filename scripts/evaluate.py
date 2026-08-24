@@ -19,12 +19,12 @@ def evaluate_model(
     max_new_tokens: int = 100,
 ):    
     if local_dataset:
-        # Load local dataset
+        # 載入本機資料集
         data = load_from_disk(dataset_path)
     else:
         data = load_dataset(dataset_path, subset, split="validation")
     
-    # # TODO: this is the format from kilt that probably needs to be generalized
+    # TODO: 這是來自 kilt 的格式，之後可能需要泛化
     prompts = [item["input"] for item in data]
     answers = [item["output"][0]["answer"] for item in data]
     if use_vllm:
@@ -38,7 +38,7 @@ def evaluate_model(
         )
         
         sampling_params = vllm.SamplingParams(
-            temperature=0,  # greedy decoding
+            temperature=0,  # 貪婪解碼
             max_tokens=max_new_tokens,
         )
                 
@@ -52,7 +52,7 @@ def evaluate_model(
             del inputs["token_type_ids"]
             inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
-            # Generate output
+            # 生成輸出
             with torch.no_grad():
                 outputs = model.generate(**inputs, max_new_tokens=100)
             generated_texts.append(tokenizer.decode(outputs[0], skip_special_tokens=True))
@@ -69,22 +69,22 @@ def evaluate_model(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate a model on a dataset.")
-    parser.add_argument("--model_id", type=str, required=True, help="Model identifier from Hugging Face.")
-    parser.add_argument("--chkpt", type=str, help="Checkpoint identifier for the model.")
-    parser.add_argument("--dataset_path", type=str, required=True, help="Path to the dataset for evaluation.")
-    parser.add_argument("--output_path", type=str, required=True, help="Path to save the evaluation results.")
-    parser.add_argument("--subset", type=str, required=True, help="The split from the datasets to use.")
-    parser.add_argument("--local_dataset", action="store_true", help="Use a local dataset instead of downloading from Hugging Face.")
-    parser.add_argument("--load_vllm", action="store_true", help="True if using vllm for inference, else False; defaults to False.")
-    parser.add_argument("--max_new_tokens", type=int, default=100, help="Max tokens for generation.")
+    parser = argparse.ArgumentParser(description="在資料集上評估模型。")
+    parser.add_argument("--model_id", type=str, required=True, help="來自 Hugging Face 的模型識別碼。")
+    parser.add_argument("--chkpt", type=str, help="模型的 checkpoint 識別碼。")
+    parser.add_argument("--dataset_path", type=str, required=True, help="要用於評估的資料集路徑。")
+    parser.add_argument("--output_path", type=str, required=True, help="儲存評估結果的路徑。")
+    parser.add_argument("--subset", type=str, required=True, help="要使用的資料集 split。")
+    parser.add_argument("--local_dataset", action="store_true", help="使用本機資料集，而不是從 Hugging Face 下載。")
+    parser.add_argument("--load_vllm", action="store_true", help="若使用 vllm 進行推論則設為 True，否則為 False；預設為 False。")
+    parser.add_argument("--max_new_tokens", type=int, default=100, help="生成時的最大 token 數。")
     
     args = parser.parse_args()
 
-    # Placeholder for evaluation logic
-    print(f"Evaluating model {args.model_id} on dataset {args.dataset_path}...")
+    # 評估邏輯入口
+    print(f"正在資料集 {args.dataset_path} 上評估模型 {args.model_id}...")
 
-    # Need to enable multiprocessing for VLLM, disabled by default
+    # VLLM 預設停用多程序，這裡需要顯式啟用
     if args.load_vllm:
         os.environ["LLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 
@@ -99,7 +99,7 @@ def main():
         args.max_new_tokens,
     )
     
-    print(f"Results saved to {args.output_path}")
+    print(f"結果已儲存至 {args.output_path}")
 
 if __name__ == "__main__":
     main()

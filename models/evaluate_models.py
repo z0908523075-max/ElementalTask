@@ -11,17 +11,17 @@ from scripts.inference import load_model_revision
 from tasks.base_task import get_task
 
 def preprocess_5shot(dataset):
-    # Sample 5 instances from the dataset
+    # 從資料集中抽樣 5 個實例
     sampled_instances = dataset.shuffle(seed=42).select(range(5))
 
-    # Remove the sampled instance from the dataset
+    # 從資料集中移除已抽樣的實例
     dataset = dataset.filter(lambda x: x not in sampled_instances)
     prompt = "Provide a response based on the following examples:\n"
     for instance in sampled_instances:
         prompt += f"Input: {instance['input']}\n{instance['output']}\n"
 
     def prompt_formatting(instance):
-        # Format the prompt
+        # 格式化提示
         instance["prompt"] = prompt + f"Input: {instance['input']}\n"
         return instance
     dataset = dataset.map(prompt_formatting)
@@ -36,7 +36,7 @@ def evaluate_model(
     max_new_tokens: int = 100,
     preprocess_fn: callable = preprocess_5shot,
 ):
-    # Load the dataset
+    # 載入資料集
     task = get_task(task_name)
     # pdb.set_trace()
     dataset = Dataset.from_list(list(task.get_split("test")))
@@ -44,7 +44,7 @@ def evaluate_model(
     if preprocess_fn:
         dataset = preprocess_fn(dataset)
 
-    # Load the model
+    # 載入模型
     if use_vllm:
         model = vllm.LLM(
             model=model_id,
@@ -56,7 +56,7 @@ def evaluate_model(
         )
         
         sampling_params = vllm.SamplingParams(
-            temperature=0,  # greedy decoding
+            temperature=0,  # 貪婪解碼
             max_tokens=max_new_tokens,
         )
                 
@@ -71,29 +71,29 @@ def evaluate_model(
             # del inputs["token_type_ids"]
             inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
-            # Generate output
+            # 生成輸出
             with torch.no_grad():
                 outputs = model.generate(**inputs, max_new_tokens=max_new_tokens)
             generated_texts.append(tokenizer.decode(outputs[0], skip_special_tokens=True))
     dataset = dataset.add_column("predictions", generated_texts)
-    # Save the predictions if output_path is provided
+    # 如果提供 output_path，則儲存預測結果
     if output_path:
         file_name = os.path.join(output_path, f"{model_id.replace('/', '_')}_{chkpt}_{task_name}.jsonl")
         os.makedirs(output_path, exist_ok=True)
         dataset.to_json(file_name, orient="records", lines=True)
-        print(f"Predictions saved to {output_path}")
-    # Evaluate the model
+        print(f"預測結果已儲存至 {output_path}")
+    # 評估模型
     metrics = task.evaluate(dataset["predictions"], split="test", updated_dataset=dataset.to_list())
-    print(f"Metrics for {model_id} at {chkpt}: {metrics}")
+    print(f"{model_id} 在 {chkpt} 的指標：{metrics}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate a model on a dataset.")
-    parser.add_argument("--model_id", type=str, default="allenai/OLMo-1B-hf", help="Model identifier from Hugging Face.")
-    parser.add_argument("--chkpt", type=str, default="step101000-tokens423B", help="Checkpoint identifier for the model.")
-    parser.add_argument("--task_name", type=str, default="FRCT_FA1_ControlledAssociations", help="Path to the dataset for evaluation.")
-    parser.add_argument("--output_path", default="output/", type=str, help="Path to save the evaluation results.")
+    parser = argparse.ArgumentParser(description="在資料集上評估模型。")
+    parser.add_argument("--model_id", type=str, default="allenai/OLMo-1B-hf", help="來自 Hugging Face 的模型識別碼。")
+    parser.add_argument("--chkpt", type=str, default="step101000-tokens423B", help="模型的 checkpoint 識別碼。")
+    parser.add_argument("--task_name", type=str, default="FRCT_FA1_ControlledAssociations", help="要評估的任務名稱。")
+    parser.add_argument("--output_path", default="output/", type=str, help="儲存評估結果的路徑。")
     parser.add_argument("--load_vllm", action="store_true")
-    parser.add_argument("--max_new_tokens", type=int, default=100, help="Max tokens for generation.")
+    parser.add_argument("--max_new_tokens", type=int, default=100, help="生成時的最大 token 數。")
     
     args = parser.parse_args()
     
@@ -106,7 +106,7 @@ def main():
         max_new_tokens=args.max_new_tokens
     )
     
-    # print(f"Results saved to {args.output_path}")
+    # print(f"結果已儲存至 {args.output_path}")
 
 if __name__ == "__main__":
     main()
