@@ -148,7 +148,7 @@ class StringAnalogyTask(BaseTask):
         參數：
             transformation: Type of transformation to apply
             source_length: Length of the source 字串
-            種子: 隨機種子 以確保可重現性
+            seed: 隨機種子 以確保可重現性
             
         回傳：
             字典 with 輸入, 輸出, and transformation fields
@@ -187,7 +187,7 @@ class StringAnalogyTask(BaseTask):
         參數：
             num_examples: 數字 of 範例 to 生成
             transformations: 列表 of transformation types to use (if None, use all)
-            種子: 隨機種子 以確保可重現性
+            seed: 隨機種子 以確保可重現性
             same_transformation: If True, all 範例 use the 相同 transformation type
                                 (proper ICL 格式). If False, mix different transformations.
             
@@ -241,9 +241,9 @@ class StringAnalogyTask(BaseTask):
         
         參數：
             num_examples: 數字 of 範例 to 回傳
-            打亂: Whether to 打亂 (ignored if use_generator=True)
-            種子: 隨機種子 以確保可重現性
-            新的: Whether to prefer 未使用 範例 (ignored if use_generator=True)
+            shuffle: Whether to 打亂 (ignored if use_generator=True)
+            seed: 隨機種子 以確保可重現性
+            fresh: Whether to prefer 未使用 範例 (ignored if use_generator=True)
             transformations: 列表 of transformation types for generator mode
             same_transformation: If True, all 已生成 範例 use the 相同 transformation
                                 (recommended for proper ICL 格式)

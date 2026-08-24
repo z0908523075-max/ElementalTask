@@ -354,7 +354,7 @@ def main():
 
     args = parser.parse_args()
     
-    # 有效ate 輸入
+    # 驗證 輸入
     if args.model_configs:
         with open(args.model_configs, 'r') as f:
             model_configs = json.load(f)

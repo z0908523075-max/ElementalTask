@@ -1726,7 +1726,7 @@ def main():
     elif args.dtype == "float32":
         torch_dtype = torch.float32
     
-    # 有效ate filtering args
+    # 驗證 filtering args
     if args.only_correct and not args.results_dir:
         print("⚠️  Warning: --only-correct requires --results-dir. Disabling filtering.")
         args.only_correct = False

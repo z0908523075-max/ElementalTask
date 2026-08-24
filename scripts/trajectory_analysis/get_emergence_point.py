@@ -773,7 +773,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # 有效ate 輸入 modes
+    # 驗證 輸入 modes
     if args.results_dirs and args.results_dir:
         parser.error("Cannot use both --results_dir and --results_dirs")
     

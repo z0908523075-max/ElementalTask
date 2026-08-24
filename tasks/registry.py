@@ -423,9 +423,9 @@ def get_task(name: str, spaced: bool = False, *args, **kwargs) -> BaseTask:
         任務 實例
     
     範例：
-        >>> 任務 = get_task("compositional:upper_reverse")
-        >>> 任務 = get_task("compositional:upper_reverse", spaced=True)
-        >>> 任務 = get_task("textfrct:CV1")
+        >>> task = get_task("compositional:upper_reverse")
+        >>> task = get_task("compositional:upper_reverse", spaced=True)
+        >>> task = get_task("textfrct:CV1")
     """
     return _task_registry.create_task(name, spaced=spaced, *args, **kwargs)
 

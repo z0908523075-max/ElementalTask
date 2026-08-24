@@ -18,11 +18,11 @@ Two modes of 操作:
 
 範例 usage:
     # 靜態 mode
-    任務 = make_copying_task(use_generator=False)
+    task = make_copying_task(use_generator=False)
     範例 = task.get_icl_examples(num_examples=5)
     
     # Generator mode with 自訂 parameters
-    任務 = make_copying_task(use_generator=True, min_length=3, max_length=8)
+    task = make_copying_task(use_generator=True, min_length=3, max_length=8)
     範例 = task.get_icl_examples(num_examples=10, charset="abc123", seed=42)
 """
 
@@ -64,7 +64,7 @@ class CopyingTask(BaseTask):
         參數：
             length: Length of the 隨機 字串. If None, randomly chosen between min_length and max_length
             charset: 字元 set to use. If None, uses letters and digits
-            種子: 隨機種子 以確保可重現性
+            seed: 隨機種子 以確保可重現性
             
         回傳：
             字典 with 'input' and 'output' keys (both identical)
@@ -90,7 +90,7 @@ class CopyingTask(BaseTask):
         參數：
             num_examples: 數字 of 範例 to 生成
             charset: 字元 set to use for 生成
-            種子: 隨機種子 以確保可重現性
+            seed: 隨機種子 以確保可重現性
             
         回傳：
             列表 of 範例 dictionaries
@@ -119,9 +119,9 @@ class CopyingTask(BaseTask):
         
         參數：
             num_examples: 數字 of 範例 to 回傳
-            打亂: Whether to 打亂 (ignored if use_generator=True)
-            種子: 隨機種子 以確保可重現性
-            新的: Whether to prefer 未使用 範例 (ignored if use_generator=True)
+            shuffle: Whether to 打亂 (ignored if use_generator=True)
+            seed: 隨機種子 以確保可重現性
+            fresh: Whether to prefer 未使用 範例 (ignored if use_generator=True)
             charset: 字元 set for 隨機 生成 (only used if use_generator=True)
             
         回傳：

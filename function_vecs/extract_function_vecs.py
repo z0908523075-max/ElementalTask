@@ -780,7 +780,7 @@ def _first_answer_token_ids(tokenizer, answers: List[str]) -> torch.Tensor:
             else:
                 tok = enc.input_ids[0, 0].item()
         
-        # 有效ate token is in 詞彙 bounds
+        # 驗證 token is in 詞彙 bounds
         if tok is None or tok < 0 or tok >= vocab_size:
             print(f"  Warning: Invalid token ID {tok} for answer '{a}', using EOS")
             tok = tokenizer.eos_token_id

@@ -8,7 +8,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class PartOfSpeechTask(BaseTask):
-    """用於identifying the 詞性 of a tar取得word in a sentence."""
+    """用於identifying the 詞性 of a targetword in a sentence."""
     TASK_NAME = "part_of_speech"  # 自動發現鍵
 
     def __init__(self, config: TaskConfig):

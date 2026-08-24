@@ -13,7 +13,7 @@ given a 問題. This is the core skill underlying virtually all QA benchmarks.
     問題: Where is the mat?
     答案: the kitchen
 
-Each 類別 tests a different 擷取 tar取得type while keeping
+Each 類別 tests a different 擷取 targettype while keeping
 the passages 簡單 and unambiguous.
 """
 

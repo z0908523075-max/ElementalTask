@@ -49,7 +49,7 @@ class TaskTrajectory:
     accuracy: np.ndarray
     
     def interpolate(self, target_tokens: np.ndarray) -> np.ndarray:
-        """Interpolate 準確率 at tar取得token counts."""
+        """Interpolate 準確率 at targettoken counts."""
         return np.interp(target_tokens, self.tokens, self.accuracy)
 
 

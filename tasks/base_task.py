@@ -110,9 +110,9 @@ class BaseTask(ABC):
 
         參數：
             num_examples: 數字 of 範例 to 回傳.
-            打亂: whether to 打亂 可用 範例 before selection.
-            種子: 可選隨機種子 以確保可重現性.
-            新的: if True, prefer 範例 that haven't been returned before
+            shuffle: whether to 打亂 可用 範例 before selection.
+            seed: 可選隨機種子 以確保可重現性.
+            fresh: if True, prefer 範例 that haven't been returned before
                    (tracks indices in ``self._icl_used_indices``).
         """
         rows = self.get_split("test")

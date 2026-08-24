@@ -370,13 +370,13 @@ class CompositionalTask(BaseTask):
     
     範例：
         # 載入all 組合式 任務
-        任務 = get_task("compositional")
+        task = get_task("compositional")
         
         # 載入specific 組合
-        任務 = get_task("compositional:upper_reverse")
+        task = get_task("compositional:upper_reverse")
         
         # 載入with spacing for character-level 操作
-        任務 = get_task("compositional:upper_reverse", spaced=True)
+        task = get_task("compositional:upper_reverse", spaced=True)
     """
     
     TASK_NAME = "compositional"  # 自動註冊名稱

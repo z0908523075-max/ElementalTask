@@ -72,7 +72,7 @@ class IgnoringContextTask(BaseTask):
             值: 值 to assign. If None, 隨機 integer 1-20.
             filler_before: 數字 of filler 詞 before the key fact.
             filler_after: 數字 of filler 詞 after the key fact.
-            種子: 隨機種子 以確保可重現性.
+            seed: 隨機種子 以確保可重現性.
             
         回傳：
             字典 with 輸入, 輸出, 變數, and 值.
@@ -117,7 +117,7 @@ class IgnoringContextTask(BaseTask):
         參數：
             num_examples: 數字 of 範例 to 生成.
             filler_range: (min, max) 詞 for filler 文字.
-            種子: 隨機種子 以確保可重現性.
+            seed: 隨機種子 以確保可重現性.
             
         回傳：
             列表 of 範例 dictionaries.
@@ -153,9 +153,9 @@ class IgnoringContextTask(BaseTask):
         
         參數：
             num_examples: 數字 of 範例 to 回傳.
-            打亂: Whether to 打亂 (ignored if use_generator=True).
-            種子: 隨機種子 以確保可重現性.
-            新的: Whether to prefer 未使用 範例 (ignored if use_generator=True).
+            shuffle: Whether to 打亂 (ignored if use_generator=True).
+            seed: 隨機種子 以確保可重現性.
+            fresh: Whether to prefer 未使用 範例 (ignored if use_generator=True).
             filler_range: (min, max) 詞 for filler 文字 in 已生成 範例.
             
         回傳：
