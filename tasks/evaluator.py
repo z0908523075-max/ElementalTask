@@ -311,7 +311,7 @@ class TaskEvaluator:
         
         參數：
             提示: 列表 of 輸入 提示
-            targets: 列表 of expected targetoutputs
+            targets: 列表 of expected target outputs
             
         回傳：
             列表 of dicts with loss, perplexity, probability for each 範例
@@ -342,7 +342,7 @@ class TaskEvaluator:
             prompt_len = prompt_ids.shape[1]
             full_len = full_ids.shape[1]
             
-            # If targetadds no 新的 tokens, skip
+            # If target adds no 新的 tokens, skip
             if full_len <= prompt_len:
                 results.append({
                     "loss": float('inf'),
@@ -359,7 +359,7 @@ class TaskEvaluator:
                 outputs = self.model(full_ids)
                 logits = outputs.logits  # [1, seq_len, vocab_size]
                 
-                # Compute loss only on targettokens
+                # Compute loss only on target tokens
                 # Shift: predict token[i+1] from position[i]
                 target_logits = logits[0, prompt_len-1:full_len-1, :]  # [target_len, vocab_size]
                 target_labels = full_ids[0, prompt_len:full_len]  # [target_len]
@@ -415,11 +415,11 @@ class TaskEvaluator:
                 output = outputs[0]
                 
                 if output.prompt_logprobs is not None:
-                    # Find where targetstarts
+                    # Find where target starts
                     prompt_tokens = self.model.get_tokenizer().encode(prompt)
                     prompt_len = len(prompt_tokens)
                     
-                    # 取得logprobs for targettokens
+                    # 取得logprobs for target tokens
                     target_logprobs = []
                     for i, lp in enumerate(output.prompt_logprobs):
                         if i >= prompt_len and lp is not None:
@@ -612,7 +612,7 @@ class TaskEvaluator:
                         target_clean = targets[i].strip().lower() if targets[i] else ""
                         item["correct"] = (pred_clean == target_clean)
                 
-                # Add targetand continuous metrics 若可用
+                # Add target and continuous metrics 若可用
                 if targets is not None:
                     item["target"] = targets[i]
                 
