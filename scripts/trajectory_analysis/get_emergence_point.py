@@ -590,7 +590,7 @@ def plot_all_tasks_emergence(
         smooth_sigma: Smoothing parameter
         output_dir: directory to Storeplots
         min_max_accuracy: Skip task below this threshold
-        Task: optionallist of specific task to plot
+        tasks: Optional list of specific tasks to plot
         **kwargs: Method-specific parameters
 
     Returns: 

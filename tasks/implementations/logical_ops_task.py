@@ -10,7 +10,7 @@ These are building blocks for reasoning-heavy benchmarks.
 Format (ICL):
     input: [text logic problem]
     output: True or False
-    (varies by class — see demos)
+    (varies by category — see demos)
 """
 
 import random

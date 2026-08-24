@@ -582,7 +582,7 @@ def load_correct_instances_from_detailed_results(
                 item_category = metadata.get('category_name', '')
                 item_category_id = metadata.get('category_id', '')
                 
-                # If we're filtering by class, skip non-matching items
+                # If we're filtering by category, skip non-matching items
                 # Match against both category_name and category_id (e.g., "Scrambled word" vs "CV1")
                 if category and item_category and item_category_id:
                     if item_category != category and item_category_id != category:
@@ -1000,7 +1000,7 @@ def extract_task_function_vec(
 ) -> TaskFunctionVec:
     torch.manual_seed(config.seed); np.random.seed(config.seed)
 
-    # Loadonce if not provided (lets you reuse across task)
+    # Load once if not provided (lets you reuse across tasks)
     if model is None:
         from transformers import AutoModelForCausalLM, AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained(
@@ -1213,7 +1213,7 @@ def build_skill_basis(task_vec_matrix: TaskMatrix, method="svd", k=-1, center=Fa
         task_vec_matrix: Matrix of task function vectors (d_model x n_tasks)
         method: Method to use ("svd" or "pca")
                 - "svd": Use raw SVD, respecting the center parameter
-                - "pca": Force centering (standard PCA), ignores center=False ifprovided
+                - "pca": Force centering (standard PCA), ignores center=False if provided
         k: number of components to keep (-1 for 95% variance threshold)
         center: Whether to center the data before decomposition.
                - False (default): No centering, good for L2-normalized vectors (cosine-based metrics)

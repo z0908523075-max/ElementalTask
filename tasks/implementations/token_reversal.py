@@ -7,7 +7,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class TokenReversalTask(BaseTask):
-    """forreversing input word or string."""
+    """Task for reversing input words or strings."""
     TASK_NAME = "token_reversal"  # automatic discovery key
 
     def __init__(self, config: TaskConfig):

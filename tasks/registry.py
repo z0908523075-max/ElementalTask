@@ -55,7 +55,7 @@ class TaskRegistry:
                 # Import the module
                 module = importlib.import_module(module_name)
                 
-                # Find all class that inherit from BaseTask
+                # Find all classes that inherit from BaseTask
                 for name, obj in inspect.getmembers(module, inspect.isclass):
                     if (issubclass(obj, BaseTask) and 
                         obj != BaseTask and 
@@ -253,9 +253,9 @@ class TaskRegistry:
         """Create a CompositionalTask with optionalcategory filtering and spacing.
         
         supports:
-            - compositional (all class)
-            - compositional:upper_reverse (single class)
-            - compositional:upper_reverse,lower_first (multiple class)
+            - compositional (all categories)
+            - compositional:upper_reverse (single category)
+            - compositional:upper_reverse,lower_first (multiple categories)
             - spaced=True for character-spaced input/output
         """
         if category_filter:
@@ -285,7 +285,7 @@ class TaskRegistry:
         task_class = self.get_task_class("compositional")
         task = task_class(config, spaced=spaced)
         
-        # filter by class if specified
+        # filter by category if specified
         if category_filter:
             categories = [c.strip() for c in category_filter.split(",")]
             if hasattr(task, 'data') and task.data:
@@ -312,13 +312,13 @@ class TaskRegistry:
         """Create a TextFRCT task with optionalcategory filtering.
         
         supports:
-            - textfrct (all class)
-            - textfrct:CV1 (single class)
-            - textfrct:CV1,CV2,FA1 (multiple class)
+            - textfrct (all categories)
+            - textfrct:CV1 (single category)
+            - textfrct:CV1,CV2,FA1 (multiple categories)
         """
         from tasks.implementations.textfrct_task import TextFRCTTask
         
-        # Parse class filter (can be single class or comma-separated list)
+        # Parse category filter (can be single category or comma-separated list)
         categories = None
         if category_filter:
             if isinstance(category_filter, list):
@@ -443,7 +443,7 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
     Args: 
         include_compositional: If True, enumerate all compositional subtasks
         include_textfrct: If True, enumerate all TextFRCT subtasks
-        include_simple_icl: If True, enumerate all simple_icl class
+        include_simple_icl: If True, enumerate all simple_icl categories
     
     Returns: 
         dictionary mapping task class to list of task name
@@ -509,7 +509,7 @@ def list_all_tasks(include_compositional: bool = True, include_textfrct: bool = 
             # Add Base simple_icl task
             result["base_tasks"].append("simple_icl")
             
-            # Enumerate all simple_icl class
+            # Enumerate all simple_icl categories
             try:
                 import pandas as pd
                 from pathlib import Path

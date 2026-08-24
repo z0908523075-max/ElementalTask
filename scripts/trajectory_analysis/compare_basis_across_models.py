@@ -314,7 +314,7 @@ def plot_procrustes_alignment(X_aligned: np.ndarray, Y_norm: np.ndarray,
 
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    # Color by class
+    # Color by category
     is_comp = [t.startswith("compositional") for t in task_names]
 
     for i, name in enumerate(task_names):
@@ -462,7 +462,7 @@ def main():
     print(f"  Spearman ρ = {r_s:.4f}  (p = {p_s:.2e})")
     print(f"  N pairs    = {len(da)}")
 
-    # Break down by class
+    # Break down by category
     comp_mask = np.array([t.startswith("compositional") for t in shared])
     elem_mask = ~comp_mask
     n_comp = comp_mask.sum()

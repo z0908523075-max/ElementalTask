@@ -52,7 +52,7 @@ def test_residual_capture_matches_attention_add_tiny_gpt2():
     diff = (resid_after - (resid_pre + attn_proj)).abs()
     assert diff.max().item() < 1e-5, f"Residual mismatch (tokenwise): {diff.max().item():.3e}"
 
-    # Checklast non-pad token specifically
+    # Check last non-pad token specifically
     B = resid_pre.size(0)
     idx = torch.arange(B, device=resid_pre.device)
     pre_last   = resid_pre[idx, t_star, :]
@@ -148,7 +148,7 @@ def test_olmo2_residual_capture():
     with ResidualCapture(model, layer_idx) as cap:
         _ = model(**batch, output_attentions=False, use_cache=False, return_dict=True)
 
-    # Checkthat all expected tensors were captured
+    # Check that all expected tensors were captured
     expected_keys = ["resid_pre_attn", "resid_after_attn_add", "attn_out_proj", "attn_pre_proj"]
     for key in expected_keys:
         assert key in cap.cache, f"Missing key: {key}"
@@ -256,7 +256,7 @@ def test_crystal_residual_capture():
     with ResidualCapture(model, layer_idx) as cap:
         _ = model(**batch, output_attentions=False, use_cache=False, return_dict=True)
 
-    # Checkthat all expected tensors were captured
+    # Check that all expected tensors were captured
     expected_keys = ["resid_pre_attn", "resid_after_attn_add", "attn_out_proj", "attn_pre_proj"]
     for key in expected_keys:
         assert key in cap.cache, f"Missing key: {key}"

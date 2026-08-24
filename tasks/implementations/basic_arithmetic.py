@@ -7,7 +7,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class BasicArithmeticTask(BaseTask):
-    """for basic arithmetic operation."""
+    """Task for basic arithmetic operations."""
     
     TASK_NAME = "basic_arithmetic"  # automatic discovery key
     
@@ -15,7 +15,7 @@ class BasicArithmeticTask(BaseTask):
         super().__init__(config)
     
     def _load_data(self):
-        """Loadarithmetic problems - uses in-memory data ifprovided, otherwise default."""
+        """Load arithmetic problems — uses in-memory data if provided, otherwise uses defaults."""
         import pandas as pd
         
         if self.config.in_memory_data:
@@ -39,17 +39,17 @@ class BasicArithmeticTask(BaseTask):
         self.data = pd.DataFrame(default_problems)
     
     def get_split(self, split: str = "test") -> List[Dict[str, Any]]:
-        # convertDataFrame to list of dictionaries for iteration
+        # Convert DataFrame to list of dictionaries for iteration
         if hasattr(self.data, 'to_dict'):
             return self.data.to_dict('records')
         return self.data
     
     def build_prompt(self, instance: Dict[str, Any], num_shots: int = 5) -> str:
-        """Build a prompt for arithmetic problems with optionalICL example.
+        """Build a prompt for arithmetic problems with optional ICL examples.
         
         Args: 
-            instance: The instance to Build a prompt for
-            num_shots: number of in-context learning example (default: 5)
+            instance: The instance to build a prompt for
+            num_shots: Number of in-context learning examples (default: 5)
         
         Returns: 
             Format prompt string

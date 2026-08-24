@@ -1,5 +1,5 @@
 """
-Test the simplified one-stop interface for function vector Extract.
+Test the simplified one-stop interface for function vector extraction.
 """
 import pytest
 import torch
@@ -19,7 +19,7 @@ def test_simple_interface_existing_task():
     """Test the simplified interface with an existing task."""
     print("Testing simplified interface with existing task...")
     
-    # Use one of our working basic ICL task
+    # Use one of our working basic ICL taskss
     function_vec = extract_function_vector_simple(
         task_name="basic_arithmetic",
         model_name="distilgpt2",  # Smaller model for testing
@@ -44,10 +44,10 @@ def test_simple_interface_existing_task():
     reason="Skip on CI by default to avoid network downloads."
 )
 def test_simple_interface_different_tasks():
-    """Test the simplified interface with different built-in task."""
+    """Test the simplified interface with different built-in tasks."""
     print("Testing simplified interface with different tasks...")
     
-    # Test multiple basic ICL task (use actual available task)
+    # Test multiple basic ICL tasks (use actual available tasks)
     tasks_to_test = ["simple_icl", "token_reversal", "part_of_speech"]
     
     for task_name in tasks_to_test:
@@ -75,10 +75,10 @@ def test_simple_interface_different_tasks():
     reason="Skip on CI by default to avoid network downloads."
 )
 def test_simple_interface_defaults():
-    """Test that the simplified interface works with all default."""
+    """Test that the simplified interface works with all defaults."""
     print("Testing simplified interface with defaults...")
     
-    # Test with minimal parameters - should use all default
+    # Test with minimal parameters — should use all defaults
     function_vec = extract_function_vector_simple("basic_arithmetic")
 
     # Verify basic properties
@@ -96,7 +96,7 @@ def test_readme_example():
     
     print("Testing simple interface README example...")
     
-    # simple usage - use a working basic ICL task
+    # simple usage — use a working basic ICL task
     function_vec = extract_function_vector_simple("basic_arithmetic", num_samples=3)
     print(f"Function vector shape: {function_vec.function_vec.shape}")
 

@@ -21,7 +21,7 @@ together_models = [
 ]
 
 
-# === LoadAPI keys from .env ===
+# === Load API keys from .env ===
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")

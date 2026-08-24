@@ -14,7 +14,7 @@ from tasks.base_task import BaseTask, TaskConfig
 
 
 class AntonymTask(BaseTask):
-    """formapping a word to its antonym."""
+    """Task for mapping a word to its antonym."""
 
     TASK_NAME = "antonym"  # automatic discovery key
 
@@ -85,8 +85,8 @@ def create_antonym_task(
     """Create a ``AntonymTask`` instance.
 
     Args: 
-        Example: optionallist of ``{"input": word, "output": antonym}`` dicts.
-                  If None, uses a built-in defaultset.
+        examples: Optional list of ``{"input": word, "output": antonym}`` dicts.
+                  If None, uses a built-in default set.
         name: task name to register/report.
 
     Returns: 

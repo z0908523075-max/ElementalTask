@@ -230,7 +230,7 @@ def analyze_multiple_dirs(
         results_dirs: list of results directory (one per model)
         model_names: list of model name (same order as results_dirs)
         min_max_accuracy: Skip task below this threshold
-        Task: optionallist of specific task to analyze
+        tasks: Optional list of specific tasks to analyze
     
     Returns: 
         Tuple of (results DataFrame, skipped task list)

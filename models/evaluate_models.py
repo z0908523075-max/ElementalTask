@@ -160,7 +160,7 @@ def evaluate_model(
         # Get ground truth for computing correctness
         ground_truth = task.get_ground_truth("test")
         
-        # group by class if present, and add correct field
+        # group by category if present, and add correct field
         category_items = {}  # class -> list of items
         
         for i, item in enumerate(dataset):
@@ -187,7 +187,7 @@ def evaluate_model(
                 }
             }
             
-            # group by class
+            # group by category
             category = item.get('category_name', '')
             if category:
                 if category not in category_items:
@@ -198,7 +198,7 @@ def evaluate_model(
                     category_items['_default'] = []
                 category_items['_default'].append(detailed_item)
         
-        # Storefiles - one per class or single file if no class
+        # Save files — one per category, or a single file if no categories
         import json
         
         if len(category_items) == 1 and '_default' in category_items:
@@ -209,7 +209,7 @@ def evaluate_model(
                     f.write(json.dumps(item, default=str) + '\n')
             print(f"Saved {len(category_items['_default'])} predictions to {file_name}")
         else:
-            # Multiple class - Storeseparate file
+            # Multiple categories — save separate file per category
             for category, items in category_items.items():
                 if category == '_default':
                     continue

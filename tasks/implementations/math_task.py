@@ -6,7 +6,7 @@ from typing import List, Dict
 
 
 class MathTask(BaseTask):
-    """A forsimple math problems."""
+    """Task for simple math problems."""
     
     TASK_NAME = "math"  # This is all that's needed for automatic register!
     

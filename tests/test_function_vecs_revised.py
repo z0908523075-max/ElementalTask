@@ -51,10 +51,10 @@ def test_compute_aie_with_varied_prompts():
     attn0 = get_attn(blocks[0])
     assert get_o_proj(attn0) is not None
 
-    # Buildsimpler ICL example for memory efficiency
+    # Build simpler ICL example for memory efficiency
     icl_examples = [("a", "A"), ("b", "B"), ("c", "C")]
     
-    # Buildjust 2 ICL prompt to reduce memory usage
+    # Build just 2 ICL prompts to reduce memory usage
     icl_texts = []
     for i in range(2):  # Reduced from 4 to 2
         demo_start = i % (len(icl_examples) - 1)
@@ -65,7 +65,7 @@ def test_compute_aie_with_varied_prompts():
         prompt = f"Examples:\n{demo1[0]} -> {demo1[1]}\n{demo2[0]} -> {demo2[1]}\n\nTask: {test_input} ->"
         icl_texts.append(prompt)
     
-    # Buildcorresponding control prompt
+    # Build corresponding control prompt
     import random
     inputs = ["a", "b", "c"]
     outputs = ["A", "B", "C"]

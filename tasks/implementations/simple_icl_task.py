@@ -6,7 +6,7 @@ from ..base_task import BaseTask, TaskConfig
 
 
 class SimpleICLTask(BaseTask):
-    """forsimple in-context learning with category-based demonstration."""
+    """Task for simple in-context learning with category-based demonstrations."""
     
     TASK_NAME = "simple_icl"  # automaticregistername
     
@@ -166,7 +166,7 @@ class SimpleICLTask(BaseTask):
             if demo_input != instance_input:
                 filtered_demos.append(d)
 
-        # Limit to num_shots ifprovided
+        # Limit to num_shots if provided
         if filtered_demos and num_shots > 0:
             demos = filtered_demos[:num_shots]
         else:

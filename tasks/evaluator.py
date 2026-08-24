@@ -573,7 +573,7 @@ class TaskEvaluator:
         """Storeevaluation results to file.
         
         For task with subtasks/class (like simple_icl), saves separate file
-        per class to avoid overwriting.
+        per category to avoid overwriting.
         """
         model_name = self.model_config.model_id.replace('/', '_')
         task_name = results["task_name"]
@@ -590,7 +590,7 @@ class TaskEvaluator:
         
         # Storedetailed predictions if requested
         if self.eval_config.save_detailed_results:
-            # group items by class if present
+            # group items by category if present
             category_items = {}  # category_name -> list of items
             
             for i, data in enumerate(task_data):
@@ -619,7 +619,7 @@ class TaskEvaluator:
                 if target_metrics is not None:
                     item["continuous_metrics"] = target_metrics[i]
                 
-                # group by class if present
+                # group by category if present
                 category = data.get("category_name", None)
                 if category:
                     if category not in category_items:
@@ -631,7 +631,7 @@ class TaskEvaluator:
                         category_items["_default"] = []
                     category_items["_default"].append(item)
             
-            # Storefiles - one per class or single file if no class
+            # Save files — one per category, or a single file if no categories
             if len(category_items) == 1 and "_default" in category_items:
                 # No class - Storesingle file
                 detailed_path = Path(self.eval_config.output_dir) / f"{base_filename}_detailed.jsonl"
@@ -639,7 +639,7 @@ class TaskEvaluator:
                     for item in category_items["_default"]:
                         f.write(json.dumps(item, default=str) + '\n')
             else:
-                # Multiple class - Storeseparate file per class
+                # Multiple categories — save separate files per category
                 for category, items in category_items.items():
                     if category == "_default":
                         continue

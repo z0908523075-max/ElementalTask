@@ -425,11 +425,11 @@ def plot_fv_prediction(
             return 'fv_known'
         return 'baseline'
 
-    # Plot predictions grouped by class
+    # Plot predictions grouped by category
     sorted_methods = sorted(predictions.keys(),
                             key=lambda m: metrics[m]['r2'], reverse=True)
 
-    # group by class for legend
+    # group by category for legend
     from itertools import groupby
     cat_order = ['baseline', 'fv_known', 'fv_disc']
     methods_by_cat = {c: [] for c in cat_order}

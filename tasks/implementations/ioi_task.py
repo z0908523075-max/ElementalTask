@@ -8,7 +8,7 @@ from datasets import load_dataset
 
 
 class IOITask(BaseTask):
-    """forindirect object identification using IOI dataset from mib-bench/ioi."""
+    """Task for indirect object identification using the IOI dataset from mib-bench/ioi."""
 
     TASK_NAME = "ioi_task"  # automatic discovery key
     

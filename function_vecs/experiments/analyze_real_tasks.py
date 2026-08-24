@@ -51,7 +51,7 @@ def load_task_performance(
     Args: 
         results_dir: path to results directory (e.g., "results/olmo2_continuous_1b_early_revised")
         checkpoint: Checkpoint to filter by (e.g., "main")
-        task_names: optionallist of task name to Load(Loadall if None)
+        task_names: Optional list of task names to load (loads all if None)
     
     Returns: 
         dictionary mapping task_name -> accuracy (0.0-1.0)
@@ -100,7 +100,7 @@ def discover_icl_tasks(
     """Discover all task that supports ICL format, including subtasks.
     
     Args: 
-        results_dir: ifprovided, dynamically discover compositional task
+        results_dir: If provided, dynamically discover compositional tasks
             from the Evaluate results directory.
         checkpoint: Checkpoint name to look for results (default: "main")
         holdout_compositional: If True, Returns(non_comp_tasks, comp_tasks)

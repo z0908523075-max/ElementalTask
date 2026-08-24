@@ -1,5 +1,5 @@
 """
-Test basic ICL task for function vector basis formation and PCA analysis.
+Test basic ICL tasks for function vector basis formation and PCA analysis.
 """
 import pytest
 import torch
@@ -399,7 +399,7 @@ class AddOneTask(BaseTask):
 
 @pytest.mark.integration
 def test_basic_function_vector_extraction():
-    """Test extracting function vectors from basic ICL task."""
+    """Test extracting function vectors from basic ICL tasks."""
     
     # Use tiny model for speed
     config = ExtractConfig(

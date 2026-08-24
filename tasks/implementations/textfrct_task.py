@@ -19,10 +19,10 @@ class TextFRCTTask(BaseTask):
             super().__init__(config)
         
         def _load_data(self):
-            """LoadTextFRCT data and optionally filter by class and subjective task."""
+            """Load TextFRCT data and optionally filter by category and subjective task."""
             data = pd.read_csv(self.config.data_path)
             
-            # filter by class if specified
+            # filter by category if specified
             if self.categories:
                 data = data[data['category_id'].isin(self.categories)]
                 print(f"Filtered to categories {self.categories}: {len(data)} examples")
