@@ -20,7 +20,7 @@
 
 * 複雜任務：我們如何用提出的元素任務構造複雜任務？
     - extractiveQA = 理解 + 推理 + 精確複製
-    - Opendomain QA = 記憶 + 理解 + 推理 + 語言學
+    - Open-domain QA = 記憶 + 理解 + 推理 + 語言學
     - Natural Language Inference = 理解 + 推理
 
 
