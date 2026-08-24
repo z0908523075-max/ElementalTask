@@ -81,7 +81,7 @@ def main():
     
     args = parser.parse_args()
 
-    # 評估邏輯入口
+    # 評估邏輯的佔位符
     print(f"正在資料集 {args.dataset_path} 上評估模型 {args.model_id}...")
 
     # VLLM 預設停用多程序，這裡需要顯式啟用
